@@ -52,12 +52,18 @@
   .dayBadge{background:var(--panel2);border:1px solid var(--line);padding:8px 16px;border-radius:6px;font-size:13px;color:var(--gold);letter-spacing:1px;}
   .clock{font-size:22px;color:var(--ink);letter-spacing:1px;}
 
-  main{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 60px;position:relative;}
-  .slide{width:100%;max-width:1400px;opacity:0;transform:translateY(18px) scale(.98);position:absolute;transition:opacity .5s ease, transform .5s ease;pointer-events:none;}
+  main{flex:1;display:flex;align-items:stretch;justify-content:center;gap:28px;padding:20px 40px;position:relative;}
+  .mainPanel{flex:1.5;min-width:0;display:flex;align-items:center;justify-content:center;position:relative;}
+  .photoPanel{flex:1;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);}
+  .photoPanel img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 9s ease-out forwards;}
+  .photoPanel .photoPanelLabel{position:absolute;top:14px;left:14px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.65);padding:6px 12px;border-radius:20px;}
+  .photoPanel .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:34px 20px 16px 20px;background:linear-gradient(transparent, rgba(6,4,16,.85));font-size:16px;color:var(--ink);}
+  .photoPanel .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:20px;text-align:center;font-size:14px;}
+  .slide{width:100%;max-width:100%;opacity:0;transform:translateY(18px) scale(.98);position:absolute;transition:opacity .5s ease, transform .5s ease;pointer-events:none;}
   .slide.active{opacity:1;transform:translateY(0) scale(1);position:relative;pointer-events:auto;}
   .eyebrow{font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:4px;font-size:14px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
   .eyebrow::before{content:'';width:26px;height:2px;background:var(--gold);display:inline-block;}
-  .title{font-family:'Poppins',sans-serif;font-weight:800;font-size:52px;letter-spacing:0px;color:var(--ink);margin:0 0 28px 0;line-height:1.05;}
+  .title{font-family:'Poppins',sans-serif;font-weight:800;font-size:42px;letter-spacing:0px;color:var(--ink);margin:0 0 24px 0;line-height:1.05;}
 
   .standings{display:flex;flex-direction:column;gap:20px;}
   .teamRow{display:flex;align-items:center;gap:20px;}
@@ -173,7 +179,10 @@
     </div>
   </header>
 
-  <main id="stage"></main>
+  <main>
+    <div id="stage" class="mainPanel"></div>
+    <div id="photoPanel" class="photoPanel"></div>
+  </main>
 
   <div class="ticker"><div class="tickerInner" id="tickerText">Loading announcements…</div></div>
 </div>
@@ -889,10 +898,22 @@ function computeDayOfYear(){
 }
 
 const JSONBLOB_BASE = 'https://jsonblob.com/api/jsonBlob';
+const BOARD_ID_STORAGE_KEY = 'derechJumbotronBoardId';
 let boardId = null;
 
 function getBoardIdFromUrl(){
-  return new URLSearchParams(window.location.search).get('board');
+  // Prefer the URL param (so links you share always point at the right
+  // board), but fall back to whatever board this browser last created —
+  // this stops a lost/stripped ?board= param from silently spawning a
+  // brand new jsonblob board (and burning through jsonblob's rate limit)
+  // every single time the page reloads.
+  const fromUrl = new URLSearchParams(window.location.search).get('board');
+  if(fromUrl) return fromUrl;
+  try{ return localStorage.getItem(BOARD_ID_STORAGE_KEY) || null; }catch(e){ return null; }
+}
+
+function rememberBoardId(id){
+  try{ localStorage.setItem(BOARD_ID_STORAGE_KEY, id); }catch(e){ /* storage unavailable, non-fatal */ }
 }
 
 async function loadConfig(){
@@ -925,39 +946,52 @@ async function createBoard(){
     headers:{'Content-Type':'application/json', 'Accept':'application/json'},
     body: JSON.stringify(config)
   });
+  if(res.status === 429) throw new Error('jsonblob.com is rate-limiting requests (HTTP 429) — wait a minute or two and try again');
   if(!res.ok) throw new Error(`jsonblob create failed: HTTP ${res.status}`);
   const loc = res.headers.get('Location');
   if(!loc) throw new Error('No blob id returned (Location header missing — likely blocked by network/CORS)');
   return loc.split('/').pop();
 }
 
+let saveInFlight = false;
+
 async function saveConfig(){
-  if(!boardId){
-    // No shared board yet: this is the first real Save, so create one now
-    // (explicit, user-triggered — not a silent background action) and make
-    // this URL the board's permanent link going forward.
-    try{
-      boardId = await createBoard();
-      const url = new URL(window.location.href);
-      url.searchParams.set('board', boardId);
-      history.replaceState(null, '', url.toString());
-      boardJustCreatedUrl = url.toString();
-    }catch(err){
-      console.error('board creation failed', err);
-      return {ok:false, error: err.message || String(err)};
-    }
-  }
+  // Guard against double-fires (double-clicks, a stuck previous request,
+  // etc.) piling up extra requests against jsonblob's rate limit.
+  if(saveInFlight) return {ok:false, error:'a save is already in progress'};
+  saveInFlight = true;
   try{
-    const res = await fetch(`${JSONBLOB_BASE}/${boardId}`, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json', 'Accept':'application/json'},
-      body: JSON.stringify(config)
-    });
-    if(!res.ok) return {ok:false, error:`HTTP ${res.status}`};
-    return {ok:true};
-  }catch(e){
-    console.error('save failed', e);
-    return {ok:false, error: e.message || 'network error'};
+    if(!boardId){
+      // No shared board yet: this is the first real Save, so create one now
+      // (explicit, user-triggered — not a silent background action) and make
+      // this URL the board's permanent link going forward.
+      try{
+        boardId = await createBoard();
+        rememberBoardId(boardId);
+        const url = new URL(window.location.href);
+        url.searchParams.set('board', boardId);
+        history.replaceState(null, '', url.toString());
+        boardJustCreatedUrl = url.toString();
+      }catch(err){
+        console.error('board creation failed', err);
+        return {ok:false, error: err.message || String(err)};
+      }
+    }
+    try{
+      const res = await fetch(`${JSONBLOB_BASE}/${boardId}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json', 'Accept':'application/json'},
+        body: JSON.stringify(config)
+      });
+      if(res.status === 429) return {ok:false, error:'jsonblob.com is rate-limiting requests (HTTP 429) — wait a minute or two and try again'};
+      if(!res.ok) return {ok:false, error:`HTTP ${res.status}`};
+      return {ok:true};
+    }catch(e){
+      console.error('save failed', e);
+      return {ok:false, error: e.message || 'network error'};
+    }
+  } finally {
+    saveInFlight = false;
   }
 }
 
@@ -970,13 +1004,6 @@ tickClock();
 
 function buildSlides(){
   slides = [];
-  const allPhotos = [
-    ...(config.photos||[]).map(p=>({...p, isCustom:true})),
-    ...(config.galleryPhotos||[]).map(p=>({...p, isCustom:false}))
-  ];
-  for(let i=0;i<allPhotos.length;i+=3){
-    slides.push({type:'photo', items: allPhotos.slice(i,i+3)});
-  }
   if(config.shoutouts && config.shoutouts.length) slides.push({type:'shoutouts'});
   if(config.leagueActive && config.teams && config.teams.length) slides.push({type:'standings'});
   const hasZmanim = (config.zmanim && (config.zmanim.candleLighting || config.zmanim.havdalah || config.zmanim.sofZmanShema)) || autoZmanim.candleLighting || autoZmanim.havdalah;
@@ -1041,12 +1068,6 @@ function updateCountdownNumbers(){
 }
 
 function renderSlideContent(slide){
-  if(slide.type === 'photo'){
-    const items = slide.items;
-    const eyebrow = items.some(p=>p.isCustom) ? 'From The Week' : 'Derech Gallery';
-    return {eyebrow, title:'Photos', body:`<div class="photoGrid">${items.map(p=>`
-      <div class="photoCell"><img src="${escapeAttr(p.url)}" alt="board photo" onerror="this.closest('.photoCell').style.display='none'"><div class="photoCaption">${escapeHtml(p.caption||'')}</div></div>`).join('')}</div>`};
-  }
   if(slide.type === 'standings'){
     return {eyebrow:'League Standings', title:'Team Points', body: `<div class="leagueName">${escapeHtml(config.leagueName||'')}</div>` + renderTeamBars()};
   }
@@ -1187,6 +1208,52 @@ function startRotation(){
   countdownRefresh = setInterval(()=>{
     if(slides[slideIndex] && slides[slideIndex].type === 'countdown') updateCountdownNumbers();
   }, 1000);
+  startPhotoRotation();
+}
+
+// ================= PHOTO SIDE PANEL =================
+// Runs completely independently of the main content rotation above, so
+// photos are always visible while everything else (scores, zmanim,
+// trivia, countdowns, etc.) cycles through the main panel.
+const PHOTO_DURATION = 8000;
+let photoList = [];
+let photoIndex = 0;
+let photoTimer = null;
+
+function buildPhotoList(){
+  photoList = [
+    ...(config.photos||[]).map(p=>({...p, isCustom:true})),
+    ...(config.galleryPhotos||[]).map(p=>({...p, isCustom:false}))
+  ];
+}
+
+function paintPhotoPanel(){
+  const panel = document.getElementById('photoPanel');
+  if(!panel) return;
+  if(!photoList.length){
+    panel.innerHTML = `<div class="photoPanelLabel">Photos</div><div class="photoEmptyState">Add photos from the gear icon to show them here</div>`;
+    return;
+  }
+  const p = photoList[photoIndex % photoList.length];
+  const label = p.isCustom ? 'From The Week' : 'Derech Gallery';
+  panel.innerHTML = `
+    <div class="photoPanelLabel">${escapeHtml(label)}</div>
+    <img src="${escapeAttr(p.url)}" alt="board photo" onerror="this.style.display='none'">
+    ${p.caption ? `<div class="photoCaptionBar">${escapeHtml(p.caption)}</div>` : ''}`;
+}
+
+function nextPhoto(){
+  photoIndex = (photoIndex + 1) % photoList.length;
+  paintPhotoPanel();
+  photoTimer = setTimeout(nextPhoto, PHOTO_DURATION);
+}
+
+function startPhotoRotation(){
+  buildPhotoList();
+  photoIndex = 0;
+  paintPhotoPanel();
+  clearTimeout(photoTimer);
+  if(photoList.length > 1) photoTimer = setTimeout(nextPhoto, PHOTO_DURATION);
 }
 
 function paintTicker(){ document.getElementById('tickerText').textContent = config.ticker || ''; }
@@ -1454,8 +1521,10 @@ async function startBoard(){
 
 (async function init(){
   boardId = getBoardIdFromUrl();
-  // No board param: runs with local defaults only (no shared storage, no
-  // silent board creation). Add ?board=ID to the URL to load/save shared data.
+  if(boardId) rememberBoardId(boardId);
+  // No board id found (URL param or local fallback): runs with local
+  // defaults only (no shared storage, no silent board creation) until you
+  // hit Save, which then creates a board and remembers it going forward.
   await startBoard();
 })();
 </script>
