@@ -87,6 +87,11 @@
   .aReveal{margin-top:24px;padding-top:20px;border-top:1px dashed var(--line);font-family:'Poppins',sans-serif;font-weight:700;font-size:28px;color:var(--gold);opacity:0;transition:opacity .6s ease;}
   .aReveal.show{opacity:1;}
 
+  .prevRiddleWrap{margin-top:26px;padding-top:20px;border-top:1px dashed var(--line);}
+  .prevRiddleLabel{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .prevRiddleText{font-size:17px;color:var(--muted);line-height:1.4;margin-bottom:16px;max-width:640px;}
+  .prevRiddleAnswer{display:inline-block;transform:rotate(180deg);font-family:'Poppins',sans-serif;font-weight:700;font-size:17px;color:var(--gold);}
+
   .shoutoutBox{display:flex;flex-direction:column;gap:14px;}
   .shoutItem{background:linear-gradient(90deg, var(--panel2), transparent);border-left:4px solid var(--gold);padding:18px 24px;border-radius:6px;font-size:24px;font-weight:500;}
 
@@ -1120,12 +1125,21 @@ function renderSlideContent(slide){
       </div>`, isReveal:true};
   }
   if(slide.type === 'riddle'){
-    const r = config.riddleBank[dayOfYear % config.riddleBank.length];
+    const bank = config.riddleBank;
+    const idxToday = dayOfYear % bank.length;
+    const idxYesterday = ((dayOfYear - 1) % bank.length + bank.length) % bank.length;
+    const rToday = bank[idxToday];
+    const rYesterday = bank[idxYesterday];
     return {eyebrow:'Riddle of the Day', title:'Figure It Out', body: `
       <div class="contentBox">
-        <div class="qText">${escapeHtml(r.r)}</div>
-        <div class="aReveal" id="aReveal">${escapeHtml(r.a)}</div>
-      </div>`, isReveal:true};
+        <div class="qText">${escapeHtml(rToday.r)}</div>
+        ${bank.length > 1 ? `
+        <div class="prevRiddleWrap">
+          <div class="prevRiddleLabel">Yesterday's Riddle</div>
+          <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
+          <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
+        </div>` : ''}
+      </div>`};
   }
   if(slide.type === 'shoutouts'){
     return {eyebrow:'Shoutouts', title:'Kol HaKavod', body: `<div class="shoutoutBox">${
