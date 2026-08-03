@@ -931,9 +931,15 @@ const firebaseConfig = {
   databaseURL: "https://PASTE_YOUR_PROJECT-default-rtdb.firebaseio.com",
   projectId: "PASTE_YOUR_PROJECT_ID"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const BOARD_REF = db.ref('jumbotronBoard');
+
+function isFirebaseConfigured(){
+  return !!(firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PASTE_')
+    && firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('PASTE_'));
+}
+
+let firebaseReady = false;
+let db = null;
+let BOARD_REF = null;
 
 function mergeStoredConfig(stored){
   const merged = Object.assign({}, structuredClone(DEFAULT_CONFIG), stored || {});
@@ -950,24 +956,55 @@ let hasLoadedOnce = false;
 let resolveFirstLoad;
 const firstLoadPromise = new Promise(res => { resolveFirstLoad = res; });
 
-// Fires immediately with the current data, then again every time ANY device
-// saves — that's what lets the kiosk screen update itself live. We skip the
-// auto-refresh while the edit modal is open so it doesn't yank the form out
-// from under whoever's currently editing.
-BOARD_REF.on('value', (snap)=>{
-  config = mergeStoredConfig(snap.exists() ? snap.val() : null);
-  if(!hasLoadedOnce){
-    hasLoadedOnce = true;
-    resolveFirstLoad();
-  } else if(!document.getElementById('modalOverlay').classList.contains('open')){
-    paintTicker();
-    startRotation();
-  }
-}, (err)=>{
-  console.error('Firebase read failed', err);
+function fallbackToLocalConfig(reason){
+  if(hasLoadedOnce) return;
+  if(reason) console.warn('Falling back to local-only mode:', reason);
   config = structuredClone(DEFAULT_CONFIG);
-  if(!hasLoadedOnce){ hasLoadedOnce = true; resolveFirstLoad(); }
-});
+  hasLoadedOnce = true;
+  resolveFirstLoad();
+}
+
+// Everything below is wrapped defensively: an unset or invalid Firebase
+// config, a blocked/failed CDN script, or any other failure must NEVER be
+// allowed to leave the page hanging forever (that's what caused the whole
+// page — gear icon included — to go dead/stuck on "Loading..."). If
+// Firebase isn't usable for any reason, we fall back to running from local
+// defaults, and paintTicker() below shows an on-screen warning so it's
+// obvious why saves aren't persisting.
+if(isFirebaseConfigured()){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    BOARD_REF = db.ref('jumbotronBoard');
+    // Fires immediately with the current data, then again every time ANY
+    // device saves — that's what lets the kiosk screen update itself live.
+    // We skip the auto-refresh while the edit modal is open so it doesn't
+    // yank the form out from under whoever's currently editing.
+    BOARD_REF.on('value', (snap)=>{
+      config = mergeStoredConfig(snap.exists() ? snap.val() : null);
+      if(!hasLoadedOnce){
+        hasLoadedOnce = true;
+        firebaseReady = true;
+        resolveFirstLoad();
+      } else if(!document.getElementById('modalOverlay').classList.contains('open')){
+        paintTicker();
+        startRotation();
+      }
+    }, (err)=>{
+      fallbackToLocalConfig('Firebase read failed: ' + (err && err.message));
+    });
+  }catch(err){
+    fallbackToLocalConfig('Firebase init threw: ' + (err && err.message));
+  }
+} else {
+  fallbackToLocalConfig('firebaseConfig still has placeholder values');
+}
+
+// Safety net: whatever else goes wrong above (a hung request, a
+// permission-denied response with no error callback, a CDN script that
+// half-loads, etc.) — never let the page wait forever. Force the local
+// fallback after 6 seconds if nothing has resolved by then.
+setTimeout(()=> fallbackToLocalConfig('timed out waiting for Firebase'), 6000);
 
 async function loadConfig(){
   await firstLoadPromise;
@@ -976,6 +1013,7 @@ async function loadConfig(){
 let saveInFlight = false;
 
 async function saveConfig(){
+  if(!firebaseReady) return {ok:false, error:"Firebase isn't configured yet — see the setup comments near the top of the script"};
   // Guard against double-fires (double-clicks, a stuck previous request, etc.)
   if(saveInFlight) return {ok:false, error:'a save is already in progress'};
   saveInFlight = true;
@@ -1273,7 +1311,10 @@ function startPhotoRotation(){
   if(photoList.length > 1) photoTimer = setTimeout(nextPhoto, PHOTO_DURATION);
 }
 
-function paintTicker(){ document.getElementById('tickerText').textContent = config.ticker || ''; }
+function paintTicker(){
+  const warning = firebaseReady ? '' : '⚠ Firebase is not configured — nothing will save or sync. Open the file and paste your firebaseConfig values in near the top of the script (see the setup comments there).   •   ';
+  document.getElementById('tickerText').textContent = warning + (config.ticker || '');
+}
 function paintDayBadge(){
   const d = new Date();
   document.getElementById('dayBadge').textContent = d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'}).toUpperCase();
@@ -1283,7 +1324,7 @@ function paintDayBadge(){
 const editOpen = document.getElementById('editOpen');
 const modalOverlay = document.getElementById('modalOverlay');
 document.getElementById('closeModal').onclick = ()=> modalOverlay.classList.remove('open');
-editOpen.onclick = ()=>{ populateModal(); modalOverlay.classList.add('open'); };
+editOpen.onclick = ()=>{ if(!config) return; populateModal(); modalOverlay.classList.add('open'); };
 modalOverlay.onclick = (e)=>{ if(e.target === modalOverlay) modalOverlay.classList.remove('open'); };
 
 document.querySelectorAll('.tab').forEach(tab=>{
