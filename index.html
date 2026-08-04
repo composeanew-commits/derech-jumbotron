@@ -53,17 +53,56 @@
   .clock{font-size:22px;color:var(--ink);letter-spacing:1px;}
 
   main{flex:1;display:flex;align-items:stretch;justify-content:center;gap:28px;padding:20px 40px;position:relative;}
-  .mainPanel{flex:1.5;min-width:0;display:flex;align-items:center;justify-content:center;position:relative;}
+  .mainPanel{flex:1.5;min-width:0;position:relative;}
   .photoPanel{flex:1;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);}
   .photoPanel img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 9s ease-out forwards;}
   .photoPanel .photoPanelLabel{position:absolute;top:14px;left:14px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.65);padding:6px 12px;border-radius:20px;}
   .photoPanel .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:34px 20px 16px 20px;background:linear-gradient(transparent, rgba(6,4,16,.85));font-size:16px;color:var(--ink);}
   .photoPanel .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:20px;text-align:center;font-size:14px;}
-  .slide{width:100%;max-width:100%;opacity:0;transform:translateY(18px) scale(.98);position:absolute;transition:opacity .5s ease, transform .5s ease;pointer-events:none;}
-  .slide.active{opacity:1;transform:translateY(0) scale(1);position:relative;pointer-events:auto;}
-  .eyebrow{font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:4px;font-size:14px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
-  .eyebrow::before{content:'';width:26px;height:2px;background:var(--gold);display:inline-block;}
-  .title{font-family:'Poppins',sans-serif;font-weight:800;font-size:42px;letter-spacing:0px;color:var(--ink);margin:0 0 24px 0;line-height:1.05;}
+
+  .dashboardGrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));grid-auto-rows:min-content;gap:16px;padding:4px 12px 4px 0;overflow-y:auto;align-content:start;}
+  .dashboardEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:'Rubik';font-size:20px;text-align:center;}
+  .widgetCard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0;}
+  .widgetWide{grid-column:span 2;}
+  .widgetEyebrow{font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:2px;font-size:10px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
+  .widgetEyebrow::before{content:'';width:12px;height:2px;background:var(--gold);display:inline-block;}
+  .widgetTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;color:var(--ink);margin:0 0 10px 0;line-height:1.15;}
+
+  /* Compact versions of the shared content styles, scoped to widget cards */
+  .widgetCard .qText{font-size:16px;line-height:1.4;}
+  .widgetCard .catTag{font-size:10px;padding:3px 9px;margin-bottom:8px;}
+  .widgetCard .aReveal{font-size:16px;margin-top:12px;padding-top:10px;}
+  .widgetCard .prevRiddleWrap{margin-top:14px;padding-top:12px;}
+  .widgetCard .prevRiddleLabel{font-size:10px;}
+  .widgetCard .prevRiddleText{font-size:13px;margin-bottom:8px;}
+  .widgetCard .prevRiddleAnswer{font-size:13px;}
+  .widgetCard .shoutoutBox{gap:8px;}
+  .widgetCard .shoutItem{font-size:14px;padding:10px 14px;}
+  .widgetCard .hebrewWord{font-size:38px;}
+  .widgetCard .translit{font-size:12px;}
+  .widgetCard .meaning{font-size:14px;margin-top:8px;}
+  .widgetCard .thoughtText{font-size:15px;}
+  .widgetCard .thoughtSource{font-size:11px;margin-top:10px;}
+  .widgetCard .zmanimGrid{gap:8px;}
+  .widgetCard .zmanRow{padding:8px 2px;}
+  .widgetCard .zmanLabel{font-size:13px;}
+  .widgetCard .zmanTime{font-size:17px;}
+  .widgetCard .scheduleList{gap:5px;}
+  .widgetCard .schedRow{padding:4px 2px;gap:14px;}
+  .widgetCard .schedTime{font-size:12px;min-width:64px;}
+  .widgetCard .schedActivity{font-size:13px;}
+  .widgetCard .standings{gap:10px;}
+  .widgetCard .teamName{font-size:14px;width:110px;}
+  .widgetCard .barTrack{height:26px;}
+  .widgetCard .barFill span{font-size:12px;}
+  .widgetCard .rankBadge{width:22px;height:22px;font-size:11px;}
+  .widgetCard .leagueName{font-size:11px;margin:-4px 0 10px 0;}
+  .widgetCard .countdownWrap{gap:4px;}
+  .widgetCard .flipRow{gap:8px;margin:6px 0 0 0;}
+  .widgetCard .flipUnit{padding:10px 12px;min-width:52px;}
+  .widgetCard .flipNum{font-size:24px;}
+  .widgetCard .flipLabel{font-size:9px;margin-top:4px;}
+  .widgetCard .activityName{font-size:15px;}
 
   .standings{display:flex;flex-direction:column;gap:20px;}
   .teamRow{display:flex;align-items:center;gap:20px;}
@@ -124,12 +163,6 @@
   .schedTime{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--gold);font-size:20px;min-width:110px;}
   .schedActivity{font-size:22px;color:var(--ink);}
 
-  .progressBar{position:absolute;bottom:-38px;left:0;right:0;display:flex;justify-content:center;gap:6px;padding:0 20px;}
-  .segTrack{flex:1;max-width:64px;height:4px;border-radius:3px;background:var(--line);overflow:hidden;}
-  .segFill{height:100%;width:0%;background:var(--gold);border-radius:3px;}
-  .segTrack.done .segFill{width:100%;}
-  .segTrack.current .segFill{animation:fillSeg var(--seg-dur,12000ms) linear forwards;}
-  @keyframes fillSeg{from{width:0%;}to{width:100%;}}
   .livePulse{width:8px;height:8px;border-radius:50%;background:#4CAF6D;display:inline-block;margin-right:8px;box-shadow:0 0 0 0 rgba(76,175,109,.6);animation:pulseDot 2s infinite;}
   @keyframes pulseDot{0%{box-shadow:0 0 0 0 rgba(76,175,109,.55);}70%{box-shadow:0 0 0 8px rgba(76,175,109,0);}100%{box-shadow:0 0 0 0 rgba(76,175,109,0);}}
 
@@ -892,9 +925,6 @@ const DEFAULT_CONFIG = {
 };
 
 let config = null;
-let slideIndex = 0;
-let slides = [];
-let revealTimer = null;
 let dayOfYear = 0;
 
 function computeDayOfYear(){
@@ -1035,26 +1065,6 @@ function tickClock(){
 setInterval(tickClock, 1000);
 tickClock();
 
-function buildSlides(){
-  slides = [];
-  if(config.shoutouts && config.shoutouts.length) slides.push({type:'shoutouts'});
-  if(config.leagueActive && config.teams && config.teams.length) slides.push({type:'standings'});
-  const hasZmanim = (config.zmanim && (config.zmanim.candleLighting || config.zmanim.havdalah || config.zmanim.sofZmanShema)) || autoZmanim.candleLighting || autoZmanim.havdalah;
-  if(hasZmanim) slides.push({type:'zmanim'});
-  slides.push({type:'schedule'}); // always shown: falls back to DEFAULT_SCHEDULE if none entered
-  const hasHistory = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
-  if(hasHistory) slides.push({type:'history'});
-  const hasYahrzeit = (config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim()) || autoYahrzeit;
-  if(hasYahrzeit) slides.push({type:'yahrzeit'});
-  (config.countdowns||[]).forEach((c,i)=>{ if(c.name && c.date && c.time) slides.push({type:'countdown', idx:i}); });
-  if(config.triviaBank && config.triviaBank.length) slides.push({type:'trivia'});
-  if(config.riddleBank && config.riddleBank.length) slides.push({type:'riddle'});
-  if(config.wordBank && config.wordBank.length) slides.push({type:'word'});
-  if(config.quoteBank && config.quoteBank.length) slides.push({type:'quote'});
-  if(config.waysBank && config.waysBank.length) slides.push({type:'ways'});
-  if(slides.length === 0) slides.push({type:'empty'});
-}
-
 function renderTeamBars(){
   const max = Math.max(...config.teams.map(t=>t.points), 1);
   const sorted = [...config.teams].sort((a,b)=>b.points-a.points);
@@ -1067,138 +1077,151 @@ function renderTeamBars(){
 }
 
 function renderCountdownMarkup(idx){
-  return `<div class="countdownWrap" data-cd-idx="${idx}"><div class="activityName" id="cdActivityName"></div><div class="flipRow" id="flipRow"></div></div>`;
+  // No fixed IDs here (data attributes only) since several countdown
+  // widgets can be on screen at the same time now.
+  return `<div class="countdownWrap" data-cd-idx="${idx}"><div class="activityName" data-cd-name></div><div class="flipRow" data-cd-flip></div></div>`;
 }
 
-function updateCountdownNumbers(){
-  const wrapOuter = document.querySelector('.countdownWrap');
-  if(!wrapOuter) return;
-  const idx = Number(wrapOuter.dataset.cdIdx);
-  const c = config.countdowns[idx];
-  const wrap = document.getElementById('flipRow');
-  const nameEl = document.getElementById('cdActivityName');
-  if(!wrap || !c || !c.time || !c.date) return;
-  nameEl.textContent = c.name || 'Next Up';
-  const [yy,mo,dd] = c.date.split('-').map(Number);
-  const [h,m] = c.time.split(':').map(Number);
-  const target = new Date(yy, mo-1, dd, h, m, 0);
-  const now = new Date();
-  let diff = target - now;
-  if(diff < 0){
-    wrap.innerHTML = `<div class="flipUnit"><div class="flipNum" style="font-size:36px;">STARTING NOW</div></div>`;
-    return;
-  }
-  const dd2 = Math.floor(diff/86400000);
-  const hh = Math.floor((diff%86400000)/3600000);
-  const mm = Math.floor((diff%3600000)/60000);
-  const ss = Math.floor((diff%60000)/1000);
-  const parts = [];
-  if(dd2>0) parts.push([dd2,'DAYS']);
-  if(dd2>0 || hh>0) parts.push([hh,'HRS']);
-  parts.push([mm,'MIN']);
-  parts.push([ss,'SEC']);
-  wrap.innerHTML = parts.map(([v,l])=>`<div class="flipUnit"><div class="flipNum">${String(v).padStart(2,'0')}</div><div class="flipLabel">${l}</div></div>`).join('');
+function updateAllCountdowns(){
+  document.querySelectorAll('.countdownWrap').forEach(wrapOuter=>{
+    const idx = Number(wrapOuter.dataset.cdIdx);
+    const c = config.countdowns[idx];
+    const wrap = wrapOuter.querySelector('[data-cd-flip]');
+    const nameEl = wrapOuter.querySelector('[data-cd-name]');
+    if(!wrap || !c || !c.time || !c.date) return;
+    nameEl.textContent = c.name || 'Next Up';
+    const [yy,mo,dd] = c.date.split('-').map(Number);
+    const [h,m] = c.time.split(':').map(Number);
+    const target = new Date(yy, mo-1, dd, h, m, 0);
+    const now = new Date();
+    let diff = target - now;
+    if(diff < 0){
+      wrap.innerHTML = `<div class="flipUnit"><div class="flipNum" style="font-size:20px;">STARTING NOW</div></div>`;
+      return;
+    }
+    const dd2 = Math.floor(diff/86400000);
+    const hh = Math.floor((diff%86400000)/3600000);
+    const mm = Math.floor((diff%3600000)/60000);
+    const ss = Math.floor((diff%60000)/1000);
+    const parts = [];
+    if(dd2>0) parts.push([dd2,'D']);
+    if(dd2>0 || hh>0) parts.push([hh,'H']);
+    parts.push([mm,'M']);
+    parts.push([ss,'S']);
+    wrap.innerHTML = parts.map(([v,l])=>`<div class="flipUnit"><div class="flipNum">${String(v).padStart(2,'0')}</div><div class="flipLabel">${l}</div></div>`).join('');
+  });
 }
 
-function renderSlideContent(slide){
-  if(slide.type === 'standings'){
-    return {eyebrow:'League Standings', title:'Team Points', body: `<div class="leagueName">${escapeHtml(config.leagueName||'')}</div>` + renderTeamBars()};
+// Builds one widget-card per active piece of content. Everything here shows
+// on screen simultaneously (as opposed to the old one-at-a-time rotation).
+function buildDashboardWidgets(){
+  const widgets = [];
+
+  {
+    const scheduleText = (config.schedule && config.schedule.trim()) || DEFAULT_SCHEDULE;
+    const lines = scheduleText.split('\n').map(l=>l.trim()).filter(Boolean);
+    const body = `<div class="scheduleList">${lines.map(l=>{
+      const [time, ...rest] = l.split(/[-–—]/);
+      const activity = rest.join('-').trim();
+      return activity
+        ? `<div class="schedRow"><span class="schedTime">${escapeHtml(time.trim())}</span><span class="schedActivity">${escapeHtml(activity)}</span></div>`
+        : `<div class="schedRow"><span class="schedActivity">${escapeHtml(l)}</span></div>`;
+    }).join('')}</div>`;
+    widgets.push({eyebrow:'Today', title:'Schedule', body, wide:true});
   }
-  if(slide.type === 'zmanim'){
-    const z = config.zmanim;
+
+  {
+    const z = config.zmanim || {};
     const rows = [];
     const candle = (z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting;
     const havdalah = (z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah;
     if(candle) rows.push(['Candle Lighting', candle]);
     if(havdalah) rows.push(['Shabbos Ends', havdalah]);
-    if(z.sofZmanShema) rows.push(["Sof Zman Krias Shema", z.sofZmanShema]);
-    return {eyebrow:'Zmanim', title:'This Week', body: `
-      <div class="contentBox"><div class="zmanimGrid">${rows.map(([label,val])=>`
-        <div class="zmanRow"><span class="zmanLabel">${escapeHtml(label)}</span><span class="zmanTime">${escapeHtml(val)}</span></div>`).join('')}</div></div>`};
+    if(z.sofZmanShema) rows.push(['Sof Zman Shema', z.sofZmanShema]);
+    if(rows.length){
+      const body = `<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`;
+      widgets.push({eyebrow:'Zmanim', title:'This Week', body});
+    }
   }
-  if(slide.type === 'schedule'){
-    const scheduleText = (config.schedule && config.schedule.trim()) || DEFAULT_SCHEDULE;
-    const lines = scheduleText.split('\n').map(l=>l.trim()).filter(Boolean);
-    return {eyebrow:"Today", title:"Schedule", body: `
-      <div class="contentBox"><div class="scheduleList">${lines.map(l=>{
-        const [time, ...rest] = l.split(/[-–—]/);
-        const activity = rest.join('-').trim();
-        return activity
-          ? `<div class="schedRow"><span class="schedTime">${escapeHtml(time.trim())}</span><span class="schedActivity">${escapeHtml(activity)}</span></div>`
-          : `<div class="schedRow"><span class="schedActivity">${escapeHtml(l)}</span></div>`;
-      }).join('')}</div></div>`};
+
+  if(config.leagueActive && config.teams && config.teams.length){
+    const body = (config.leagueName ? `<div class="leagueName">${escapeHtml(config.leagueName)}</div>` : '') + renderTeamBars();
+    widgets.push({eyebrow:'League Standings', title:'Team Points', body, wide:true});
   }
-  if(slide.type === 'history'){
-    const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
-    return {eyebrow:'Today in Jewish History', title:'On This Day', body: `
-      <div class="contentBox"><div class="qText" style="font-size:26px;">${escapeHtml(text)}</div></div>`};
+
+  (config.countdowns||[]).forEach((c,i)=>{
+    if(c.name && c.date && c.time){
+      widgets.push({eyebrow:'Countdown', title: c.name || 'On Deck', body: renderCountdownMarkup(i)});
+    }
+  });
+
+  if(config.shoutouts && config.shoutouts.length){
+    const body = `<div class="shoutoutBox">${config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
+    widgets.push({eyebrow:'Shoutouts', title:'Kol HaKavod', body, wide:true});
   }
-  if(slide.type === 'yahrzeit'){
-    const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
-    const y = manual ? config.yahrzeit : autoYahrzeit;
-    return {eyebrow:'Yahrzeit Today', title: y.name, body: `
-      <div class="contentBox">${y.blurb ? `<div class="qText" style="font-size:24px;">${escapeHtml(y.blurb)}</div>` : ''}</div>`};
-  }
-  if(slide.type === 'countdown'){
-    const c = config.countdowns[slide.idx];
-    return {eyebrow:'Countdown', title: c.name || 'On Deck', body: renderCountdownMarkup(slide.idx)};
-  }
-  if(slide.type === 'trivia'){
+
+  if(config.triviaBank && config.triviaBank.length){
     const t = config.triviaBank[dayOfYear % config.triviaBank.length];
-    return {eyebrow:'Trivia of the Day', title:'Do You Know?', body: `
-      <div class="contentBox">
-        ${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
-        <div class="qText">${escapeHtml(t.q)}</div>
-        <div class="aReveal" id="aReveal">${escapeHtml(t.a)}</div>
-      </div>`, isReveal:true};
+    const body = `${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
+      <div class="qText">${escapeHtml(t.q)}</div>
+      <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
+    widgets.push({eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true});
   }
-  if(slide.type === 'riddle'){
+
+  if(config.riddleBank && config.riddleBank.length){
     const bank = config.riddleBank;
     const idxToday = dayOfYear % bank.length;
     const idxYesterday = ((dayOfYear - 1) % bank.length + bank.length) % bank.length;
     const rToday = bank[idxToday];
     const rYesterday = bank[idxYesterday];
-    return {eyebrow:'Riddle of the Day', title:'Figure It Out', body: `
-      <div class="contentBox">
-        <div class="qText">${escapeHtml(rToday.r)}</div>
-        ${bank.length > 1 ? `
-        <div class="prevRiddleWrap">
-          <div class="prevRiddleLabel">Yesterday's Riddle</div>
-          <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
-          <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
-        </div>` : ''}
-      </div>`};
+    const body = `<div class="qText">${escapeHtml(rToday.r)}</div>
+      ${bank.length > 1 ? `
+      <div class="prevRiddleWrap">
+        <div class="prevRiddleLabel">Yesterday's Riddle</div>
+        <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
+        <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
+      </div>` : ''}`;
+    widgets.push({eyebrow:'Riddle of the Day', title:'Figure It Out', body, wide:true});
   }
-  if(slide.type === 'shoutouts'){
-    return {eyebrow:'Shoutouts', title:'Kol HaKavod', body: `<div class="shoutoutBox">${
-      config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')
-    }</div>`};
-  }
-  if(slide.type === 'word'){
+
+  if(config.wordBank && config.wordBank.length){
     const w = config.wordBank[dayOfYear % config.wordBank.length];
-    return {eyebrow:'Word of the Day', title:'Milah HaYom', body: `
-      <div class="wordBox">
-        ${w.cat ? `<div class="catTag">${escapeHtml(w.cat === 'Modern' ? 'Modern Hebrew' : 'Yeshivish')}</div>` : ''}
-        <div class="hebrewWord">${escapeHtml(w.hebrew)}</div>
-        <div class="translit">${escapeHtml(w.translit)}</div>
-        <div class="meaning">${escapeHtml(w.meaning)}</div>
-      </div>`};
+    const body = `<div class="wordBox">
+      ${w.cat ? `<div class="catTag">${escapeHtml(w.cat === 'Modern' ? 'Modern Hebrew' : 'Yeshivish')}</div>` : ''}
+      <div class="hebrewWord">${escapeHtml(w.hebrew)}</div>
+      <div class="translit">${escapeHtml(w.translit)}</div>
+      <div class="meaning">${escapeHtml(w.meaning)}</div>
+    </div>`;
+    widgets.push({eyebrow:'Word of the Day', title:'Milah HaYom', body});
   }
-  if(slide.type === 'quote'){
+
+  if(config.quoteBank && config.quoteBank.length){
     const q = config.quoteBank[dayOfYear % config.quoteBank.length];
     const parts = q.split(/\s*\((.*?)\)\s*$/);
-    return {eyebrow:'Thought of the Day', title:'Something to Chew On', body: `
-      <div class="thoughtBox">
-        <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
-        ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
-      </div>`};
+    const body = `<div class="thoughtBox">
+      <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
+      ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
+    </div>`;
+    widgets.push({eyebrow:'Thought of the Day', title:'Something to Chew On', body});
   }
-  if(slide.type === 'ways'){
+
+  if(config.waysBank && config.waysBank.length){
     const w = config.waysBank[dayOfYear % config.waysBank.length];
-    return {eyebrow:'Today\u2019s Trait to Work On', title: w.trait, body: `
-      <div class="contentBox"><div class="qText" style="font-size:26px;">${escapeHtml(w.challenge)}</div></div>`};
+    widgets.push({eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText widgetQText">${escapeHtml(w.challenge)}</div>`});
   }
-  return {eyebrow:'Board', title:'Tap the gear to add content', body:''};
+
+  {
+    const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
+    if(text) widgets.push({eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText widgetQText">${escapeHtml(text)}</div>`});
+  }
+
+  {
+    const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
+    const y = manual ? config.yahrzeit : autoYahrzeit;
+    if(y) widgets.push({eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText widgetQText">${escapeHtml(y.blurb)}</div>` : ''});
+  }
+
+  return widgets;
 }
 
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1213,52 +1236,34 @@ function fullResUrl(url){
   return url.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)(\?.*)?$/, '$1$2');
 }
 
-const SLIDE_DURATIONS = {
-  photo: 9500, standings: 10000, countdown: 9000, trivia: 17000,
-  riddle: 17000, shoutouts: 12000, word: 9000, quote: 11000,
-  zmanim: 9000, schedule: 12000, ways: 14000, history: 13000, yahrzeit: 13000, empty: 8000
-};
-function durationFor(slide){ return SLIDE_DURATIONS[slide.type] || 12000; }
+let revealTimer = null;
 
-function paintStage(){
+function paintDashboard(){
   const stage = document.getElementById('stage');
-  const s = renderSlideContent(slides[slideIndex]);
-  const dur = durationFor(slides[slideIndex]);
-  stage.innerHTML = `
-    <div class="slide active">
-      <div class="eyebrow">${s.eyebrow}</div>
-      <h1 class="title">${s.title}</h1>
-      ${s.body}
-      <div class="progressBar">${slides.map((_,i)=>`<div class="segTrack ${i<slideIndex?'done':''} ${i===slideIndex?'current':''}" style="${i===slideIndex?`--seg-dur:${dur}ms;`:''}"><div class="segFill"></div></div>`).join('')}</div>
-    </div>`;
-  clearTimeout(revealTimer);
-  if(slides[slideIndex].type === 'countdown') updateCountdownNumbers();
-  if(s.isReveal){
-    revealTimer = setTimeout(()=>{
-      const el = document.getElementById('aReveal');
-      if(el) el.classList.add('show');
-    }, Math.min(6000, dur - 3000));
+  const widgets = buildDashboardWidgets();
+  if(!widgets.length){
+    stage.innerHTML = `<div class="dashboardEmpty">Tap the gear to add content</div>`;
+    return;
   }
-}
-
-function nextSlide(){
-  slideIndex = (slideIndex + 1) % slides.length;
-  paintStage();
-  rotationTimer = setTimeout(nextSlide, durationFor(slides[slideIndex]));
+  stage.innerHTML = `<div class="dashboardGrid">${widgets.map(w=>`
+    <div class="widgetCard ${w.wide ? 'widgetWide' : ''}">
+      <div class="widgetEyebrow">${w.eyebrow}</div>
+      <h2 class="widgetTitle">${escapeHtml(w.title)}</h2>
+      ${w.body}
+    </div>`).join('')}</div>`;
+  clearTimeout(revealTimer);
+  const revealEl = stage.querySelector('[data-reveal]');
+  if(revealEl){
+    revealTimer = setTimeout(()=>{ revealEl.classList.add('show'); }, 8000);
+  }
+  updateAllCountdowns();
 }
 
 let countdownRefresh = null;
-let rotationTimer = null;
 function startRotation(){
-  buildSlides();
-  slideIndex = 0;
-  paintStage();
-  clearTimeout(rotationTimer);
-  rotationTimer = setTimeout(nextSlide, durationFor(slides[0]));
+  paintDashboard();
   clearInterval(countdownRefresh);
-  countdownRefresh = setInterval(()=>{
-    if(slides[slideIndex] && slides[slideIndex].type === 'countdown') updateCountdownNumbers();
-  }, 1000);
+  countdownRefresh = setInterval(updateAllCountdowns, 1000);
   startPhotoRotation();
 }
 
