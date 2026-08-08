@@ -52,57 +52,79 @@
   .dayBadge{background:var(--panel2);border:1px solid var(--line);padding:8px 16px;border-radius:6px;font-size:13px;color:var(--gold);letter-spacing:1px;}
   .clock{font-size:22px;color:var(--ink);letter-spacing:1px;}
 
-  main{flex:1;display:flex;align-items:stretch;justify-content:center;gap:28px;padding:20px 40px;position:relative;}
-  .mainPanel{flex:1.5;min-width:0;position:relative;}
-  .photoPanel{flex:1;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);}
-  .photoPanel img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 9s ease-out forwards;}
-  .photoPanel .photoPanelLabel{position:absolute;top:14px;left:14px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.65);padding:6px 12px;border-radius:20px;}
-  .photoPanel .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:34px 20px 16px 20px;background:linear-gradient(transparent, rgba(6,4,16,.85));font-size:16px;color:var(--ink);}
-  .photoPanel .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:20px;text-align:center;font-size:14px;}
+  main{flex:1;display:flex;align-items:stretch;justify-content:center;gap:24px;padding:18px 36px;position:relative;min-height:0;}
+  .mainPanel{flex:1.4;min-width:0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;}
 
-  .dashboardGrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));grid-auto-rows:min-content;gap:16px;padding:4px 12px 4px 0;overflow-y:auto;align-content:start;}
-  .dashboardEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:'Rubik';font-size:20px;text-align:center;}
-  .widgetCard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0;}
-  .widgetWide{grid-column:span 2;}
-  .widgetEyebrow{font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:2px;font-size:10px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:7px;}
-  .widgetEyebrow::before{content:'';width:12px;height:2px;background:var(--gold);display:inline-block;}
-  .widgetTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;color:var(--ink);margin:0 0 10px 0;line-height:1.15;}
+  /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating */
+  .photoPanel{flex:1;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:repeat(3,1fr);gap:3px;}
+  .photoCell{position:relative;overflow:hidden;background:#0E0C1B;}
+  .photoCell.heroCell{grid-column:1;grid-row:1 / 4;}
+  .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
+  .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
+  .photoCell.heroCell .photoPanelLabel{font-size:11px;top:12px;left:12px;padding:6px 12px;}
+  .photoCell .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:18px 10px 8px 10px;background:linear-gradient(transparent, rgba(6,4,16,.88));font-size:11px;color:var(--ink);line-height:1.3;}
+  .photoCell.heroCell .photoCaptionBar{font-size:15px;padding:30px 16px 12px 16px;}
+  .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:16px;text-align:center;font-size:13px;}
 
-  /* Compact versions of the shared content styles, scoped to widget cards */
-  .widgetCard .qText{font-size:16px;line-height:1.4;}
-  .widgetCard .catTag{font-size:10px;padding:3px 9px;margin-bottom:8px;}
-  .widgetCard .aReveal{font-size:16px;margin-top:12px;padding-top:10px;}
-  .widgetCard .prevRiddleWrap{margin-top:14px;padding-top:12px;}
-  .widgetCard .prevRiddleLabel{font-size:10px;}
-  .widgetCard .prevRiddleText{font-size:13px;margin-bottom:8px;}
-  .widgetCard .prevRiddleAnswer{font-size:13px;}
-  .widgetCard .shoutoutBox{gap:8px;}
-  .widgetCard .shoutItem{font-size:14px;padding:10px 14px;}
-  .widgetCard .hebrewWord{font-size:38px;}
-  .widgetCard .translit{font-size:12px;}
-  .widgetCard .meaning{font-size:14px;margin-top:8px;}
-  .widgetCard .thoughtText{font-size:15px;}
-  .widgetCard .thoughtSource{font-size:11px;margin-top:10px;}
-  .widgetCard .zmanimGrid{gap:8px;}
-  .widgetCard .zmanRow{padding:8px 2px;}
-  .widgetCard .zmanLabel{font-size:13px;}
-  .widgetCard .zmanTime{font-size:17px;}
-  .widgetCard .scheduleList{gap:5px;}
-  .widgetCard .schedRow{padding:4px 2px;gap:14px;}
-  .widgetCard .schedTime{font-size:12px;min-width:64px;}
-  .widgetCard .schedActivity{font-size:13px;}
-  .widgetCard .standings{gap:10px;}
-  .widgetCard .teamName{font-size:14px;width:110px;}
-  .widgetCard .barTrack{height:26px;}
-  .widgetCard .barFill span{font-size:12px;}
-  .widgetCard .rankBadge{width:22px;height:22px;font-size:11px;}
-  .widgetCard .leagueName{font-size:11px;margin:-4px 0 10px 0;}
-  .widgetCard .countdownWrap{gap:4px;}
-  .widgetCard .flipRow{gap:8px;margin:6px 0 0 0;}
-  .widgetCard .flipUnit{padding:10px 12px;min-width:52px;}
-  .widgetCard .flipNum{font-size:24px;}
-  .widgetCard .flipLabel{font-size:9px;margin-top:4px;}
-  .widgetCard .activityName{font-size:15px;}
+  /* Compact, energizing countdown strip \u2014 works for one or several at once */
+  .countdownStrip{flex-shrink:0;display:none;gap:12px;}
+  .countdownStrip.active{display:flex;}
+  .countdownChip{flex:1;min-width:0;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;}
+  .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
+  @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
+  @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;}
+  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
+  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
+  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+
+  /* Main grid: Schedule (always on) + one rotating spotlight carousel.
+     Fixed to the available height \u2014 nothing here ever needs to scroll. */
+  .mainGrid{flex:1;min-height:0;display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
+  .bigCard{min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;}
+  .bigCard .widgetTitle{flex-shrink:0;}
+  .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
+  .bigCard .cardScroll::after{content:'';position:absolute;left:0;right:0;bottom:0;height:28px;background:linear-gradient(transparent, var(--panel2));pointer-events:none;}
+  .spotlightCard{animation:widgetFadeIn .5s ease both;}
+  @keyframes widgetFadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .spotlightDots{display:flex;gap:6px;margin-top:14px;}
+  .spotlightDot{width:6px;height:6px;border-radius:50%;background:var(--line);}
+  .spotlightDot.active{background:var(--gold);}
+
+  .widgetEyebrow{font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:2px;font-size:11px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .widgetEyebrow::before{content:'';width:14px;height:2px;background:var(--gold);display:inline-block;}
+  .widgetTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:19px;color:var(--ink);margin:0 0 10px 0;line-height:1.15;}
+
+  /* Compact versions of the shared content styles, scoped to the two big cards */
+  .bigCard .qText{font-size:16px;line-height:1.4;}
+  .bigCard .catTag{font-size:10px;padding:3px 9px;margin-bottom:8px;}
+  .bigCard .aReveal{font-size:16px;margin-top:12px;padding-top:10px;}
+  .bigCard .prevRiddleWrap{margin-top:14px;padding-top:12px;}
+  .bigCard .prevRiddleLabel{font-size:10px;}
+  .bigCard .prevRiddleText{font-size:13px;margin-bottom:8px;}
+  .bigCard .prevRiddleAnswer{font-size:13px;}
+  .bigCard .shoutoutBox{gap:8px;}
+  .bigCard .shoutItem{font-size:14px;padding:9px 13px;}
+  .bigCard .hebrewWord{font-size:40px;}
+  .bigCard .translit{font-size:12px;}
+  .bigCard .meaning{font-size:14px;margin-top:8px;}
+  .bigCard .thoughtText{font-size:16px;}
+  .bigCard .thoughtSource{font-size:11px;margin-top:10px;}
+  .bigCard .zmanimGrid{gap:8px;}
+  .bigCard .zmanRow{padding:8px 2px;}
+  .bigCard .zmanLabel{font-size:13px;}
+  .bigCard .zmanTime{font-size:17px;}
+  .bigCard .scheduleList{gap:5px;}
+  .bigCard .schedRow{padding:4px 2px;gap:14px;}
+  .bigCard .schedTime{font-size:12px;min-width:64px;}
+  .bigCard .schedActivity{font-size:13px;}
+  .bigCard .standings{gap:9px;}
+  .bigCard .teamName{font-size:14px;width:100px;}
+  .bigCard .barTrack{height:24px;}
+  .bigCard .barFill span{font-size:11px;}
+  .bigCard .rankBadge{width:20px;height:20px;font-size:11px;}
+  .bigCard .leagueName{font-size:11px;margin:-4px 0 10px 0;}
 
   .standings{display:flex;flex-direction:column;gap:20px;}
   .teamRow{display:flex;align-items:center;gap:20px;}
@@ -112,13 +134,6 @@
   .barFill span{font-family:'JetBrains Mono',monospace;font-weight:700;color:#0E0C1B;font-size:18px;}
   .rankBadge{width:38px;height:38px;border-radius:50%;background:var(--gold);color:#0E0C1B;font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .leagueName{font-size:16px;color:var(--muted);margin:-18px 0 24px 0;letter-spacing:1px;}
-
-  .countdownWrap{display:flex;flex-direction:column;align-items:center;text-align:center;}
-  .flipRow{display:flex;gap:18px;margin:10px 0 22px 0;}
-  .flipUnit{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:24px 30px;min-width:140px;box-shadow:0 0 40px rgba(240,184,77,.06), inset 0 1px 0 rgba(255,255,255,.03);}
-  .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:70px;color:var(--gold);text-shadow:0 0 24px rgba(240,184,77,.4);line-height:1;}
-  .flipLabel{font-size:13px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:8px;}
-  .activityName{font-family:'Poppins',sans-serif;font-weight:700;font-size:34px;color:var(--ink);}
 
   .contentBox{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:44px 50px;}
   .catTag{display:inline-block;background:rgba(240,184,77,.1);color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:5px 12px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
@@ -218,7 +233,13 @@
   </header>
 
   <main>
-    <div id="stage" class="mainPanel"></div>
+    <div id="stage" class="mainPanel">
+      <div id="countdownStrip" class="countdownStrip"></div>
+      <div class="mainGrid">
+        <div id="scheduleCard" class="bigCard"></div>
+        <div id="spotlightCard" class="bigCard spotlightCard"></div>
+      </div>
+    </div>
     <div id="photoPanel" class="photoPanel"></div>
   </main>
 
@@ -1065,38 +1086,24 @@ function tickClock(){
 setInterval(tickClock, 1000);
 tickClock();
 
-function renderTeamBars(){
-  const max = Math.max(...config.teams.map(t=>t.points), 1);
-  const sorted = [...config.teams].sort((a,b)=>b.points-a.points);
-  return `<div class="standings">` + sorted.map((t,i)=>`
-    <div class="teamRow">
-      <div class="rankBadge">${i+1}</div>
-      <div class="teamName" style="color:${t.color}">${escapeHtml(t.name)}</div>
-      <div class="barTrack"><div class="barFill" style="width:${Math.max(6,(t.points/max*100))}%;background:${t.color}"><span>${t.points}</span></div></div>
-    </div>`).join('') + `</div>`;
-}
-
-function renderCountdownMarkup(idx){
-  // No fixed IDs here (data attributes only) since several countdown
-  // widgets can be on screen at the same time now.
-  return `<div class="countdownWrap" data-cd-idx="${idx}"><div class="activityName" data-cd-name></div><div class="flipRow" data-cd-flip></div></div>`;
+function getActiveCountdowns(){
+  return (config.countdowns||[])
+    .map((c,i)=>({...c, idx:i}))
+    .filter(c=>c.name && c.date && c.time);
 }
 
 function updateAllCountdowns(){
-  document.querySelectorAll('.countdownWrap').forEach(wrapOuter=>{
-    const idx = Number(wrapOuter.dataset.cdIdx);
+  document.querySelectorAll('.countdownChipFlips').forEach(flipEl=>{
+    const idx = Number(flipEl.dataset.cdIdx);
     const c = config.countdowns[idx];
-    const wrap = wrapOuter.querySelector('[data-cd-flip]');
-    const nameEl = wrapOuter.querySelector('[data-cd-name]');
-    if(!wrap || !c || !c.time || !c.date) return;
-    nameEl.textContent = c.name || 'Next Up';
+    if(!c || !c.time || !c.date) return;
     const [yy,mo,dd] = c.date.split('-').map(Number);
     const [h,m] = c.time.split(':').map(Number);
     const target = new Date(yy, mo-1, dd, h, m, 0);
     const now = new Date();
     let diff = target - now;
     if(diff < 0){
-      wrap.innerHTML = `<div class="flipUnit"><div class="flipNum" style="font-size:20px;">STARTING NOW</div></div>`;
+      flipEl.innerHTML = `<div class="flipUnit"><div class="flipNum" style="font-size:12px;">NOW! \u{1F389}</div></div>`;
       return;
     }
     const dd2 = Math.floor(diff/86400000);
@@ -1108,27 +1115,84 @@ function updateAllCountdowns(){
     if(dd2>0 || hh>0) parts.push([hh,'H']);
     parts.push([mm,'M']);
     parts.push([ss,'S']);
-    wrap.innerHTML = parts.map(([v,l])=>`<div class="flipUnit"><div class="flipNum">${String(v).padStart(2,'0')}</div><div class="flipLabel">${l}</div></div>`).join('');
+    flipEl.innerHTML = parts.map(([v,l])=>`<div class="flipUnit"><div class="flipNum">${String(v).padStart(2,'0')}</div><div class="flipLabel">${l}</div></div>`).join('');
   });
 }
 
-// Builds one widget-card per active piece of content. Everything here shows
-// on screen simultaneously (as opposed to the old one-at-a-time rotation).
-function buildDashboardWidgets(){
-  const widgets = [];
-
-  {
-    const scheduleText = (config.schedule && config.schedule.trim()) || DEFAULT_SCHEDULE;
-    const lines = scheduleText.split('\n').map(l=>l.trim()).filter(Boolean);
-    const body = `<div class="scheduleList">${lines.map(l=>{
-      const [time, ...rest] = l.split(/[-–—]/);
-      const activity = rest.join('-').trim();
-      return activity
-        ? `<div class="schedRow"><span class="schedTime">${escapeHtml(time.trim())}</span><span class="schedActivity">${escapeHtml(activity)}</span></div>`
-        : `<div class="schedRow"><span class="schedActivity">${escapeHtml(l)}</span></div>`;
-    }).join('')}</div>`;
-    widgets.push({eyebrow:'Today', title:'Schedule', body, wide:true});
+// Compact, always-visible strip — works whether there's one countdown or
+// several, without eating much screen space.
+function paintCountdownStrip(){
+  const strip = document.getElementById('countdownStrip');
+  const active = getActiveCountdowns();
+  if(!active.length){
+    strip.classList.remove('active');
+    strip.innerHTML = '';
+    return;
   }
+  strip.classList.add('active');
+  strip.innerHTML = active.map(c=>`
+    <div class="countdownChip">
+      <div class="countdownChipName">${escapeHtml(c.name)}</div>
+      <div class="countdownChipFlips" data-cd-idx="${c.idx}"></div>
+    </div>`).join('');
+  updateAllCountdowns();
+}
+
+function renderTeamBars(){
+  const max = Math.max(...config.teams.map(t=>t.points), 1);
+  const sorted = [...config.teams].sort((a,b)=>b.points-a.points);
+  return `<div class="standings">` + sorted.map((t,i)=>`
+    <div class="teamRow">
+      <div class="rankBadge">${i+1}</div>
+      <div class="teamName" style="color:${t.color}">${escapeHtml(t.name)}</div>
+      <div class="barTrack"><div class="barFill" style="width:${Math.max(6,(t.points/max*100))}%;background:${t.color}"><span>${t.points}</span></div></div>
+    </div>`).join('') + `</div>`;
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+// WordPress saves resized copies as "filename-WIDTHxHEIGHT.ext" alongside the
+// full-resolution original at "filename.ext". The bundled gallery photos are
+// pointed at those small resized copies (some as tiny as 300x200), which is
+// why they look blurry when stretched to fill the photo panel. This strips
+// that suffix to request the full-size original instead.
+function fullResUrl(url){
+  return url.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)(\?.*)?$/, '$1$2');
+}
+
+// ================= SCHEDULE CARD (always on) =================
+function paintScheduleCard(){
+  const card = document.getElementById('scheduleCard');
+  if(!card) return;
+  const scheduleText = (config.schedule && config.schedule.trim()) || DEFAULT_SCHEDULE;
+  const lines = scheduleText.split('\n').map(l=>l.trim()).filter(Boolean);
+  const body = lines.map(l=>{
+    const [time, ...rest] = l.split(/[-–—]/);
+    const activity = rest.join('-').trim();
+    return activity
+      ? `<div class="schedRow"><span class="schedTime">${escapeHtml(time.trim())}</span><span class="schedActivity">${escapeHtml(activity)}</span></div>`
+      : `<div class="schedRow"><span class="schedActivity">${escapeHtml(l)}</span></div>`;
+  }).join('');
+  card.innerHTML = `
+    <div class="widgetEyebrow">Today</div>
+    <h2 class="widgetTitle">Schedule</h2>
+    <div class="cardScroll"><div class="scheduleList">${body}</div></div>`;
+}
+
+// ================= SPOTLIGHT CAROUSEL =================
+// Everything that only needs to show for a few seconds at a time — Zmanim,
+// standings, shoutouts, trivia, riddle, word, quote, today's trait, history,
+// yahrzeit — takes turns in this one compact card instead of each claiming
+// its own permanent space.
+let spotlightItems = [];
+let spotlightIndex = 0;
+let spotlightTimer = null;
+let revealTimer = null;
+const SPOTLIGHT_DURATION = 9000;
+
+function buildSpotlightItems(){
+  const items = [];
 
   {
     const z = config.zmanim || {};
@@ -1139,25 +1203,18 @@ function buildDashboardWidgets(){
     if(havdalah) rows.push(['Shabbos Ends', havdalah]);
     if(z.sofZmanShema) rows.push(['Sof Zman Shema', z.sofZmanShema]);
     if(rows.length){
-      const body = `<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`;
-      widgets.push({eyebrow:'Zmanim', title:'This Week', body});
+      items.push({eyebrow:'Zmanim \u2014 Jerusalem', title:'This Week', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`});
     }
   }
 
   if(config.leagueActive && config.teams && config.teams.length){
     const body = (config.leagueName ? `<div class="leagueName">${escapeHtml(config.leagueName)}</div>` : '') + renderTeamBars();
-    widgets.push({eyebrow:'League Standings', title:'Team Points', body, wide:true});
+    items.push({eyebrow:'League Standings', title:'Team Points', body});
   }
-
-  (config.countdowns||[]).forEach((c,i)=>{
-    if(c.name && c.date && c.time){
-      widgets.push({eyebrow:'Countdown', title: c.name || 'On Deck', body: renderCountdownMarkup(i)});
-    }
-  });
 
   if(config.shoutouts && config.shoutouts.length){
     const body = `<div class="shoutoutBox">${config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
-    widgets.push({eyebrow:'Shoutouts', title:'Kol HaKavod', body, wide:true});
+    items.push({eyebrow:'Shoutouts', title:'Kol HaKavod', body});
   }
 
   if(config.triviaBank && config.triviaBank.length){
@@ -1165,7 +1222,7 @@ function buildDashboardWidgets(){
     const body = `${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
       <div class="qText">${escapeHtml(t.q)}</div>
       <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
-    widgets.push({eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true});
+    items.push({eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true});
   }
 
   if(config.riddleBank && config.riddleBank.length){
@@ -1181,7 +1238,7 @@ function buildDashboardWidgets(){
         <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
         <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
       </div>` : ''}`;
-    widgets.push({eyebrow:'Riddle of the Day', title:'Figure It Out', body, wide:true});
+    items.push({eyebrow:'Riddle of the Day', title:'Figure It Out', body});
   }
 
   if(config.wordBank && config.wordBank.length){
@@ -1192,7 +1249,7 @@ function buildDashboardWidgets(){
       <div class="translit">${escapeHtml(w.translit)}</div>
       <div class="meaning">${escapeHtml(w.meaning)}</div>
     </div>`;
-    widgets.push({eyebrow:'Word of the Day', title:'Milah HaYom', body});
+    items.push({eyebrow:'Word of the Day', title:'Milah HaYom', body});
   }
 
   if(config.quoteBank && config.quoteBank.length){
@@ -1202,118 +1259,144 @@ function buildDashboardWidgets(){
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
       ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
-    widgets.push({eyebrow:'Thought of the Day', title:'Something to Chew On', body});
+    items.push({eyebrow:'Thought of the Day', title:'Something to Chew On', body});
   }
 
   if(config.waysBank && config.waysBank.length){
     const w = config.waysBank[dayOfYear % config.waysBank.length];
-    widgets.push({eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText widgetQText">${escapeHtml(w.challenge)}</div>`});
+    items.push({eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`});
   }
 
   {
     const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
-    if(text) widgets.push({eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText widgetQText">${escapeHtml(text)}</div>`});
+    if(text) items.push({eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`});
   }
 
   {
     const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
     const y = manual ? config.yahrzeit : autoYahrzeit;
-    if(y) widgets.push({eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText widgetQText">${escapeHtml(y.blurb)}</div>` : ''});
+    if(y) items.push({eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : ''});
   }
 
-  return widgets;
+  return items;
 }
 
-function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
-
-// WordPress saves resized copies as "filename-WIDTHxHEIGHT.ext" alongside the
-// full-resolution original at "filename.ext". The bundled gallery photos are
-// pointed at those small resized copies (some as tiny as 300x200), which is
-// why they look blurry when stretched to fill the photo panel. This strips
-// that suffix to request the full-size original instead.
-function fullResUrl(url){
-  return url.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)(\?.*)?$/, '$1$2');
-}
-
-let revealTimer = null;
-
-function paintDashboard(){
-  const stage = document.getElementById('stage');
-  const widgets = buildDashboardWidgets();
-  if(!widgets.length){
-    stage.innerHTML = `<div class="dashboardEmpty">Tap the gear to add content</div>`;
+function paintSpotlight(){
+  const card = document.getElementById('spotlightCard');
+  if(!card) return;
+  if(!spotlightItems.length){
+    card.innerHTML = `<div class="widgetEyebrow">Board</div><h2 class="widgetTitle">Tap the gear to add content</h2>`;
     return;
   }
-  stage.innerHTML = `<div class="dashboardGrid">${widgets.map(w=>`
-    <div class="widgetCard ${w.wide ? 'widgetWide' : ''}">
-      <div class="widgetEyebrow">${w.eyebrow}</div>
-      <h2 class="widgetTitle">${escapeHtml(w.title)}</h2>
-      ${w.body}
-    </div>`).join('')}</div>`;
+  const i = spotlightIndex % spotlightItems.length;
+  const item = spotlightItems[i];
+  card.innerHTML = `
+    <div class="widgetEyebrow">${item.eyebrow}</div>
+    <h2 class="widgetTitle">${escapeHtml(item.title)}</h2>
+    <div class="cardScroll">${item.body}</div>
+    ${spotlightItems.length > 1 ? `<div class="spotlightDots">${spotlightItems.map((_,d)=>`<span class="spotlightDot ${d===i?'active':''}"></span>`).join('')}</div>` : ''}
+  `;
+  // Retrigger the fade-in animation each time so the swap has some motion.
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = '';
   clearTimeout(revealTimer);
-  const revealEl = stage.querySelector('[data-reveal]');
-  if(revealEl){
-    revealTimer = setTimeout(()=>{ revealEl.classList.add('show'); }, 8000);
+  const revealEl = card.querySelector('[data-reveal]');
+  if(item.isReveal && revealEl){
+    revealTimer = setTimeout(()=>{ revealEl.classList.add('show'); }, 5000);
   }
-  updateAllCountdowns();
+}
+
+function nextSpotlight(){
+  spotlightIndex = (spotlightIndex + 1) % spotlightItems.length;
+  paintSpotlight();
+  spotlightTimer = setTimeout(nextSpotlight, SPOTLIGHT_DURATION);
+}
+
+function startSpotlightRotation(){
+  spotlightItems = buildSpotlightItems();
+  spotlightIndex = 0;
+  paintSpotlight();
+  clearTimeout(spotlightTimer);
+  if(spotlightItems.length > 1) spotlightTimer = setTimeout(nextSpotlight, SPOTLIGHT_DURATION);
 }
 
 let countdownRefresh = null;
 function startRotation(){
-  paintDashboard();
+  paintScheduleCard();
+  startSpotlightRotation();
+  paintCountdownStrip();
   clearInterval(countdownRefresh);
   countdownRefresh = setInterval(updateAllCountdowns, 1000);
   startPhotoRotation();
 }
 
-// ================= PHOTO SIDE PANEL =================
-// Runs completely independently of the main content rotation above, so
-// photos are always visible while everything else (scores, zmanim,
-// trivia, countdowns, etc.) cycles through the main panel.
+// ================= PHOTO MOSAIC =================
+// 4 photos on screen at once (1 big + 3 small), each rotating on its own
+// staggered timer for a livelier, "always something moving" feel — fully
+// independent of everything else in the main panel.
+const PHOTO_CELL_COUNT = 4;
 const PHOTO_DURATION = 8000;
-let photoList = [];
-let photoIndex = 0;
-let photoTimer = null;
+let photoPool = [];
+let photoCellIndexes = [];
+let photoCellTimers = [];
 
-function buildPhotoList(){
-  photoList = [
-    ...(config.photos||[]).map(p=>({...p, isCustom:true})),
-    ...(config.galleryPhotos||[]).map(p=>({...p, isCustom:false}))
-  ];
+function buildPhotoPool(){
+  // Prioritize the newest uploads: config.photos is appended to over time,
+  // so the most recently added is at the END — reverse it so new photos
+  // come first, then repeat the newest few extra times in the pool so they
+  // show up more often. Older custom photos and the built-in gallery still
+  // appear, just less frequently — new stuff never gets buried by old.
+  const newestFirst = [...(config.photos||[])].reverse().map(p=>({...p, isCustom:true}));
+  const gallery = (config.galleryPhotos||[]).map(p=>({...p, isCustom:false}));
+  const pool = [];
+  newestFirst.forEach((p,i)=>{
+    const weight = i < 3 ? 4 : 2;
+    for(let n=0;n<weight;n++) pool.push(p);
+  });
+  gallery.forEach(p=> pool.push(p));
+  return pool;
 }
 
-function paintPhotoPanel(){
-  const panel = document.getElementById('photoPanel');
-  if(!panel) return;
-  if(!photoList.length){
-    panel.innerHTML = `<div class="photoPanelLabel">Photos</div><div class="photoEmptyState">Add photos from the gear icon to show them here</div>`;
+function paintPhotoCell(cellIdx){
+  const cell = document.getElementById('photoCell'+cellIdx);
+  if(!cell) return;
+  if(!photoPool.length){
+    cell.innerHTML = cellIdx===0 ? `<div class="photoPanelLabel">Photos</div><div class="photoEmptyState">Add photos from the gear icon</div>` : '';
     return;
   }
-  const p = photoList[photoIndex % photoList.length];
+  const p = photoPool[photoCellIndexes[cellIdx] % photoPool.length];
   const label = p.isCustom ? 'From The Week' : 'Derech Gallery';
-  // Gallery photos: try the full-resolution original first: if it 404s
-  // (this data-fallback attribute + onerror below), drop back to the
-  // small thumbnail URL rather than showing nothing.
   const src = p.isCustom ? p.url : fullResUrl(p.url);
-  panel.innerHTML = `
+  cell.innerHTML = `
     <div class="photoPanelLabel">${escapeHtml(label)}</div>
     <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(p.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
     ${p.caption ? `<div class="photoCaptionBar">${escapeHtml(p.caption)}</div>` : ''}`;
 }
 
-function nextPhoto(){
-  photoIndex = (photoIndex + 1) % photoList.length;
-  paintPhotoPanel();
-  photoTimer = setTimeout(nextPhoto, PHOTO_DURATION);
+function advancePhotoCell(cellIdx){
+  photoCellIndexes[cellIdx] = (photoCellIndexes[cellIdx] + 1) % Math.max(photoPool.length, 1);
+  paintPhotoCell(cellIdx);
+  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION);
 }
 
 function startPhotoRotation(){
-  buildPhotoList();
-  photoIndex = 0;
-  paintPhotoPanel();
-  clearTimeout(photoTimer);
-  if(photoList.length > 1) photoTimer = setTimeout(nextPhoto, PHOTO_DURATION);
+  photoPool = buildPhotoPool();
+  const panel = document.getElementById('photoPanel');
+  panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
+    `<div class="photoCell ${i===0 ? 'heroCell' : ''}" id="photoCell${i}"></div>`
+  ).join('');
+  photoCellTimers.forEach(t=>clearTimeout(t));
+  photoCellTimers = [];
+  photoCellIndexes = [];
+  for(let i=0;i<PHOTO_CELL_COUNT;i++){
+    photoCellIndexes[i] = i % Math.max(photoPool.length, 1);
+    paintPhotoCell(i);
+    if(photoPool.length > 1){
+      // Staggered so all 4 cells don't change in lockstep.
+      photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), PHOTO_DURATION + i*1800);
+    }
+  }
 }
 
 function paintTicker(){
