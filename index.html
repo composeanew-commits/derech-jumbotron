@@ -95,10 +95,19 @@
   .flyerWhen.urgency-today{color:#ff8a75;}
   .flyerWhen.urgency-later{color:var(--purple-light);}
 
-  /* Compact, energizing countdown strip \u2014 works for one or several at once */
-  .countdownStrip{flex-shrink:0;display:none;gap:12px;}
+  /* Compact, energizing countdown strip — every active countdown gets a
+     chip; wraps onto extra rows instead of squeezing chips unreadably
+     small, so nothing upcoming ever gets hidden. */
+  .countdownStrip{flex-shrink:0;display:none;flex-wrap:wrap;gap:10px;}
   .countdownStrip.active{display:flex;}
-  .countdownChip{flex:1;min-width:0;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  .countdownChip{flex:1 1 170px;min-width:150px;max-width:100%;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  /* When several countdowns are active at once, trim padding/type size a
+     touch so more chips fit per row without the strip taking over the
+     whole sidebar. */
+  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
+  .countdownStrip.compact .countdownChipName{font-size:13px;}
+  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
+  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
   @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
   @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -1246,19 +1255,19 @@ function updateAllCountdowns(){
   });
 }
 
-// Compact, always-visible strip — works whether there's one countdown or
-// several, without eating much screen space. Capped so a busy Flyers tab
-// can't squeeze every chip down to nothing on screen; soonest events win.
-const MAX_COUNTDOWN_CHIPS = 4;
+// Every active countdown shows, always — soonest first. Wraps onto extra
+// rows (see .countdownStrip.compact) instead of hiding anything, so nothing
+// upcoming is ever missing from the screen.
 function paintCountdownStrip(){
   const strip = document.getElementById('countdownStrip');
-  const active = getCountdownEntries().slice(0, MAX_COUNTDOWN_CHIPS);
+  const active = getCountdownEntries();
   if(!active.length){
     strip.classList.remove('active');
     strip.innerHTML = '';
     return;
   }
   strip.classList.add('active');
+  strip.classList.toggle('compact', active.length > 3);
   strip.innerHTML = active.map(c=>`
     <div class="countdownChip urgency-${c.urgency}" data-cd-key="${c.key}">
       <div class="countdownChipName">${c.urgency==='today' ? '<span class="todayTag">Today!</span> ' : ''}${escapeHtml(c.name)}</div>
