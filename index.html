@@ -106,7 +106,15 @@
   .photoCell.heroCell .flyerWhen{font-size:13px;}
   .flyerWhen.urgency-today{color:#ff8a75;}
   .flyerWhen.urgency-later{color:var(--purple-light);}
-
+  .flyerSpotlight{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:5%;pointer-events:none;}
+  .flyerSpotlight.active{display:flex;}
+  .flyerSpotlight::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center, rgba(6,4,16,.6) 0%, rgba(6,4,16,.2) 55%, transparent 75%);}
+  .flyerSpotlightInner{position:relative;max-width:82%;max-height:88%;display:flex;flex-direction:column;align-items:center;animation:widgetFadeIn .6s ease both;}
+  .flyerSpotlightInner img{max-width:100%;max-height:70vh;object-fit:contain;border-radius:14px;border:2px solid rgba(240,184,77,.45);box-shadow:0 20px 70px rgba(0,0,0,.65);background:#0E0C1B;}
+  .flyerSpotlightInner .flyerBadge{position:static;margin-bottom:10px;font-size:12px;padding:6px 14px;}
+  .flyerSpotlightCaption{margin-top:14px;text-align:center;}
+  .flyerSpotlightCaption .flyerEventName{font-size:24px;}
+  .flyerSpotlightCaption .flyerWhen{font-size:15px;margin-top:6px;}
   /* Compact, energizing countdown strip — every active countdown gets a
      chip; wraps onto extra rows instead of squeezing chips unreadably
      small, so nothing upcoming ever gets hidden. */
@@ -1618,6 +1626,58 @@ function formatRelativeTime(target){
   return `In ${weeks} week${weeks>1?'s':''}`;
 }
 
+  // ================= FLYER SPOTLIGHT (centered, orientation-agnostic) =================
+const FLYER_SPOTLIGHT_DURATION = 12000;
+let flyerSpotlightTimer = null;
+let flyerSpotlightQueue = [];
+let flyerSpotlightPos = 0;
+
+function reshuffleFlyerQueue(flyers){
+  flyerSpotlightQueue = [...flyers];
+  for(let i = flyerSpotlightQueue.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [flyerSpotlightQueue[i], flyerSpotlightQueue[j]] = [flyerSpotlightQueue[j], flyerSpotlightQueue[i]];
+  }
+  flyerSpotlightPos = 0;
+}
+
+function paintFlyerSpotlight(){
+  const el = document.getElementById('flyerSpotlight');
+  if(!el) return;
+  const flyers = getActiveFlyers();
+  if(!flyers.length){
+    el.classList.remove('active');
+    el.innerHTML = '';
+    return;
+  }
+  if(!flyerSpotlightQueue.length || flyerSpotlightPos >= flyerSpotlightQueue.length){
+    reshuffleFlyerQueue(flyers);
+  }
+  const f = flyerSpotlightQueue[flyerSpotlightPos++];
+  el.classList.add('active');
+  el.innerHTML = `
+    <div class="flyerSpotlightInner">
+      <div class="flyerBadge urgency-${f.urgency}">\u2605 Event</div>
+      <img src="${escapeAttr(f.url)}" alt="event flyer" onerror="this.style.display='none';">
+      <div class="flyerSpotlightCaption">
+        <div class="flyerEventName">${escapeHtml(f.eventName || 'Upcoming Event')}</div>
+        <div class="flyerWhen urgency-${f.urgency}">${escapeHtml(formatRelativeTime(f.target))}</div>
+      </div>
+    </div>`;
+}
+
+function advanceFlyerSpotlight(){
+  paintFlyerSpotlight();
+  clearTimeout(flyerSpotlightTimer);
+  flyerSpotlightTimer = setTimeout(advanceFlyerSpotlight, FLYER_SPOTLIGHT_DURATION);
+}
+
+function startFlyerSpotlightRotation(){
+  clearTimeout(flyerSpotlightTimer);
+  flyerSpotlightQueue = [];
+  advanceFlyerSpotlight();
+}
+  
 // Every custom-uploaded photo gets a real chance to appear (weighted heavily
 // if it's one of the 5 most recent uploads), while the built-in gallery still
 // shows up sometimes as a lower-weight "side thing" \u2014 never picked so often
@@ -1688,10 +1748,6 @@ function renderPhotoCellMarkup(item){
 // random tile among many. With no active flyer, every cell (hero included)
 // draws from the same weighted, shuffled photo pool.
 function pickNextForCell(cellIdx){
-  if(cellIdx === 0){
-    const flyers = getActiveFlyers();
-    if(flyers.length) return { ...pickWeightedFlyer(flyers), isFlyer: true };
-  }
   const pool = buildWeightedPhotoItems();
   const avoid = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
@@ -1726,7 +1782,7 @@ function startPhotoRotation(){
   const panel = document.getElementById('photoPanel');
   panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
     `<div class="photoCell ${i===0 ? 'heroCell' : ''}" id="photoCell${i}"></div>`
-  ).join('');
+  ).join('') + `<div class="flyerSpotlight" id="flyerSpotlight"></div>`;
   photoCellTimers.forEach(t=>clearTimeout(t));
   photoCellTimers = [];
   currentlyShownPhotoUrls = {};
@@ -1736,6 +1792,7 @@ function startPhotoRotation(){
     // gets a longer dwell too, matching its role as the main focal point.
     const baseDuration = i===0 ? HERO_PHOTO_DURATION : PHOTO_DURATION;
     photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), baseDuration + i*1800);
+      startFlyerSpotlightRotation();
   }
 }
 
