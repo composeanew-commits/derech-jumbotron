@@ -108,8 +108,8 @@
   /* Compact, energizing countdown strip — every active countdown gets a
      chip; wraps onto extra rows instead of squeezing chips unreadably
      small, so nothing upcoming ever gets hidden. */
-  .countdownStrip{flex-shrink:0;display:none;flex-wrap:wrap;gap:10px;}
-  .countdownStrip.active{display:flex;}
+  .countdownStrip{flex-shrink:0;display:none;flex-wrap:wrap;gap:10px;padding:0 36px;}
+  .countdownStrip.active{display:flex;padding:16px 36px 0 36px;}
   .countdownChip{flex:1 1 170px;min-width:150px;max-width:100%;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
@@ -130,7 +130,7 @@
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:normal;line-height:1.2;min-width:0;}
   .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;}
   .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
   .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
@@ -311,9 +311,10 @@
     </div>
   </header>
 
+  <div id="countdownStrip" class="countdownStrip"></div>
+
   <main>
     <div id="stage" class="mainPanel">
-      <div id="countdownStrip" class="countdownStrip"></div>
       <div id="spotlightGrid" class="spotlightGrid">
         <div id="spotlightCard0" class="bigCard spotlightCard"></div>
         <div id="spotlightCard1" class="bigCard spotlightCard"></div>
@@ -1902,6 +1903,7 @@ function populateModal(){
         <div class="hint" data-thumb-status="${i}" style="margin-top:0;"></div>
         <div class="field"><label>Event Name</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
         <div class="field"><label>Flyer Image URL</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
+        <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
         <div class="row">
           <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
           <div class="field"><label>Time (optional)</label><input type="time" data-field="flyerTimeEdit" data-idx="${i}" value="${escapeAttr(f.eventTime||'')}"></div>
@@ -1974,6 +1976,13 @@ function bindDynamicHandlers(){
   });
   document.querySelectorAll('.swatch').forEach(sw=>{
     sw.onclick = ()=>{ syncFormToConfig(); config.teams[Number(sw.dataset.idx)].color = sw.dataset.color; populateModal(); };
+  });
+  document.querySelectorAll('[data-clear-flyer-image]').forEach(btn=>{
+    btn.onclick = ()=>{
+      syncFormToConfig();
+      config.flyers[Number(btn.dataset.clearFlyerImage)].url = '';
+      populateModal();
+    };
   });
 }
 
