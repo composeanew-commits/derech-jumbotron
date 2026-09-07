@@ -75,44 +75,33 @@
   .mainPanel{flex:0.8;min-width:0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;}
 
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
-     This is the dominant element on screen \u2014 flyers get uploaded here via
-     the Photos tab, so it's sized well above the sidebar. */
-  .photoPanel{flex:2.2;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);display:grid;grid-template-columns:0.55fr 3.2fr 0.55fr;grid-template-rows:1fr;gap:3px;}
-  .photoCell{position:relative;overflow:hidden;background:#0E0C1B;transition:opacity .38s ease;}
+     This is the dominant element on screen — the flyer gets its own panel,
+     entirely separate from the smaller photo column beside it. */
+  .flyerPanel{flex:2.3;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease;}
+  .flyerPanel.fadeOut{opacity:0;}
+  /* Flyers must always be shown in full — never cropped — no matter if the
+     upload is portrait or landscape, so this uses object-fit:contain rather
+     than the cover/crop treatment regular candid photos use. */
+  .flyerPanel img{width:100%;height:100%;object-fit:contain;background:#0E0C1B;display:block;}
+  .flyerPanel .flyerEventName{font-size:22px;}
+  .flyerPanel .flyerWhen{font-size:15px;}
+  .flyerPanel .flyerCaptionBar{padding:40px 22px 16px 22px;}
+
+  /* Photos are the smaller, separate "nice to look at" column — a stack of
+     a couple of cells, each still a real size, never squeezed into slivers. */
+  .photoPanel{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
-  /* The flyer (hero cell) is the dominant element on screen \u2014 it owns the wide
-     center column. Photos are a small side extra: one thin strip left, one
-     thin strip right, and nothing else competes with the flyer for space. */
-  .photoCell.heroCell{grid-column:2;grid-row:1;}
-  .photoCell:nth-child(2){grid-column:1;grid-row:1;}
-  .photoCell:nth-child(3){grid-column:3;grid-row:1;}
   .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
-  /* Flyers must always be shown in full \u2014 never cropped \u2014 no matter if the
-     upload is portrait or landscape, so they get object-fit:contain instead of
-     the cover/crop treatment regular candid photos use. */
-  .photoCell.heroCell img.flyerImg{object-fit:contain;background:#0E0C1B;animation:none;}
   .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
   .photoCell .photoPanelLabel.photoPanelLabelNew{color:#0E0C1B;background:var(--gold);font-weight:700;animation:badgePulse 1.7s ease-in-out infinite;}
-  .photoCell.heroCell .photoPanelLabel{font-size:11px;top:12px;left:12px;padding:6px 12px;}
   .photoCell .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:18px 10px 8px 10px;background:linear-gradient(transparent, rgba(6,4,16,.88));font-size:11px;color:var(--ink);line-height:1.3;}
-  .photoCell.heroCell .photoCaptionBar{font-size:15px;padding:30px 16px 12px 16px;}
   .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:16px;text-align:center;font-size:13px;}
   @keyframes badgePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
 
-  /* Event flyers: same photo cell, distinct badge + caption treatment so a
-     rabbi's upload for an upcoming event is unmistakably "this is a thing
-     that's happening", not just another candid photo. Color escalates with
-     urgency \u2014 identical language to the countdown chips above. */
-  .flyerBadge{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#0E0C1B;background:var(--gold);padding:4px 10px;border-radius:14px;}
-  .photoCell.heroCell .flyerBadge{font-size:11px;top:12px;left:12px;padding:6px 13px;}
-  .flyerBadge.urgency-today{background:var(--red);color:#fff;animation:badgePulse 1.4s ease-in-out infinite;}
-  .flyerBadge.urgency-later{background:var(--purple-light);color:#0E0C1B;}
   .flyerCaptionBar{padding:22px 12px 10px 12px;}
-  .photoCell.heroCell .flyerCaptionBar{padding:36px 18px 14px 18px;}
   .flyerEventName{font-family:'Poppins',sans-serif;font-weight:800;font-size:13px;color:var(--ink);line-height:1.25;}
-  .photoCell.heroCell .flyerEventName{font-size:19px;}
   .flyerWhen{margin-top:4px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);}
-  .photoCell.heroCell .flyerWhen{font-size:13px;}
   .flyerWhen.urgency-today{color:#ff8a75;}
   .flyerWhen.urgency-later{color:var(--purple-light);}
 
@@ -331,6 +320,7 @@
         <div id="spotlightCard2" class="bigCard spotlightCard"></div>
       </div>
     </div>
+    <div id="flyerPanel" class="flyerPanel"></div>
     <div id="photoPanel" class="photoPanel"></div>
   </main>
 
@@ -1581,22 +1571,20 @@ function startRotation(){
   paintCountdownStrip();
   clearInterval(countdownRefresh);
   countdownRefresh = setInterval(updateAllCountdowns, 1000);
+  startFlyerRotation();
   startPhotoRotation();
 }
 
-// ================= PHOTO MOSAIC =================
-// 4 photos on screen at once (1 big + 3 small), each rotating on its own
-// staggered timer for a livelier, "always something moving" feel — fully
-// independent of everything else in the main panel.
-const PHOTO_CELL_COUNT = 3;
-const PHOTO_DURATION = 8000;
-const HERO_PHOTO_DURATION = 14000; // hero cell dwells longer so flyers stay visible
-let photoCellTimers = [];
+// ================= FLYER PANEL (the main focus of the screen) =================
+// Its own dedicated panel — never mixed in with the photo column. Rotates
+// only among active event flyers, weighted so a closer/high-priority event
+// shows up more often. If nothing's active it shows a simple empty state.
+const FLYER_DURATION = 14000;
+let flyerTimer = null;
 
 // Flyers get a target the same way countdown entries do (falls back to end
 // of day if no time was set), plus a weight that grows sharply as the event
-// gets closer and again if the rabbi marked it High Priority — this is what
-// makes an upcoming event "take over" the screen as it approaches.
+// gets closer and again if the rabbi marked it High Priority.
 function getActiveFlyers(){
   const now = new Date();
   return (config.flyers||[])
@@ -1629,6 +1617,61 @@ function formatRelativeTime(target){
   const weeks = Math.round(days/7);
   return `In ${weeks} week${weeks>1?'s':''}`;
 }
+
+function pickWeightedFlyer(flyers){
+  const total = flyers.reduce((s,f)=>s+f.weight, 0);
+  let r = Math.random() * total;
+  for(const f of flyers){
+    if(r < f.weight) return f;
+    r -= f.weight;
+  }
+  return flyers[flyers.length - 1];
+}
+
+function renderFlyerMarkup(item){
+  if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+  return `
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';">
+    <div class="photoCaptionBar flyerCaptionBar">
+      <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
+      ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
+    </div>`;
+}
+
+function paintFlyerPanel(animate){
+  const panel = document.getElementById('flyerPanel');
+  if(!panel) return;
+  const render = ()=>{
+    const flyers = getActiveFlyers();
+    const item = flyers.length ? pickWeightedFlyer(flyers) : null;
+    panel.innerHTML = renderFlyerMarkup(item);
+    panel.classList.remove('fadeOut');
+  };
+  if(animate){
+    panel.classList.add('fadeOut');
+    setTimeout(render, 380);
+  } else {
+    render();
+  }
+}
+
+function advanceFlyerPanel(){
+  paintFlyerPanel(true);
+  flyerTimer = setTimeout(advanceFlyerPanel, FLYER_DURATION);
+}
+
+function startFlyerRotation(){
+  clearTimeout(flyerTimer);
+  paintFlyerPanel(false);
+  flyerTimer = setTimeout(advanceFlyerPanel, FLYER_DURATION);
+}
+
+// ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
+// Never shows flyers — purely candid photos, stacked in a couple of cells,
+// each rotating independently.
+const PHOTO_CELL_COUNT = 2;
+const PHOTO_DURATION = 8000;
+let photoCellTimers = [];
 
 // Every custom-uploaded photo gets a real chance to appear (weighted heavily
 // if it's one of the 5 most recent uploads), while the built-in gallery still
@@ -1664,45 +1707,18 @@ function pickWeightedPhoto(items, avoidUrls){
   return candidates[candidates.length - 1];
 }
 
-function pickWeightedFlyer(flyers){
-  const total = flyers.reduce((s,f)=>s+f.weight, 0);
-  let r = Math.random() * total;
-  for(const f of flyers){
-    if(r < f.weight) return f;
-    r -= f.weight;
-  }
-  return flyers[flyers.length - 1];
-}
-
 // cellIdx -> url currently shown in that cell, so other cells avoid repeating it.
 let currentlyShownPhotoUrls = {};
 
 function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
-  if(item.isFlyer){
-    return `
-      <img class="flyerImg" src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';">
-      <div class="photoCaptionBar flyerCaptionBar">
-        <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
-        ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
-      </div>`;
-  }
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   return `
     <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
-// Picks what a given cell should show next. The hero cell (0) is reserved
-// for an active event flyer whenever one exists — that's what makes an
-// upcoming event genuinely take over the main spot instead of just being one
-// random tile among many. With no active flyer, every cell (hero included)
-// draws from the same weighted, shuffled photo pool.
 function pickNextForCell(cellIdx){
-  if(cellIdx === 0){
-    const flyers = getActiveFlyers();
-    if(flyers.length) return { ...pickWeightedFlyer(flyers), isFlyer: true };
-  }
   const pool = buildWeightedPhotoItems();
   const avoid = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
@@ -1729,25 +1745,23 @@ function paintPhotoCell(cellIdx, animate){
 
 function advancePhotoCell(cellIdx){
   paintPhotoCell(cellIdx, true);
-  const duration = cellIdx===0 ? HERO_PHOTO_DURATION : PHOTO_DURATION;
-  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), duration);
+  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION);
 }
 
 function startPhotoRotation(){
   const panel = document.getElementById('photoPanel');
   panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
-    `<div class="photoCell ${i===0 ? 'heroCell' : ''}" id="photoCell${i}"></div>`
+    `<div class="photoCell" id="photoCell${i}"></div>`
   ).join('');
   photoCellTimers.forEach(t=>clearTimeout(t));
   photoCellTimers = [];
   currentlyShownPhotoUrls = {};
   for(let i=0;i<PHOTO_CELL_COUNT;i++){
     paintPhotoCell(i);
-    // Staggered so all 4 cells don't change in lockstep. Hero cell (i===0)
-    // gets a longer dwell too, matching its role as the main focal point.
-    const baseDuration = i===0 ? HERO_PHOTO_DURATION : PHOTO_DURATION;
-    photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), baseDuration + i*1800);
+    // Staggered so both cells don't change in lockstep.
+    photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), PHOTO_DURATION + i*1800);
   }
+
 }
 
 function paintTicker(){
