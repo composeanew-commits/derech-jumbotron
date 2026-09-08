@@ -75,120 +75,74 @@
   .mainPanel{flex:0.8;min-width:0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;}
 
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
-     This is the dominant element on screen — flyers get uploaded here via
-     the Photos tab, so it's sized well above the sidebar. */
-  .photoPanel{flex:2.2;min-width:0;position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);display:grid;gap:3px;transition:grid-template-columns .5s ease, grid-template-rows .5s ease;}
-  /* The panel reshapes itself around however many event flyers are actually
-     live right now — nothing sits in an oversized "hero" spot pretending to
-     be important when there's really just an ordinary photo to show.
-       - No active flyers: an even 2x2 mosaic of photos.
-       - One active flyer: it takes a large central spot, photos sit beside it.
-       - Two+ active flyers: two large flyer spots side by side, photos fill in below. */
-  .photoPanel.layout-mosaic{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
-  .photoPanel.layout-mosaic .photoCell:nth-child(1){grid-column:1;grid-row:1;}
-  .photoPanel.layout-mosaic .photoCell:nth-child(2){grid-column:2;grid-row:1;}
-  .photoPanel.layout-mosaic .photoCell:nth-child(3){grid-column:1;grid-row:2;}
-  .photoPanel.layout-mosaic .photoCell:nth-child(4){grid-column:2;grid-row:2;}
-  /* Two extra mosaic shapes, picked at rebuild time based on the actual
-     orientation of whichever photo lands in the feature spot (cached from
-     that image's real dimensions the first time it's shown) — so a wide
-     landscape shot gets a wide slot instead of being squeezed into a square,
-     and a tall portrait shot gets a tall one instead of being cropped thin. */
-  .photoPanel.layout-mosaic.variant-wide{grid-template-columns:1fr 1fr;grid-template-rows:1.5fr 1fr;}
-  .photoPanel.layout-mosaic.variant-wide .photoCell:nth-child(1){grid-column:1 / 3;grid-row:1;}
-  .photoPanel.layout-mosaic.variant-wide .photoCell:nth-child(2){grid-column:1;grid-row:2;}
-  .photoPanel.layout-mosaic.variant-wide .photoCell:nth-child(3){grid-column:2;grid-row:2;}
-  .photoPanel.layout-mosaic.variant-tall{grid-template-columns:1.5fr 1fr;grid-template-rows:1fr 1fr;}
-  .photoPanel.layout-mosaic.variant-tall .photoCell:nth-child(1){grid-column:1;grid-row:1 / 3;}
-  .photoPanel.layout-mosaic.variant-tall .photoCell:nth-child(2){grid-column:2;grid-row:1;}
-  .photoPanel.layout-mosaic.variant-tall .photoCell:nth-child(3){grid-column:2;grid-row:2;}
+     This is the dominant element on screen — the flyer gets its own panel,
+     entirely separate from the smaller photo column beside it. */
+  .flyerPanel{flex:2.3;min-width:0;position:relative;display:flex;gap:12px;}
+  .flyerCell{flex:1;min-width:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease;}
+  .flyerCell.fadeOut{opacity:0;}
+  /* Flyers must always be shown in full — never cropped — no matter if the
+     upload is portrait or landscape. */
+  .flyerCell img{width:100%;height:100%;object-fit:contain;background:#0E0C1B;display:block;}
+  .flyerCell .flyerEventName{font-size:20px;}
+  .flyerCell .flyerWhen{font-size:14px;}
+  .flyerCell .flyerCaptionBar{padding:34px 20px 14px 20px;}
 
-  .photoPanel.layout-flyer1{grid-template-columns:1.9fr 1fr;grid-template-rows:repeat(3,1fr);}
-  .photoPanel.layout-flyer1 .photoCell.heroCell{grid-column:1;grid-row:1 / 4;}
-
-  .photoPanel.layout-flyer2{grid-template-columns:1fr 1fr;grid-template-rows:1.6fr 1fr;}
-  .photoPanel.layout-flyer2 .photoCell:nth-child(1){grid-column:1;grid-row:1;}
-  .photoPanel.layout-flyer2 .photoCell:nth-child(2){grid-column:2;grid-row:1;}
-  .photoPanel.layout-flyer2 .photoCell:nth-child(3){grid-column:1;grid-row:2;}
-  .photoPanel.layout-flyer2 .photoCell:nth-child(4){grid-column:2;grid-row:2;}
-
-  .photoCell{position:relative;overflow:hidden;background:#0E0C1B;transition:opacity .55s cubic-bezier(.4,0,.2,1), transform .55s cubic-bezier(.4,0,.2,1);}
-  .photoCell.fadeOut{opacity:0;transform:scale(.96);}
-  .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurnsVariant var(--kb-duration,12s) var(--kb-ease,ease-out) forwards;}
+  /* Photos are the smaller, separate "nice to look at" column — a stack of
+     a couple of cells, each still a real size, never squeezed into slivers. */
+  .photoPanel{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
+  .photoCell.fadeOut{opacity:0;}
+  .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
   .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
   .photoCell .photoPanelLabel.photoPanelLabelNew{color:#0E0C1B;background:var(--gold);font-weight:700;animation:badgePulse 1.7s ease-in-out infinite;}
-  .photoCell.heroCell .photoPanelLabel{font-size:11px;top:12px;left:12px;padding:6px 12px;}
   .photoCell .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:18px 10px 8px 10px;background:linear-gradient(transparent, rgba(6,4,16,.88));font-size:11px;color:var(--ink);line-height:1.3;}
-  .photoCell.heroCell .photoCaptionBar{font-size:15px;padding:30px 16px 12px 16px;}
   .photoEmptyState{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-family:'Rubik';padding:16px;text-align:center;font-size:13px;}
   @keyframes badgePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
 
-  /* Event flyers: same photo cell, distinct badge + caption treatment so a
-     rabbi's upload for an upcoming event is unmistakably "this is a thing
-     that's happening", not just another candid photo. Color escalates with
-     urgency — identical language to the countdown chips above. */
-  .flyerBadge{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#0E0C1B;background:var(--gold);padding:4px 10px;border-radius:14px;}
-  .photoCell.heroCell .flyerBadge{font-size:11px;top:12px;left:12px;padding:6px 13px;}
-  .flyerBadge.urgency-today{background:var(--red);color:#fff;animation:badgePulse 1.4s ease-in-out infinite;}
-  .flyerBadge.urgency-later{background:var(--purple-light);color:#0E0C1B;}
   .flyerCaptionBar{padding:22px 12px 10px 12px;}
-  .photoCell.heroCell .flyerCaptionBar{padding:36px 18px 14px 18px;}
   .flyerEventName{font-family:'Poppins',sans-serif;font-weight:800;font-size:13px;color:var(--ink);line-height:1.25;}
-  .photoCell.heroCell .flyerEventName{font-size:19px;}
   .flyerWhen{margin-top:4px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);}
-  .photoCell.heroCell .flyerWhen{font-size:13px;}
   .flyerWhen.urgency-today{color:#ff8a75;}
   .flyerWhen.urgency-later{color:var(--purple-light);}
-
-  /* Flyer cell: instead of cropping the image to fill the tile (object-fit:
-     cover, like ordinary photos), the flyer is letterboxed to fit fully
-     within the cell no matter its orientation (object-fit: contain) —
-     nothing is ever cut off, whether the rabbi uploads a tall poster or a
-     wide banner. The cell centers it on a dark backdrop and the caption/
-     badge float over the image itself. */
-  .photoCell.heroCell.flyerCell{display:flex;align-items:center;justify-content:center;background:#050410;padding:18px;}
-  .photoCell.heroCell.flyerCell img{width:100%;height:100%;object-fit:contain;object-position:center;animation:none;border-radius:8px;box-shadow:0 10px 50px rgba(0,0,0,.55);}
-  .photoCell.heroCell.flyerCell .flyerCaptionBar{position:absolute;padding:36px 18px 14px 18px;}
 
   /* Compact, energizing countdown strip — every active countdown gets a
      chip; wraps onto extra rows instead of squeezing chips unreadably
      small, so nothing upcoming ever gets hidden. */
-  .countdownStrip{flex-shrink:0;display:none;flex-wrap:wrap;gap:10px;}
+  .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:0 24px;}
   .countdownStrip.active{display:flex;}
-  .countdownChip{flex:1 1 170px;min-width:150px;max-width:100%;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:10px;padding:6px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  .countdownChip{flex:0 1 auto;min-width:170px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
      whole sidebar. */
-  .countdownStrip.compact .countdownChip{padding:5px 12px;flex-basis:150px;}
+  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
   .countdownStrip.compact .countdownChipName{font-size:13px;}
-  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:3px 6px;min-width:auto;}
-  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:13px;}
-  .countdownStrip.compact .countdownChipFlips .flipLabel{font-size:8px;}
+  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
+  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
   @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
   @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
   /* Urgency tiers: events happening today pulse hot and red so they're
      unmissable; the default gold glow covers "soon" (within 3 days); further
-     out settles into a calmer purple — the chip visibly heats up as the
+     out settles into a calmer purple \u2014 the chip visibly heats up as the
      event approaches. */
   .countdownChip.urgency-today{border-color:var(--red);background:linear-gradient(135deg, rgba(214,80,63,.24), rgba(240,184,77,.14));animation:heroGlowHot 1.7s ease-in-out infinite;}
   .countdownChip.urgency-today::before{background:radial-gradient(circle, rgba(214,80,63,.22), transparent 60%);animation-duration:5s;}
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:5px;flex-shrink:0;}
-  .countdownChipFlips .flipUnit{display:flex;align-items:baseline;gap:2px;padding:4px 7px;min-width:auto;background:rgba(14,12,27,.55);border-radius:7px;border:1px solid var(--line);}
-  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--gold);line-height:1;}
-  .countdownChipFlips .flipLabel{font-size:9px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-top:0;line-height:1;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;text-align:center;}
+  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
+  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
+  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
+  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
 
   /* Single rotating spotlight card, fills the rest of the sidebar below the
-     countdown strip. Fixed to the available height — nothing here ever
+     countdown strip. Fixed to the available height \u2014 nothing here ever
      needs to scroll. Each content type sets --accent (see buildSpotlightItems)
-     so the eyebrow, dots, border, and progress bar all shift color with it —
+     so the eyebrow, dots, border, and progress bar all shift color with it \u2014
      a quick visual cue for what kind of thing is on screen right now. */
   /* Sidebar now shows 2-3 of these stacked at once instead of one card
-     rotating through everything one at a time — each slot rotates
+     rotating through everything one at a time \u2014 each slot rotates
      independently on its own timer, so several different pieces of content
      (zmanim, a shoutout, trivia...) are visible simultaneously. */
   .spotlightGrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
@@ -200,7 +154,7 @@
   @keyframes widgetFadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
   /* Thin progress bar fills over the exact dwell time of that slot's current
-     slide — a small constant reminder that the board is always mid-motion. */
+     slide \u2014 a small constant reminder that the board is always mid-motion. */
   .spotlightMeta{flex-shrink:0;margin-top:8px;}
   .spotlightProgress{height:2px;background:var(--line);border-radius:2px;overflow:hidden;}
   .spotlightProgressFill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation-name:spotlightFill;animation-timing-function:linear;animation-fill-mode:forwards;}
@@ -278,14 +232,6 @@
   .photoCell{display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;min-width:0;}
   .photoCell img{width:100%;height:56vh;border-radius:12px;border:1px solid var(--line);box-shadow:0 0 50px rgba(0,0,0,.5);object-fit:cover;animation:kenBurns 9s ease-out forwards;}
   @keyframes kenBurns{from{transform:scale(1);}to{transform:scale(1.06);}}
-  /* Each photo gets its own random pan/zoom (see randomKenBurns() in the script) instead of
-     every photo doing the exact same centered zoom-in — some drift left, some right, some
-     zoom out instead of in, at slightly different speeds, so the wall feels alive rather than
-     mechanical. */
-  @keyframes kenBurnsVariant{
-    from{ transform: scale(var(--kb-from-scale,1)) translate(var(--kb-from-x,0),var(--kb-from-y,0)); }
-    to{ transform: scale(var(--kb-to-scale,1.08)) translate(var(--kb-to-x,0),var(--kb-to-y,0)); }
-  }
   .photoCaption{font-size:20px;color:var(--muted);}
 
   .zmanimGrid{display:flex;flex-direction:column;gap:16px;}
@@ -356,9 +302,10 @@
 <div class="display">
   <header>
     <div class="brand">
-      <div class="logoPlateWrap"><div class="logoPlate"><img src="data:image/png;base64,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" alt="Derech logo"></div></div>
+      <div class="logoPlateWrap"><div class="logoPlate"><img src="data:image/png;base64,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" alt="Derech logo"></div></div>
       <div class="brandText"><span class="name">DERECH</span><span class="sub">Jumbotron</span></div>
     </div>
+    <div id="countdownStrip" class="countdownStrip"></div>
     <div class="headerRight">
       <div class="dayBadge" id="dayBadge">DAY —</div>
       <div class="clock"><span class="livePulse"></span><span id="clock">--:--</span></div>
@@ -367,13 +314,13 @@
 
   <main>
     <div id="stage" class="mainPanel">
-      <div id="countdownStrip" class="countdownStrip"></div>
       <div id="spotlightGrid" class="spotlightGrid">
         <div id="spotlightCard0" class="bigCard spotlightCard"></div>
         <div id="spotlightCard1" class="bigCard spotlightCard"></div>
         <div id="spotlightCard2" class="bigCard spotlightCard"></div>
       </div>
     </div>
+    <div id="flyerPanel" class="flyerPanel"></div>
     <div id="photoPanel" class="photoPanel"></div>
   </main>
 
@@ -426,7 +373,7 @@
     </div>
 
     <div class="tabPanel" data-panel="flyers">
-      <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen, counts down on its own automatically, and shows up more and more often as the date gets closer, so nobody misses it. Direct uploads from this device work right away — no signup or setup needed.</div>
+      <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen, counts down on its own automatically, and shows up more and more often as the date gets closer, so nobody misses it.</div>
       <div class="field"><label>Event Name</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
 
       <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Flyer Image</label>
@@ -436,9 +383,13 @@
       </div>
       <div class="uploadDivider">or paste a link instead</div>
       <div class="field"><input id="flyerUrl" placeholder="Image URL"></div>
+      <div id="flyerUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
+        <img id="flyerUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
+        <div id="flyerUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
+      </div>
 
       <div class="row">
-        <div class="field"><label>Event Date</label><input id="flyerDate" type="date"></div>
+        <div class="field"><label>Event Date (optional — leave blank if you just want it in rotation)</label><input id="flyerDate" type="date"></div>
         <div class="field"><label>Event Time (optional)</label><input id="flyerTime" type="time"></div>
       </div>
       <div class="field">
@@ -521,34 +472,36 @@ import { HDate, HebrewCalendar, Location } from 'https://esm.run/@hebcal/core';
 
 const TEAM_COLORS = ['#D6503F','#3E7CB1','#4E9B5C','#8B82C9','#F0B84D','#D673A8'];
 
-// ===================== DIRECT FLYER UPLOADS (no signup, no API key) =====================
-// Picking a flyer photo from a phone/computer is resized and compressed right here in the
-// browser, then embedded directly into the shared board data (as a compact JPEG) — there's
-// no external image host, no account, and no API key to configure. Pasting an image link is
-// still available as an alternative if that's ever more convenient.
-async function fileToCompressedDataUrl(file, maxDim = 1400, quality = 0.82){
-  const rawDataUrl = await new Promise((res, rej)=>{
-    const reader = new FileReader();
-    reader.onload = ()=> res(reader.result);
-    reader.onerror = ()=> rej(new Error("Couldn't read that file — try a different photo."));
-    reader.readAsDataURL(file);
-  });
-  const img = await new Promise((res, rej)=>{
-    const im = new Image();
-    im.onload = ()=> res(im);
-    im.onerror = ()=> rej(new Error("That doesn't look like a valid image file."));
-    im.src = rawDataUrl;
-  });
-  let { width, height } = img;
-  if(width > maxDim || height > maxDim){
-    if(width >= height){ height = Math.round(height * (maxDim / width)); width = maxDim; }
-    else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+// ===================== IMGBB — free image hosting for direct flyer uploads =====================
+// Paste your own free key here to let people pick a flyer image directly from their phone/
+// computer instead of needing to paste an image link. Takes 2 minutes, no credit card:
+//   1. Go to https://api.imgbb.com/  and sign up (email address only).
+//   2. On that page, click "Add API key" (or find it under your account) and copy the key.
+//   3. Paste it below in place of 'PASTE_YOUR_IMGBB_KEY_HERE'.
+// Until you do, the file-picker will show an error and people can still fall back to pasting
+// a link (from postimages.org, Google Photos, etc.) — nothing else on the board is affected.
+const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_KEY_HERE';
+
+function isImgbbConfigured(){
+  return !!(IMGBB_API_KEY && !IMGBB_API_KEY.includes('PASTE_'));
+}
+
+// Uploads a File object to imgbb and resolves with the hosted image URL, or throws.
+async function uploadImageToImgbb(file){
+  if(!isImgbbConfigured()){
+    throw new Error("Direct upload isn't set up yet — paste a free imgbb API key near the top of the script (see the comment above IMGBB_API_KEY).");
   }
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-  return canvas.toDataURL('image/jpeg', quality);
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`, {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  if(!res.ok || !data || !data.success){
+    throw new Error((data && data.error && data.error.message) || 'Upload failed — check your imgbb API key');
+  }
+  return data.data.url;
 }
 
 const DEFAULT_TRIVIA = [
@@ -1281,7 +1234,7 @@ async function saveConfig(){
 
 function tickClock(){
   const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit', hour12:true});
 }
 setInterval(tickClock, 1000);
 tickClock();
@@ -1618,38 +1571,39 @@ function startRotation(){
   paintCountdownStrip();
   clearInterval(countdownRefresh);
   countdownRefresh = setInterval(updateAllCountdowns, 1000);
+  startFlyerRotation();
   startPhotoRotation();
 }
 
-// ================= PHOTO MOSAIC =================
-// 3 or 4 photos on screen at once depending on the current layout/variant
-// (see startPhotoRotation below), each rotating on its own staggered timer
-// for a livelier, "always something moving" feel — fully independent of
-// everything else in the main panel.
-const PHOTO_DURATION = 8000;
-const HERO_PHOTO_DURATION = 14000; // hero cell dwells longer so flyers stay visible
-let photoCellTimers = [];
+// ================= FLYER PANEL (the main focus of the screen) =================
+// Its own dedicated panel — never mixed in with the photo column. Rotates
+// only among active event flyers, weighted so a closer/high-priority event
+// shows up more often. If nothing's active it shows a simple empty state.
+const FLYER_DURATION = 14000;
+let flyerTimer = null;
 
 // Flyers get a target the same way countdown entries do (falls back to end
 // of day if no time was set), plus a weight that grows sharply as the event
-// gets closer and again if the rabbi marked it High Priority — this is what
-// makes an upcoming event "take over" the screen as it approaches.
+// gets closer and again if the rabbi marked it High Priority.
 function getActiveFlyers(){
   const now = new Date();
   return (config.flyers||[])
     .map((f,i)=>({...f, idx:i, target: flyerTarget(f)}))
-    .filter(f=>f.target)
-    // Keep showing a flyer for a day after its event so it doesn't vanish
-    // mid-event, then drop it from rotation (still editable/removable in
-    // the Flyers tab).
-    .filter(f=>f.target - now > -24*3600*1000)
+    // Flyers with no date attached never expire and always stay in rotation.
+    // Dated flyers keep showing for a day after the event, then drop out
+    // (still editable/removable in the Flyers tab).
+    .filter(f=> !f.target || (f.target - now > -24*3600*1000))
     .map(f=>{
+      if(!f.target){
+        const priorityMult = f.priority === 'high' ? 2 : 1;
+        return {...f, urgency: 'later', weight: priorityMult * 3};
+      }
       const diffDays = (f.target - now) / 86400000;
       const urgencyMult = diffDays <= 1 ? 4 : diffDays <= 3 ? 3 : diffDays <= 7 ? 2 : 1;
       const priorityMult = f.priority === 'high' ? 2 : 1;
       return {...f, urgency: getCountdownUrgency(f.target), weight: urgencyMult * priorityMult * 3};
     })
-    .sort((a,b)=>a.target - b.target);
+    .sort((a,b)=> (a.target||Infinity) - (b.target||Infinity));
 }
 
 function formatRelativeTime(target){
@@ -1664,9 +1618,99 @@ function formatRelativeTime(target){
   return `In ${weeks} week${weeks>1?'s':''}`;
 }
 
+function pickWeightedFlyer(flyers){
+  const total = flyers.reduce((s,f)=>s+f.weight, 0);
+  let r = Math.random() * total;
+  for(const f of flyers){
+    if(r < f.weight) return f;
+    r -= f.weight;
+  }
+  return flyers[flyers.length - 1];
+}
+
+function renderFlyerMarkup(item){
+  if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+  return `
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';">
+    <div class="photoCaptionBar flyerCaptionBar">
+      <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
+      ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
+    </div>`;
+}
+
+// Up to 2 flyers can share the center panel at once. With only one active
+// flyer, cell 1 is hidden and cell 0 stretches to fill the whole panel —
+// still the single, uncrowded centerpiece. With 2+ active flyers, both
+// cells show (each avoiding whatever the other cell is currently showing),
+// so two different flyers sit cleanly side by side instead of the panel
+// ever looking cluttered.
+let flyerCellTimers = [null, null];
+let currentlyShownFlyerUrls = {};
+
+function pickNextFlyerForCell(cellIdx, activeFlyers){
+  if(!activeFlyers.length) return null;
+  const avoid = Object.keys(currentlyShownFlyerUrls)
+    .filter(k => Number(k) !== cellIdx)
+    .map(k => currentlyShownFlyerUrls[k]);
+  let candidates = activeFlyers.filter(f => !avoid.includes(f.url));
+  if(!candidates.length) candidates = activeFlyers;
+  return pickWeightedFlyer(candidates);
+}
+
+function paintFlyerCell(cellIdx, animate){
+  const cell = document.getElementById('flyerCell'+cellIdx);
+  if(!cell) return;
+  const render = ()=>{
+    const activeFlyers = getActiveFlyers();
+    const item = pickNextFlyerForCell(cellIdx, activeFlyers);
+    currentlyShownFlyerUrls[cellIdx] = item ? item.url : null;
+    cell.innerHTML = renderFlyerMarkup(item);
+    cell.classList.remove('fadeOut');
+  };
+  if(animate){
+    cell.classList.add('fadeOut');
+    setTimeout(render, 380);
+  } else {
+    render();
+  }
+}
+
+function advanceFlyerCell(cellIdx){
+  paintFlyerCell(cellIdx, true);
+  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx), FLYER_DURATION);
+}
+
+function startFlyerRotation(){
+  const panel = document.getElementById('flyerPanel');
+  if(!panel) return;
+  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
+  flyerCellTimers.forEach(t=>clearTimeout(t));
+  flyerCellTimers = [null, null];
+  currentlyShownFlyerUrls = {};
+
+  const activeFlyers = getActiveFlyers();
+  const showSecond = activeFlyers.length >= 2;
+  const cell1 = document.getElementById('flyerCell1');
+  if(cell1) cell1.style.display = showSecond ? '' : 'none';
+
+  paintFlyerCell(0, false);
+  flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0), FLYER_DURATION);
+  if(showSecond){
+    paintFlyerCell(1, false);
+    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1), FLYER_DURATION + 3000);
+  }
+}
+
+// ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
+// Never shows flyers — purely candid photos, stacked in a couple of cells,
+// each rotating independently.
+const PHOTO_CELL_COUNT = 2;
+const PHOTO_DURATION = 8000;
+let photoCellTimers = [];
+
 // Every custom-uploaded photo gets a real chance to appear (weighted heavily
 // if it's one of the 5 most recent uploads), while the built-in gallery still
-// shows up sometimes as a lower-weight "side thing" — never picked so often
+// shows up sometimes as a lower-weight "side thing" \u2014 never picked so often
 // that it crowds out new uploads, never removed from the mix entirely either.
 function buildWeightedPhotoItems(){
   const customs = config.photos || [];
@@ -1698,101 +1742,18 @@ function pickWeightedPhoto(items, avoidUrls){
   return candidates[candidates.length - 1];
 }
 
-function pickWeightedFlyer(flyers, avoidUrls){
-  let candidates = avoidUrls && avoidUrls.length ? flyers.filter(f => !avoidUrls.includes(f.url)) : flyers;
-  if(!candidates.length) candidates = flyers;
-  const total = candidates.reduce((s,f)=>s+f.weight, 0);
-  let r = Math.random() * total;
-  for(const f of candidates){
-    if(r < f.weight) return f;
-    r -= f.weight;
-  }
-  return candidates[candidates.length - 1];
-}
-
 // cellIdx -> url currently shown in that cell, so other cells avoid repeating it.
 let currentlyShownPhotoUrls = {};
-// How many of the photo panel's cells are currently reserved for event
-// flyers (0, 1, or 2) — set each time the panel's layout is (re)computed in
-// startPhotoRotation(), and read by pickNextForCell()/paintPhotoCell() below.
-let currentHeroSlots = 0;
-let currentPhotoLayoutMode = null;
-
-// Decides how the photo panel should be shaped right now, based purely on
-// how many event flyers are actually live — see the CSS comment above
-// .photoPanel.layout-mosaic for what each mode looks like.
-function computePhotoLayoutMode(){
-  const n = getActiveFlyers().length;
-  if(n >= 2) return 'flyer2';
-  if(n === 1) return 'flyer1';
-  return 'mosaic';
-}
-
-// Remembers each photo's real aspect ratio the first time it's actually
-// rendered on screen (from the image's true pixel dimensions, not a guess),
-// so future rebuilds can give a wide photo a wide slot and a tall photo a
-// tall slot instead of always cropping everything into the same rectangle.
-// Session-only — it just needs to warm up once the board's been running a
-// little while, no need to persist it.
-const photoOrientationCache = new Map();
-
-function cacheOrientationFromImg(url, imgEl){
-  if(!imgEl || !imgEl.naturalWidth || !imgEl.naturalHeight) return;
-  const ratio = imgEl.naturalWidth / imgEl.naturalHeight;
-  photoOrientationCache.set(url, ratio > 1.2 ? 'landscape' : ratio < 0.83 ? 'portrait' : 'square');
-}
-
-// Gives each photo its own one-off pan/zoom instead of every photo doing the
-// identical centered zoom-in — some zoom in, some slowly zoom out, drifting
-// in a random direction, at a slightly different speed each time, so the
-// wall feels alive rather than mechanical. Returned as an inline style
-// string of CSS custom properties consumed by the kenBurnsVariant keyframe.
-function randomKenBurnsStyle(){
-  const zoomIn = Math.random() > 0.3;
-  const fromScale = zoomIn ? (1 + Math.random()*0.015) : (1.09 + Math.random()*0.05);
-  const toScale = zoomIn ? (1.08 + Math.random()*0.07) : (1 + Math.random()*0.015);
-  const driftPct = (2.5 + Math.random()*3.5).toFixed(2);
-  const angle = Math.random() * Math.PI * 2;
-  const toX = (Math.cos(angle) * driftPct).toFixed(2) + '%';
-  const toY = (Math.sin(angle) * driftPct).toFixed(2) + '%';
-  const duration = (9 + Math.random()*6).toFixed(1) + 's';
-  const eases = ['ease-out','ease-in-out','cubic-bezier(.22,.1,.24,1)','cubic-bezier(.4,0,.2,1)'];
-  const ease = eases[Math.floor(Math.random()*eases.length)];
-  return `--kb-from-scale:${fromScale.toFixed(3)};--kb-to-scale:${toScale.toFixed(3)};--kb-to-x:${toX};--kb-to-y:${toY};--kb-duration:${duration};--kb-ease:${ease};`;
-}
 
 function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
-  if(item.isFlyer){
-    return `
-      <div class="flyerBadge urgency-${item.urgency}">\u2605 Event</div>
-      <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';">
-      <div class="photoCaptionBar flyerCaptionBar">
-        <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
-        <div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>
-      </div>`;
-  }
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   return `
-    <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" data-orient-url="${escapeAttr(item.url)}" style="${randomKenBurnsStyle()}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
+    <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
-// Picks what a given cell should show next. Cells below currentHeroSlots are
-// reserved for active event flyers — that's what makes upcoming events
-// genuinely take over the main spot(s) instead of being one random tile
-// among many. Every other cell (and every cell when there's no active
-// flyer) draws from the same weighted, shuffled photo pool.
 function pickNextForCell(cellIdx){
-  if(cellIdx < currentHeroSlots){
-    const flyers = getActiveFlyers();
-    if(flyers.length){
-      const avoidFlyers = Object.keys(currentlyShownPhotoUrls)
-        .filter(k => Number(k) !== cellIdx && Number(k) < currentHeroSlots)
-        .map(k => currentlyShownPhotoUrls[k]);
-      return { ...pickWeightedFlyer(flyers, avoidFlyers), isFlyer: true };
-    }
-  }
   const pool = buildWeightedPhotoItems();
   const avoid = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
@@ -1800,37 +1761,15 @@ function pickNextForCell(cellIdx){
   return pickWeightedPhoto(pool, avoid);
 }
 
-// Paints a specific item into a cell (used both for the normal randomized
-// pick and for the mosaic's pre-picked "feature" cell, so both paths share
-// the exact same rendering/flyer-class/orientation-learning logic).
-function paintCellContent(cellIdx, item){
-  const cell = document.getElementById('photoCell'+cellIdx);
-  if(!cell) return;
-  currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
-  cell.innerHTML = renderPhotoCellMarkup(item);
-  cell.classList.remove('fadeOut');
-  // Any hero-slot cell gets a dedicated "flyerCell" treatment (letterboxed,
-  // fully visible regardless of orientation) whenever it's actually showing
-  // an event flyer, so the flyer always reads clearly no matter its shape.
-  if(cellIdx < currentHeroSlots){
-    cell.classList.toggle('flyerCell', !!(item && item.isFlyer));
-  }
-  // Learn this photo's true aspect ratio once it's actually loaded, so a
-  // future mosaic rebuild can give it a wide or tall feature slot instead of
-  // guessing. Flyers already letterbox regardless of shape, so skip those.
-  if(item && !item.isFlyer){
-    const imgEl = cell.querySelector('img[data-orient-url]');
-    if(imgEl){
-      if(imgEl.complete && imgEl.naturalWidth) cacheOrientationFromImg(item.url, imgEl);
-      else imgEl.addEventListener('load', ()=> cacheOrientationFromImg(item.url, imgEl), {once:true});
-    }
-  }
-}
-
 function paintPhotoCell(cellIdx, animate){
   const cell = document.getElementById('photoCell'+cellIdx);
   if(!cell) return;
-  const render = ()=> paintCellContent(cellIdx, pickNextForCell(cellIdx));
+  const render = ()=>{
+    const item = pickNextForCell(cellIdx);
+    currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
+    cell.innerHTML = renderPhotoCellMarkup(item);
+    cell.classList.remove('fadeOut');
+  };
   if(animate){
     cell.classList.add('fadeOut');
     setTimeout(render, 380);
@@ -1841,70 +1780,24 @@ function paintPhotoCell(cellIdx, animate){
 
 function advancePhotoCell(cellIdx){
   paintPhotoCell(cellIdx, true);
-  const duration = cellIdx < currentHeroSlots ? HERO_PHOTO_DURATION : PHOTO_DURATION;
-  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), duration);
+  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION);
 }
 
-// Rebuilds the photo panel from scratch: figures out how many flyer slots
-// are warranted right now, applies the matching layout class (see the CSS
-// comment above .photoPanel.layout-mosaic), and starts each cell's own
-// independent rotation timer. When there's no active flyer, it also checks
-// whether the photo about to feature in cell 0 is known (from
-// photoOrientationCache) to be distinctly wide or tall, and picks a matching
-// 3-cell "feature" shape instead of forcing it into a square — falling back
-// to the plain even 2x2 grid whenever that orientation isn't known yet.
 function startPhotoRotation(){
   const panel = document.getElementById('photoPanel');
-  const mode = computePhotoLayoutMode();
-  currentPhotoLayoutMode = mode;
-  currentHeroSlots = mode === 'flyer2' ? 2 : mode === 'flyer1' ? 1 : 0;
-
-  let cellCount = 4;
-  let variantClass = '';
-  let featureItem = null;
-
-  if(mode === 'mosaic'){
-    const pool = buildWeightedPhotoItems();
-    featureItem = pool.length ? pickWeightedPhoto(pool, []) : null;
-    const orient = featureItem ? photoOrientationCache.get(featureItem.url) : null;
-    if(orient === 'landscape'){ variantClass = 'variant-wide'; cellCount = 3; }
-    else if(orient === 'portrait'){ variantClass = 'variant-tall'; cellCount = 3; }
-  }
-
-  panel.classList.remove('layout-mosaic','layout-flyer1','layout-flyer2','variant-wide','variant-tall');
-  panel.classList.add('layout-' + mode);
-  if(variantClass) panel.classList.add(variantClass);
-
-  panel.innerHTML = Array.from({length: cellCount}).map((_,i)=>
-    `<div class="photoCell ${i < currentHeroSlots ? 'heroCell' : ''}" id="photoCell${i}"></div>`
+  panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
+    `<div class="photoCell" id="photoCell${i}"></div>`
   ).join('');
   photoCellTimers.forEach(t=>clearTimeout(t));
   photoCellTimers = [];
   currentlyShownPhotoUrls = {};
-
-  for(let i=0;i<cellCount;i++){
-    if(i === 0 && featureItem){
-      paintCellContent(0, featureItem);
-    } else {
-      paintPhotoCell(i);
-    }
-    // Staggered so cells don't all change in lockstep. Hero/flyer cells
-    // get a longer dwell too, matching their role as the main focal point(s).
-    const baseDuration = i < currentHeroSlots ? HERO_PHOTO_DURATION : PHOTO_DURATION;
-    photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), baseDuration + i*1800);
+  for(let i=0;i<PHOTO_CELL_COUNT;i++){
+    paintPhotoCell(i);
+    // Staggered so both cells don't change in lockstep.
+    photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), PHOTO_DURATION + i*1800);
   }
-}
 
-// A flyer's active/inactive status is purely time-based (see getActiveFlyers)
-// and can flip without any save happening — e.g. a Shabbaton's date quietly
-// passes while the kiosk just keeps running for days. This check, on a slow
-// interval, is what lets the board reshape itself on its own when that
-// happens, instead of only reshaping the next time someone edits something.
-setInterval(()=>{
-  if(!config) return;
-  if(document.getElementById('modalOverlay').classList.contains('open')) return;
-  if(computePhotoLayoutMode() !== currentPhotoLayoutMode) startPhotoRotation();
-}, 60000);
+}
 
 function paintTicker(){
   const warning = firebaseReady ? '' : '⚠ Firebase is not configured — nothing will save or sync. Open the file and paste your firebaseConfig values in near the top of the script (see the setup comments there).   •   ';
@@ -2015,18 +1908,36 @@ function populateModal(){
   const flyersList = document.getElementById('flyersList');
   if(flyersList){
     flyersList.innerHTML = '';
+    const activeFlyerUrls = new Set(getActiveFlyers().map(f=>f.url));
+    if(!config.flyers || !config.flyers.length){
+      flyersList.innerHTML = `<div class="hint" style="margin-top:0;">No flyers added yet.</div>`;
+    } else {
+      const activeCount = getActiveFlyers().length;
+      const statusDiv = document.createElement('div');
+      statusDiv.className = 'hint';
+      statusDiv.style.marginTop = '0';
+      statusDiv.textContent = activeCount
+        ? `${activeCount} flyer${activeCount>1?'s':''} currently active \u2014 taking over the main screen right now.`
+        : `No flyers are currently active on the board (either none have a valid upcoming date, or their images aren't loading \u2014 check below).`;
+      flyersList.appendChild(statusDiv);
+    }
     (config.flyers||[]).forEach((f,i)=>{
       const target = flyerTarget(f);
+      const isActive = activeFlyerUrls.has(f.url);
       const div = document.createElement('div');
       div.className = 'listItem';
       div.innerHTML = `
         <button class="rmBtn" data-remove="flyer" data-idx="${i}">✕</button>
         <div style="margin-bottom:10px;">
           <span class="priorityPill ${f.priority==='high' ? 'high' : 'normal'}">${f.priority==='high' ? 'High Priority' : 'Normal'}</span>
+          ${isActive ? `<span class="priorityPill" style="background:var(--green);color:#fff;">● Live on board now</span>` : ''}
           ${target ? `<span class="hint" style="display:inline;margin:0 0 0 8px;">${escapeHtml(formatRelativeTime(target))}</span>` : ''}
         </div>
+        <img class="flyerThumb" data-thumb-idx="${i}" src="${escapeAttr(f.url||'')}" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid var(--line);display:${f.url ? 'block':'none'};margin-bottom:6px;">
+        <div class="hint" data-thumb-status="${i}" style="margin-top:0;"></div>
         <div class="field"><label>Event Name</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
         <div class="field"><label>Flyer Image URL</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
+        <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
         <div class="row">
           <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
           <div class="field"><label>Time (optional)</label><input type="time" data-field="flyerTimeEdit" data-idx="${i}" value="${escapeAttr(f.eventTime||'')}"></div>
@@ -2039,6 +1950,17 @@ function populateModal(){
           </select>
         </div>`;
       flyersList.appendChild(div);
+      const thumbImg = div.querySelector(`[data-thumb-idx="${i}"]`);
+      const thumbStatus = div.querySelector(`[data-thumb-status="${i}"]`);
+      if(thumbImg && f.url){
+        thumbImg.onload = ()=>{ thumbStatus.textContent = ''; };
+        thumbImg.onerror = ()=>{
+          thumbImg.style.display = 'none';
+          thumbStatus.innerHTML = `⚠ <span style="color:var(--red);">This image link isn't loading.</span> If it's from postimages.org, re-copy the "Direct link" (ends in .jpg/.png) rather than the page link, paste it into the Image URL field above, then Save & Publish.`;
+        };
+      } else if(thumbStatus && !f.url){
+        thumbStatus.textContent = 'No image set for this flyer yet.';
+      }
     });
   }
 
@@ -2089,6 +2011,13 @@ function bindDynamicHandlers(){
   document.querySelectorAll('.swatch').forEach(sw=>{
     sw.onclick = ()=>{ syncFormToConfig(); config.teams[Number(sw.dataset.idx)].color = sw.dataset.color; populateModal(); };
   });
+  document.querySelectorAll('[data-clear-flyer-image]').forEach(btn=>{
+    btn.onclick = ()=>{
+      syncFormToConfig();
+      config.flyers[Number(btn.dataset.clearFlyerImage)].url = '';
+      populateModal();
+    };
+  });
 }
 
 document.getElementById('addTeam').onclick = ()=>{
@@ -2131,6 +2060,39 @@ function resetFlyerFilePicker(){
   if(flyerFileLabel) flyerFileLabel.textContent = '📎 Tap to choose a photo from this device';
 }
 
+// Live preview so a broken/wrong link (e.g. a postimages.org PAGE link
+// instead of its "Direct link") is obvious immediately, instead of only
+// discovering it after saving and checking the kiosk screen.
+const flyerUrlInput = document.getElementById('flyerUrl');
+const flyerUrlPreviewWrap = document.getElementById('flyerUrlPreviewWrap');
+const flyerUrlPreviewImg = document.getElementById('flyerUrlPreviewImg');
+const flyerUrlPreviewMsg = document.getElementById('flyerUrlPreviewMsg');
+if(flyerUrlInput){
+  let previewDebounce = null;
+  flyerUrlInput.addEventListener('input', ()=>{
+    clearTimeout(previewDebounce);
+    const val = flyerUrlInput.value.trim();
+    if(!val){ flyerUrlPreviewWrap.style.display = 'none'; return; }
+    previewDebounce = setTimeout(()=>{
+      flyerUrlPreviewWrap.style.display = '';
+      flyerUrlPreviewMsg.textContent = 'Checking link…';
+      flyerUrlPreviewMsg.style.color = 'var(--muted)';
+      flyerUrlPreviewImg.style.display = 'none';
+      flyerUrlPreviewImg.onload = ()=>{
+        flyerUrlPreviewImg.style.display = 'block';
+        flyerUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
+        flyerUrlPreviewMsg.style.color = 'var(--green)';
+      };
+      flyerUrlPreviewImg.onerror = ()=>{
+        flyerUrlPreviewImg.style.display = 'none';
+        flyerUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
+        flyerUrlPreviewMsg.style.color = 'var(--red)';
+      };
+      flyerUrlPreviewImg.src = val;
+    }, 500);
+  });
+}
+
 document.getElementById('addFlyer').onclick = async ()=>{
   const eventName = document.getElementById('flyerEventName').value.trim();
   let url = document.getElementById('flyerUrl').value.trim();
@@ -2139,21 +2101,17 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const priority = document.getElementById('flyerPriority').value;
   const status = document.getElementById('flyerStatus');
 
-  if(!eventDate){
-    status.textContent = 'Pick an event date first';
-    return;
-  }
   if(!url && !flyerPickedFile){
     status.textContent = 'Choose a photo from this device, or paste an image link';
     return;
   }
 
   if(flyerPickedFile){
-    status.textContent = 'Processing photo…';
+    status.textContent = 'Uploading photo…';
     try{
-      url = await fileToCompressedDataUrl(flyerPickedFile);
+      url = await uploadImageToImgbb(flyerPickedFile);
     }catch(e){
-      status.textContent = e.message || 'Could not process that photo — try pasting a link instead';
+      status.textContent = e.message || 'Upload failed — try pasting a link instead';
       return;
     }
   }
@@ -2166,6 +2124,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   document.getElementById('flyerTime').value = '';
   document.getElementById('flyerPriority').value = 'normal';
   resetFlyerFilePicker();
+  flyerUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…', 'flyerStatus');
   populateModal();
 };
