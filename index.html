@@ -155,14 +155,15 @@
      small, so nothing upcoming ever gets hidden. */
   .countdownStrip{flex-shrink:0;display:none;flex-wrap:wrap;gap:10px;}
   .countdownStrip.active{display:flex;}
-  .countdownChip{flex:1 1 170px;min-width:150px;max-width:100%;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  .countdownChip{flex:1 1 170px;min-width:150px;max-width:100%;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:10px;padding:6px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
      whole sidebar. */
-  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
+  .countdownStrip.compact .countdownChip{padding:5px 12px;flex-basis:150px;}
   .countdownStrip.compact .countdownChipName{font-size:13px;}
-  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
-  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
+  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:3px 6px;min-width:auto;}
+  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:13px;}
+  .countdownStrip.compact .countdownChipFlips .flipLabel{font-size:8px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
   @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
   @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -176,10 +177,10 @@
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
   .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;}
-  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
-  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
-  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:5px;flex-shrink:0;}
+  .countdownChipFlips .flipUnit{display:flex;align-items:baseline;gap:2px;padding:4px 7px;min-width:auto;background:rgba(14,12,27,.55);border-radius:7px;border:1px solid var(--line);}
+  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--gold);line-height:1;}
+  .countdownChipFlips .flipLabel{font-size:9px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin-top:0;line-height:1;}
 
   /* Single rotating spotlight card, fills the rest of the sidebar below the
      countdown strip. Fixed to the available height — nothing here ever
