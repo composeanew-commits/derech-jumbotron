@@ -77,8 +77,13 @@
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
      This is the dominant element on screen — the flyer gets its own panel,
      entirely separate from the smaller photo column beside it. */
-  .flyerPanel{flex:2.3;min-width:0;position:relative;display:flex;gap:12px;}
-  .flyerCell{flex:1;min-width:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease;}
+  /* Default layout is two cells side by side (good for portrait/vertical
+     flyers). When the flyers currently on screen are landscape/horizontal,
+     .flyerPanel.stacked switches this to a column so they sit one on top
+     of the other instead of being squeezed skinny side by side. */
+  .flyerPanel{flex:2.3;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
+  .flyerPanel.stacked{flex-direction:column;}
+  .flyerCell{flex:1;min-width:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease, box-shadow .5s ease, border-color .5s ease;}
   .flyerCell.fadeOut{opacity:0;}
   /* Flyers must always be shown in full — never cropped — no matter if the
      upload is portrait or landscape. */
@@ -86,6 +91,20 @@
   .flyerCell .flyerEventName{font-size:20px;}
   .flyerCell .flyerWhen{font-size:14px;}
   .flyerCell .flyerCaptionBar{padding:34px 20px 14px 20px;}
+
+  /* A flyer whose event is imminent ("urgent") takes over the whole panel
+     alone and gets a hot, pulsing frame so it's unmissable — the same
+     visual language as the "today" countdown chips. It automatically drops
+     back into the normal rotation once the event has passed. */
+  .flyerCell.flyerUrgent{border-color:var(--red);animation:flyerUrgentPulse 1.8s ease-in-out infinite;}
+  @keyframes flyerUrgentPulse{0%,100%{box-shadow:0 0 40px rgba(0,0,0,.25), 0 0 0 rgba(214,80,63,0);}50%{box-shadow:0 0 40px rgba(0,0,0,.25), 0 0 46px rgba(214,80,63,.55);}}
+  .flyerUrgentBadge{position:absolute;top:14px;left:14px;z-index:3;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 12px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.4);animation:badgePulse 1.7s ease-in-out infinite;}
+
+  /* When a flyer is left on screen without anything to rotate to (just one
+     active flyer, or a lone leftover cell), give it a slow idle breathing
+     animation so the panel still feels alive instead of a static, dead image. */
+  .flyerCell.flyerIdle{animation:flyerIdleBreathe 5s ease-in-out infinite;}
+  @keyframes flyerIdleBreathe{0%,100%{box-shadow:0 0 40px rgba(0,0,0,.25);border-color:var(--line);}50%{box-shadow:0 0 46px rgba(240,184,77,.28);border-color:var(--gold-dim);}}
 
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
@@ -108,16 +127,20 @@
   /* Compact, energizing countdown strip — every active countdown gets a
      chip; wraps onto extra rows instead of squeezing chips unreadably
      small, so nothing upcoming ever gets hidden. */
-  .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:0 24px;}
+  .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;margin:0 24px;}
   .countdownStrip.active{display:flex;}
-  .countdownChip{flex:0 1 auto;min-width:170px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  /* Chip is laid out sideways — name to the left, flip numbers to the right
+     — instead of the name stacked on top of the numbers. That keeps each
+     chip short, so the header strip (and the whole top banner) stays a lot
+     less tall than the old stacked version. */
+  .countdownChip{flex:0 1 auto;min-width:190px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:10px;padding:7px 14px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;text-align:left;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
      whole sidebar. */
-  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
-  .countdownStrip.compact .countdownChipName{font-size:13px;}
-  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
-  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
+  .countdownStrip.compact .countdownChip{padding:5px 10px;flex-basis:170px;gap:8px;}
+  .countdownStrip.compact .countdownChipName{font-size:12px;}
+  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:3px 5px;min-width:26px;}
+  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:13px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
   @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
   @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -130,11 +153,11 @@
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;text-align:center;}
-  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
-  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
-  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
-  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;line-height:1.2;text-align:left;flex-shrink:1;}
+  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:5px;flex-shrink:0;justify-content:flex-end;}
+  .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;background:rgba(14,12,27,.55);border-radius:7px;border:1px solid var(--line);text-align:center;}
+  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--gold);line-height:1;}
+  .countdownChipFlips .flipLabel{font-size:6.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:1px;}
 
   /* Single rotating spotlight card, fills the rest of the sidebar below the
      countdown strip. Fixed to the available height \u2014 nothing here ever
@@ -1579,7 +1602,16 @@ function startRotation(){
 // Its own dedicated panel — never mixed in with the photo column. Rotates
 // only among active event flyers, weighted so a closer/high-priority event
 // shows up more often. If nothing's active it shows a simple empty state.
+//
+// "Urgent" mode: a flyer whose event is happening within the next 24 hours
+// takes over the WHOLE panel by itself — no sharing space — cycles faster,
+// and gets a hot pulsing frame + badge so it can't be missed. The instant
+// its event time passes it stops being urgent on its own; the panel quietly
+// drops it back into the normal shared rotation. Nothing is ever deleted
+// from the board itself, it just stops taking over the screen.
 const FLYER_DURATION = 14000;
+const FLYER_URGENT_DURATION = 8000;
+const FLYER_MODE_CHECK_INTERVAL = 15000;
 let flyerTimer = null;
 
 // Flyers get a target the same way countdown entries do (falls back to end
@@ -1606,6 +1638,16 @@ function getActiveFlyers(){
     .sort((a,b)=> (a.target||Infinity) - (b.target||Infinity));
 }
 
+// A flyer is "urgent" — worth taking over the whole panel — only while its
+// event is imminent (within 24h) and hasn't happened yet. The moment the
+// event time passes, it naturally falls out of this list and rejoins the
+// normal shared rotation below (still active until the usual 24h-after
+// cutoff in getActiveFlyers).
+function getUrgentFlyers(activeFlyers){
+  const now = new Date();
+  return activeFlyers.filter(f => f.target && (f.target - now) > 0 && (f.target - now) <= 24*3600*1000);
+}
+
 function formatRelativeTime(target){
   const diff = target - new Date();
   if(diff <= 0) return 'Happening now';
@@ -1628,24 +1670,39 @@ function pickWeightedFlyer(flyers){
   return flyers[flyers.length - 1];
 }
 
-function renderFlyerMarkup(item){
+function renderFlyerMarkup(item, urgent){
   if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
   return `
-    <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';">
+    ${urgent ? `<div class="flyerUrgentBadge">Happening Soon</div>` : ''}
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';" onload="onFlyerImageLoad(this)">
     <div class="photoCaptionBar flyerCaptionBar">
       <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
       ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
     </div>`;
 }
 
-// Up to 2 flyers can share the center panel at once. With only one active
-// flyer, cell 1 is hidden and cell 0 stretches to fill the whole panel —
-// still the single, uncrowded centerpiece. With 2+ active flyers, both
-// cells show (each avoiding whatever the other cell is currently showing),
-// so two different flyers sit cleanly side by side instead of the panel
-// ever looking cluttered.
+// Once a flyer image finishes loading we know whether it's portrait or
+// landscape. The leading cell (cell 0) drives the panel's layout: portrait
+// flyers get the default side-by-side layout, landscape flyers switch the
+// panel to stacked (one on top of the other) — see .flyerPanel.stacked.
+function onFlyerImageLoad(img){
+  const panel = document.getElementById('flyerPanel');
+  const cell = img.closest('.flyerCell');
+  if(!panel || !cell || cell.id !== 'flyerCell0') return;
+  const landscape = img.naturalWidth > img.naturalHeight;
+  panel.classList.toggle('stacked', landscape);
+}
+
+// Up to 2 flyers can share the center panel at once when nothing is urgent.
+// With only one active flyer, cell 1 is hidden and cell 0 stretches to fill
+// the whole panel. Each cell avoids whatever the other cell is currently
+// showing, so two different flyers sit cleanly together instead of
+// duplicating one flyer in both spots.
 let flyerCellTimers = [null, null];
 let currentlyShownFlyerUrls = {};
+let flyerModeCheckTimer = null;
+let flyerPanelMode = null;   // 'urgent' | 'normal' | 'empty'
+let flyerPanelCellCount = 0; // how many cells were showing last render
 
 function pickNextFlyerForCell(cellIdx, activeFlyers){
   if(!activeFlyers.length) return null;
@@ -1657,15 +1714,16 @@ function pickNextFlyerForCell(cellIdx, activeFlyers){
   return pickWeightedFlyer(candidates);
 }
 
-function paintFlyerCell(cellIdx, animate){
+function paintFlyerCell(cellIdx, activeFlyers, urgent, idle, animate){
   const cell = document.getElementById('flyerCell'+cellIdx);
   if(!cell) return;
   const render = ()=>{
-    const activeFlyers = getActiveFlyers();
     const item = pickNextFlyerForCell(cellIdx, activeFlyers);
     currentlyShownFlyerUrls[cellIdx] = item ? item.url : null;
-    cell.innerHTML = renderFlyerMarkup(item);
+    cell.innerHTML = renderFlyerMarkup(item, urgent);
     cell.classList.remove('fadeOut');
+    cell.classList.toggle('flyerUrgent', !!urgent);
+    cell.classList.toggle('flyerIdle', !urgent && !!idle);
   };
   if(animate){
     cell.classList.add('fadeOut');
@@ -1675,30 +1733,74 @@ function paintFlyerCell(cellIdx, animate){
   }
 }
 
-function advanceFlyerCell(cellIdx){
-  paintFlyerCell(cellIdx, true);
-  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx), FLYER_DURATION);
+function advanceFlyerCell(cellIdx, urgent){
+  const activeFlyers = urgent ? getUrgentFlyers(getActiveFlyers()) : getActiveFlyers();
+  paintFlyerCell(cellIdx, activeFlyers, urgent, false, true);
+  const duration = urgent ? FLYER_URGENT_DURATION : FLYER_DURATION;
+  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx, urgent), duration + (cellIdx===1 ? 3000 : 0));
 }
 
 function startFlyerRotation(){
   const panel = document.getElementById('flyerPanel');
   if(!panel) return;
-  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
   flyerCellTimers.forEach(t=>clearTimeout(t));
   flyerCellTimers = [null, null];
   currentlyShownFlyerUrls = {};
+  panel.classList.remove('stacked');
+  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
+  const cell1 = document.getElementById('flyerCell1');
 
   const activeFlyers = getActiveFlyers();
-  const showSecond = activeFlyers.length >= 2;
-  const cell1 = document.getElementById('flyerCell1');
-  if(cell1) cell1.style.display = showSecond ? '' : 'none';
+  const urgentFlyers = getUrgentFlyers(activeFlyers);
 
-  paintFlyerCell(0, false);
-  flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0), FLYER_DURATION);
-  if(showSecond){
-    paintFlyerCell(1, false);
-    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1), FLYER_DURATION + 3000);
+  if(urgentFlyers.length){
+    // Urgent mode: whichever flyer(s) are imminent take the ENTIRE panel,
+    // more frequently than normal, with nothing else sharing the space.
+    flyerPanelMode = 'urgent';
+    flyerPanelCellCount = 1;
+    if(cell1) cell1.style.display = 'none';
+    const rotate = urgentFlyers.length > 1;
+    paintFlyerCell(0, urgentFlyers, true, !rotate, false);
+    if(rotate) flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0, true), FLYER_URGENT_DURATION);
+  } else if(activeFlyers.length > 2){
+    // Plenty to rotate through: normal fading rotation, two at a time.
+    flyerPanelMode = 'normal';
+    flyerPanelCellCount = 2;
+    if(cell1) cell1.style.display = '';
+    paintFlyerCell(0, activeFlyers, false, false, false);
+    paintFlyerCell(1, activeFlyers, false, false, false);
+    flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0, false), FLYER_DURATION);
+    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1, false), FLYER_DURATION + 3000);
+  } else if(activeFlyers.length === 2){
+    // Exactly two, nothing else to rotate to — show both, side by side or
+    // stacked depending on orientation, and leave them put. A slow idle
+    // glow keeps the panel feeling alive instead of a dead static image.
+    flyerPanelMode = 'normal';
+    flyerPanelCellCount = 2;
+    if(cell1) cell1.style.display = '';
+    paintFlyerCell(0, activeFlyers, false, true, false);
+    paintFlyerCell(1, activeFlyers, false, true, false);
+  } else {
+    // 0 or 1 active flyer.
+    flyerPanelMode = activeFlyers.length ? 'normal' : 'empty';
+    flyerPanelCellCount = 1;
+    if(cell1) cell1.style.display = 'none';
+    paintFlyerCell(0, activeFlyers, false, activeFlyers.length===1, false);
   }
+
+  // An event starting or ending shouldn't have to wait for the current
+  // slide to finish — recheck periodically and re-render the whole panel
+  // the moment urgent/normal status (or the active flyer count) changes.
+  clearInterval(flyerModeCheckTimer);
+  flyerModeCheckTimer = setInterval(()=>{
+    const nowActive = getActiveFlyers();
+    const nowUrgent = getUrgentFlyers(nowActive);
+    const nextMode = nowUrgent.length ? 'urgent' : (nowActive.length ? 'normal' : 'empty');
+    const nextCellCount = nowUrgent.length ? 1 : (nowActive.length >= 2 ? 2 : 1);
+    if(nextMode !== flyerPanelMode || nextCellCount !== flyerPanelCellCount){
+      startFlyerRotation();
+    }
+  }, FLYER_MODE_CHECK_INTERVAL);
 }
 
 // ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
