@@ -103,7 +103,7 @@
   .photoPanel{flex:0.7;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
-  .photoCell img{width:100%;height:100%;object-fit:contain;background:#0E0C1B;display:block;animation:kenBurns 10s ease-out forwards;}
+  .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
   .photoCell img.kb1{animation-name:kenBurns1;}
   .photoCell img.kb2{animation-name:kenBurns2;}
   .photoCell img.kb3{animation-name:kenBurns3;}
@@ -392,8 +392,7 @@
       <div class="field"><label>Quick-Add a Shoutout / Mazel Tov</label><input id="qShoutout" placeholder="Type it and tap Add"></div>
       <button class="addBtn" id="qShoutoutAdd">+ Add & Save</button>
       <div style="height:20px;"></div>
-      <div class="field"><label>Quick-Add a Photo or Video (paste URL)</label><input id="qPhotoUrl" placeholder="Image or video URL"></div>
-      <label style="display:flex;align-items:center;gap:8px;margin:-6px 0 10px 0;font-size:13px;color:var(--muted);"><input type="checkbox" id="qPhotoIsVideo" style="width:auto;"> This link is a video</label>
+      <div class="field"><label>Quick-Add a Photo (paste URL)</label><input id="qPhotoUrl" placeholder="Image URL"></div>
       <div id="qPhotoUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
         <img id="qPhotoUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
         <div id="qPhotoUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
@@ -830,39 +829,6 @@ const DEFAULT_WORDS = [
 ["התפעלות","Hispaalus","Genuine excitement — being moved by something instead of numb to it.","Frum"],
 ["קדושה","Kedusha","Holiness — setting something apart and elevating it.","Frum"],
 ["טהרה","Taharah","Purity — clarity, free of what muddies it.","Frum"],
-["תפילה","Tefillah","Prayer — standing before Hashem and actually meaning it.","Frum"],
-["תשובה","Teshuva","Return — coming back to where you're supposed to be.","Frum"],
-["מצוה","Mitzvah","A commandment — a connection point, not just a rule.","Frum"],
-["עבודה","Avodah","Service — the effortful work of serving Hashem.","Frum"],
-["יגיעה","Yegia","Toil — the sweat that real growth in Torah takes.","Frum"],
-["שקידה","Shkida","Diligence — steady, unglamorous consistency in learning.","Frum"],
-["כוונה","Kavana","Intent — being present in what you're doing, not on autopilot.","Frum"],
-["חברותא","Chavrusa","A learning partner — Torah sharpened by two minds instead of one.","Frum"],
-["בית מדרש","Beis Medrash","The study hall — where the learning actually happens.","Frum"],
-["תלמיד חכם","Talmid Chacham","A Torah scholar — someone whose learning has shaped who they are.","Frum"],
-["פשט","Pshat","The plain, straightforward reading of a text.","Frum"],
-["חידוש","Chidush","A novel insight — something genuinely new uncovered in learning.","Frum"],
-["סברא","Svara","Logical reasoning — the \"why\" underneath a halacha.","Frum"],
-["קל וחומר","Kal V'chomer","An a fortiori argument — if the lesser case is true, how much more so the greater.","Frum"],
-["מסורה","Mesorah","The tradition — passed down faithfully, generation to generation.","Frum"],
-["תוכחה","Tochacha","Rebuke — correction given because you actually care.","Frum"],
-["ערבות","Areivus","Mutual responsibility — every Jew accountable for one another.","Frum"],
-["קידוש השם","Kiddush Hashem","Sanctifying Hashem's name through how you act in public.","Frum"],
-["נאמנות","Ne'emanus","Trustworthiness — being someone whose word actually holds.","Frum"],
-["יושר","Yosher","Integrity — straightness between what you say and what you do.","Frum"],
-["אמת","Emes","Truth — the foundation everything else has to stand on.","Frum"],
-["שלום בית","Shalom Bayis","Peace in the home — the quiet work that keeps a household whole.","Frum"],
-["מוסר","Mussar","Ethical self-work — training your character on purpose.","Frum"],
-["יראת שמים","Yiras Shamayim","Fear of Heaven — a felt awareness of Whom you answer to.","Frum"],
-["שכר ועונש","Sechar V'onesh","Reward and consequence — actions that genuinely count.","Frum"],
-["השגחה פרטית","Hashgacha Pratis","Divine providence — nothing that happens is random.","Frum"],
-["גאולה","Geulah","Redemption — the ultimate return to how things should be.","Frum"],
-["ניסיון","Nisayon","A test — a hard moment that's actually an opportunity.","Frum"],
-["שמירת הלשון","Shmiras Halashon","Guarding your speech — thinking before the words come out.","Frum"],
-["גמילות חסדים","Gemilus Chasadim","Acts of kindness done simply because they're needed.","Frum"],
-["עמל תורה","Amal Torah","Laboring in Torah — learning that costs you real effort.","Frum"],
-["דקדוק","Dikduk","Precision — getting the details right, not just the big picture.","Frum"],
-["מחלוקת","Machlokes","A halachic dispute — two views, each argued for the sake of truth.","Frum"],
 ["סבבה","Sababa","\"Cool\" / \"all good\" — everyday slang you'll hear constantly.","Modern"],
 ["אחלה","Achla","\"Great\" / \"awesome.\"","Modern"],
 ["יאללה","Yalla","\"Let's go\" — used to hurry people along.","Modern"],
@@ -2138,7 +2104,7 @@ function buildWeightedPhotoItems(){
   const customs = config.photos || [];
   const n = customs.length;
   const items = customs.map((p, i) => ({
-    url: p.url, caption: p.caption, isCustom: true, type: p.type,
+    url: p.url, caption: p.caption, isCustom: true,
     weight: (n - i) <= 5 ? 6 : 2
   }));
   driveFolderPhotos.forEach(p => {
@@ -2231,7 +2197,6 @@ function paintPhotoCell(cellIdx, animate){
     const vid = cell.querySelector('video');
     if(vid){
       vid.muted = true;
-      vid.load();
       const playPromise = vid.play();
       if(playPromise && playPromise.catch) playPromise.catch(()=>{ /* autoplay blocked; video still shows its first frame */ });
     }
@@ -2300,17 +2265,12 @@ document.querySelectorAll('.tab').forEach(tab=>{
 // etc.) are viewer PAGES, not the image itself — an <img> tag can't load them,
 // which is why Drive photos silently never appeared. Rewrite them to Drive's
 // actual direct-image host whenever we save a URL.
-function normalizeImageUrl(url, isVideo){
+function normalizeImageUrl(url){
   if(!url) return url;
   const u = url.trim();
   const m = u.match(/drive\.google\.com\/(?:file\/d\/([^/?]+)|open\?id=([^&]+)|uc\?(?:export=view&)?id=([^&]+))/);
   const id = m && (m[1] || m[2] || m[3]);
-  if(!id) return u;
-  // Drive's lh3 thumbnail host only ever serves a static image, even for
-  // video files — that's the "video shows up as a regular image" bug. For a
-  // link flagged as a video, use Drive's raw-bytes endpoint instead so a
-  // <video> tag can actually stream and play it.
-  return isVideo ? `https://drive.google.com/uc?id=${id}` : `https://lh3.googleusercontent.com/d/${id}`;
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : u;
 }
 
 function syncFormToConfig(){
@@ -2718,14 +2678,12 @@ document.getElementById('qShoutoutAdd').onclick = async ()=>{
 };
 
 document.getElementById('qPhotoAdd').onclick = async ()=>{
-  const isVideo = document.getElementById('qPhotoIsVideo').checked;
-  const url = normalizeImageUrl(document.getElementById('qPhotoUrl').value.trim(), isVideo);
+  const url = normalizeImageUrl(document.getElementById('qPhotoUrl').value.trim());
   if(!url) return;
   syncFormToConfig();
-  config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim(), type: isVideo ? 'video' : 'image'});
+  config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim()});
   document.getElementById('qPhotoUrl').value = '';
   document.getElementById('qPhotoCaption').value = '';
-  document.getElementById('qPhotoIsVideo').checked = false;
   qPhotoUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…');
 };
