@@ -84,6 +84,11 @@
      being squeezed into a narrow vertical sliver. Toggled via JS once each
      flyer's real image dimensions are known (see updateFlyerPanelLayout). */
   .flyerPanel.stacked{flex-direction:column;}
+  /* Triple layout: a portrait flyer takes one full-height side, and the
+     space that a single landscape flyer would otherwise leave half-empty
+     next to it instead holds two landscape flyers stacked on top of each
+     other. */
+  .flyerStackWrap{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;}
   .flyerCell{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease;}
   .flyerCell.fadeOut{opacity:0;}
   /* Flyers must always be shown in full — never cropped — no matter if the
@@ -759,7 +764,29 @@ const DEFAULT_RIDDLES = [
 ["What word in the dictionary is spelled wrong for everyone, no matter who reads it?","Nothing — trick question, but commonly answered as \"wrong\" itself"],
 ["What can you fill a suitcase with that makes it lighter, not heavier?","Holes"],
 ["What has hands but cannot clap?","A clock"],
-["I appear once in a week, twice in a year, but never in a day. What letter am I?","The letter E"]
+["I appear once in a week, twice in a year, but never in a day. What letter am I?","The letter E"],
+["Name three people in the Torah who explicitly say \"Baruch Hashem.\"","Noach, Eliezer (Avraham's servant), and Yitro."],
+["Two people in Tanach whose names spelled backward become the exact word the Torah uses to describe them.","Noach → backward spells \"chein\" (favor, Bereishit 6:8); Er → backward spells \"ra\" (evil, Bereishit 38:7)."],
+["Who was the first person to ever learn Chumash with Rashi?","Rashi's own father."],
+["Which Talmudic tractate's name means the exact opposite of the \"seder\" (order) it belongs to?","Chullin (\"non-holy things\"), which is part of Seder Kodshim (\"holy things\")."],
+["Three items in the Mishkan (Parshat Terumah) are spelled with the exact same Hebrew letters, just rearranged. What are they?","Kapores, Kaftor, and Paroches."],
+["Why couldn't you say Kiddush Levana (the blessing on the new moon) if you were literally standing on the moon?","The blessing requires benefiting from the moon's light shining on you — you can't experience that while standing on the moon itself."],
+["Which mitzvah applies only to someone who is sitting, reclining, or lying down?","Rising for a Torah scholar or elder — the mitzvah only \"activates\" when you're not already standing."],
+["Which single verse in the Torah is read publicly more often than any other?","Bamidbar 28:3, part of the monthly Rosh Chodesh reading (read twice in most communities)."],
+["Which Purim mitzvah is done in New York a day before it's done in Jerusalem — even though Israel is normally \"first\"?","Reading the Megillah: walled cities like Jerusalem read on the 15th of Adar, a day after everywhere else."],
+["On Tisha B'Av morning everyone sits on the floor — except one person in every shul, who sits in a chair. Who?","Whoever does hagbah (lifting the Torah after the reading)."],
+["What one Hebrew word means \"and his hook\"?","Vav — spelled vav-vav (the letter vav means both \"hook\" and, as a prefix/suffix, \"and\"/\"his\")."],
+["A healthy first-born boy, observant family, yet exempt from bris milah — how?","He's a triplet whose two younger brothers tragically died from their own circumcisions, a rare case that exempts any remaining brothers."],
+["What common kitchen item, mixed with meat, makes the meat kosher to cook — but makes itself no longer kosher?","Salt — it draws the blood out of raw meat, but the salt absorbs that blood."],
+["Which mitzvah can only ever happen by accident, never on purpose?","Shichecha — a forgotten sheaf left in the field for the poor. If you leave it on purpose, it's just regular tzedakah instead."],
+["A Talmudic tractate whose name, translated into Aramaic, is literally the name of a completely different tractate.","Kelayim (forbidden mixtures) translates to \"Eruvin\" in Aramaic — an unrelated tractate about Shabbos boundaries."],
+["Two identical people do the identical act with identical intent — one has done a mitzvah, the other a Torah violation. How?","Shechting a mother animal is a mitzvah; shechting her offspring right after, same day, is the Torah prohibition of \"oto v'et beno.\""],
+["Which mitzvah is unique in that it can only be done on a Wednesday or Thursday?","Eruv Tavshilin, set up before a Yom Tov that falls right before Shabbos."],
+["Who in Bereishit was his own sister's son-in-law?","Yosef — he married Osnat, who was raised as the daughter of Potifera but was actually his sister Dina's daughter."],
+["There's a verse in the Torah containing all 22 letters of the Hebrew alphabet. What's it about?","Shemos 16:16, describing the gathering of the manna."],
+["What's the shortest word in the entire Torah?","\"Ha\" — a single letter (Devarim 32:6)."],
+["\"I'm too young to be parve. Who am I?\"","An undeveloped egg found inside a slaughtered chicken — halachically it's still part of the chicken (meat), unlike a fully formed egg."],
+["Which Jewish leap-year quirk can leave the month of Adar I with zero bar or bat mitzvahs?","Kids born in Adar of a regular year celebrate in Adar II when their bar/bat mitzvah year turns out to be a leap year — leaving Adar I empty that year."]
 ];
 
 const DEFAULT_WORDS = [
@@ -1805,26 +1832,47 @@ function pickWeightedFlyer(flyers){
 function renderFlyerMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
   return `
-    <img src="${escapeAttr(item.url)}" alt="event flyer" onload="updateFlyerPanelLayout();" onerror="this.style.display='none'; updateFlyerPanelLayout();">
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onload="cacheFlyerImgOrientation(this); updateFlyerPanelLayout();" onerror="this.style.display='none'; updateFlyerPanelLayout();">
     <div class="photoCaptionBar flyerCaptionBar">
       <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
       ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
     </div>`;
 }
 
-// When both flyer cells are showing a landscape (wider-than-tall) image at
-// once, stack them one on top of the other instead of side by side — a
-// horizontal flyer squeezed into a narrow vertical column reads far worse
-// than the same flyer given the panel's full width. Runs every time either
-// image finishes loading (or fails), since orientation isn't known until
-// then; re-checks both cells' current images and flips the layout class.
+// Remembers each flyer image's real orientation once it's actually loaded,
+// keyed by its src URL — this is what lets the *next* rotation decide ahead
+// of time whether a flyer is portrait or landscape, instead of only finding
+// out after it's already on screen.
+let flyerOrientationCache = {};
+function cacheFlyerOrientation(url, isLandscape){
+  if(url) flyerOrientationCache[url] = isLandscape ? 'landscape' : 'portrait';
+}
+function getFlyerOrientation(url){
+  return flyerOrientationCache[url] || null; // 'landscape' | 'portrait' | null (not loaded yet)
+}
+function cacheFlyerImgOrientation(imgEl){
+  if(!imgEl || !imgEl.naturalWidth || !imgEl.naturalHeight) return;
+  cacheFlyerOrientation(imgEl.getAttribute('src'), imgEl.naturalWidth >= imgEl.naturalHeight);
+}
+// This script is type="module", so top-level functions aren't on `window`
+// by default — but the flyer <img> tags call these via inline "onload=..."
+// HTML attributes, which run in the global scope. Without these lines those
+// calls silently fail (ReferenceError).
+window.cacheFlyerImgOrientation = cacheFlyerImgOrientation;
+
+// When two flyer cells sit side by side and are both showing a landscape
+// (wider-than-tall) image at once, stack them one on top of the other
+// instead — a horizontal flyer squeezed into a narrow vertical column reads
+// far worse than the same flyer given the panel's full width. Only applies
+// to the plain 2-cell layout; the 3-cell layout already has a fixed
+// arrangement built for exactly this situation, so it's left alone here.
 function updateFlyerPanelLayout(){
   const panel = document.getElementById('flyerPanel');
   if(!panel) return;
   const cell0 = document.getElementById('flyerCell0');
   const cell1 = document.getElementById('flyerCell1');
-  const showingSecond = !!(cell1 && cell1.style.display !== 'none');
-  if(!showingSecond){
+  const cell2 = document.getElementById('flyerCell2');
+  if(cell2 || !cell1){
     panel.classList.remove('stacked');
     return;
   }
@@ -1833,75 +1881,101 @@ function updateFlyerPanelLayout(){
   const isLoadedLandscape = (img)=> !!(img && img.style.display !== 'none' && img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth >= img.naturalHeight);
   panel.classList.toggle('stacked', isLoadedLandscape(img0) && isLoadedLandscape(img1));
 }
-// This script is type="module", so top-level functions aren't on `window`
-// by default — but the flyer <img> tags call this via an inline
-// onload="..." HTML attribute, which runs in the global scope. Without this
-// line that call silently fails (ReferenceError), which is why landscape
-// flyers were never actually stacking.
 window.updateFlyerPanelLayout = updateFlyerPanelLayout;
 
-// Up to 2 flyers can share the center panel at once. With only one active
-// flyer, cell 1 is hidden and cell 0 stretches to fill the whole panel —
-// still the single, uncrowded centerpiece. With 2+ active flyers, both
-// cells show (each avoiding whatever the other cell is currently showing),
-// so two different flyers sit cleanly side by side instead of the panel
-// ever looking cluttered.
-let flyerCellTimers = [null, null];
-let currentlyShownFlyerUrls = {};
-
-function pickNextFlyerForCell(cellIdx, activeFlyers){
-  if(!activeFlyers.length) return null;
-  const avoid = Object.keys(currentlyShownFlyerUrls)
-    .filter(k => Number(k) !== cellIdx)
-    .map(k => currentlyShownFlyerUrls[k]);
-  let candidates = activeFlyers.filter(f => !avoid.includes(f.url));
-  if(!candidates.length) candidates = activeFlyers;
-  return pickWeightedFlyer(candidates);
-}
-
-function paintFlyerCell(cellIdx, animate){
-  const cell = document.getElementById('flyerCell'+cellIdx);
-  if(!cell) return;
-  const render = ()=>{
-    const activeFlyers = getActiveFlyers();
-    const item = pickNextFlyerForCell(cellIdx, activeFlyers);
-    currentlyShownFlyerUrls[cellIdx] = item ? item.url : null;
-    cell.innerHTML = renderFlyerMarkup(item);
-    cell.classList.remove('fadeOut');
-  };
-  if(animate){
-    cell.classList.add('fadeOut');
-    setTimeout(render, 380);
-  } else {
-    render();
+// Weighted-picks up to `count` distinct flyers from `pool`, preferring ones
+// not in `avoidUrls` (so a rotation doesn't immediately repeat what was just
+// showing) but falling back to the full pool if avoiding them leaves too few
+// to fill every cell.
+function pickDistinctFlyers(pool, count, avoidUrls){
+  let remaining = pool.filter(f => !avoidUrls.includes(f.url));
+  if(remaining.length < count) remaining = pool.slice();
+  const picks = [];
+  for(let i=0; i<count && remaining.length; i++){
+    const chosen = pickWeightedFlyer(remaining);
+    picks.push(chosen);
+    remaining = remaining.filter(f => f.url !== chosen.url);
   }
+  return picks;
 }
 
-function advanceFlyerCell(cellIdx){
-  paintFlyerCell(cellIdx, true);
-  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx), FLYER_DURATION);
+// Decides how many flyer cells to show this cycle and which flyers fill
+// them.
+//  - 1 or 2 active flyers: everything active shows, always, and none of it
+//    rotates — with nothing else to rotate to, nothing should move.
+//  - 3+ active flyers: rotates through them as before. If the flyer picked
+//    to feature is known (from a previous load) to be portrait, and there
+//    are at least two others to pair with it, it gets the 3-up layout: full
+//    height on one side, with two more flyers stacked in the space a single
+//    landscape flyer would otherwise leave half-empty next to it.
+function planFlyerCells(activeFlyers, avoidUrls){
+  if(activeFlyers.length === 0) return {mode:'empty', picks:[], rotates:false};
+  if(activeFlyers.length === 1) return {mode:'single', picks: activeFlyers.slice(0,1), rotates:false};
+  if(activeFlyers.length === 2) return {mode:'double', picks: activeFlyers.slice(0,2), rotates:false};
+
+  const main = pickDistinctFlyers(activeFlyers, 1, avoidUrls)[0];
+  const others = activeFlyers.filter(f => f.url !== main.url);
+  if(getFlyerOrientation(main.url) === 'portrait' && others.length >= 2){
+    const landscapeOthers = others.filter(f => getFlyerOrientation(f.url) === 'landscape');
+    const pool = landscapeOthers.length >= 2 ? landscapeOthers : others;
+    const side = pickDistinctFlyers(pool, 2, avoidUrls);
+    if(side.length === 2) return {mode:'triple', picks:[main, side[0], side[1]], rotates:true};
+  }
+  const second = pickDistinctFlyers(others, 1, avoidUrls)[0];
+  return {mode: second ? 'double' : 'single', picks: second ? [main, second] : [main], rotates:true};
+}
+
+function flyerCellsMarkup(mode){
+  if(mode === 'triple'){
+    return `<div class="flyerCell" id="flyerCell0"></div>
+      <div class="flyerStackWrap">
+        <div class="flyerCell" id="flyerCell1"></div>
+        <div class="flyerCell" id="flyerCell2"></div>
+      </div>`;
+  }
+  if(mode === 'double') return `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
+  if(mode === 'single') return `<div class="flyerCell" id="flyerCell0"></div>`;
+  return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+}
+
+let flyerRotationTimer = null;
+let lastFlyerUrls = [];
+
+function renderFlyerPanel(animate){
+  const panel = document.getElementById('flyerPanel');
+  if(!panel) return;
+  const activeFlyers = getActiveFlyers();
+  const plan = planFlyerCells(activeFlyers, lastFlyerUrls);
+
+  const doRender = ()=>{
+    panel.classList.remove('stacked');
+    panel.innerHTML = flyerCellsMarkup(plan.mode);
+    plan.picks.forEach((item, i)=>{
+      const cell = document.getElementById('flyerCell'+i);
+      if(cell) cell.innerHTML = renderFlyerMarkup(item);
+    });
+    lastFlyerUrls = plan.picks.map(p=>p.url);
+    updateFlyerPanelLayout();
+  };
+
+  clearTimeout(flyerRotationTimer);
+  if(animate){
+    panel.querySelectorAll('.flyerCell').forEach(c=>c.classList.add('fadeOut'));
+    setTimeout(doRender, 380);
+  } else {
+    doRender();
+  }
+
+  // Only 1-2 active flyers means everything active is already on screen —
+  // nothing to rotate to, so no timer gets set and the flyers stay put.
+  if(plan.rotates){
+    flyerRotationTimer = setTimeout(()=>renderFlyerPanel(true), FLYER_DURATION);
+  }
 }
 
 function startFlyerRotation(){
-  const panel = document.getElementById('flyerPanel');
-  if(!panel) return;
-  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
-  panel.classList.remove('stacked');
-  flyerCellTimers.forEach(t=>clearTimeout(t));
-  flyerCellTimers = [null, null];
-  currentlyShownFlyerUrls = {};
-
-  const activeFlyers = getActiveFlyers();
-  const showSecond = activeFlyers.length >= 2;
-  const cell1 = document.getElementById('flyerCell1');
-  if(cell1) cell1.style.display = showSecond ? '' : 'none';
-
-  paintFlyerCell(0, false);
-  flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0), FLYER_DURATION);
-  if(showSecond){
-    paintFlyerCell(1, false);
-    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1), FLYER_DURATION + 3000);
-  }
+  lastFlyerUrls = [];
+  renderFlyerPanel(false);
 }
 
 // ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
