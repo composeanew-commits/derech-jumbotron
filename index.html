@@ -103,16 +103,8 @@
   .photoPanel{flex:0.7;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
-  .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
-  .photoCell img.kb1{animation-name:kenBurns1;}
-  .photoCell img.kb2{animation-name:kenBurns2;}
-  .photoCell img.kb3{animation-name:kenBurns3;}
-  .photoCell img.kb4{animation-name:kenBurns4;}
-  @keyframes kenBurns1{from{transform:scale(1) translate(0,0);}to{transform:scale(1.12) translate(-1.5%,0);}}
-  @keyframes kenBurns2{from{transform:scale(1.1) translate(1.5%,1%);}to{transform:scale(1) translate(0,0);}}
-  @keyframes kenBurns3{from{transform:scale(1) translate(0,-1%);}to{transform:scale(1.14) translate(1.5%,1%);}}
-  @keyframes kenBurns4{from{transform:scale(1.08) translate(-1%,0);}to{transform:scale(1) translate(0.5%,-0.5%);}}
-  .photoCell video{width:100%;height:100%;object-fit:cover;display:block;background:#0E0C1B;}
+  .photoCell img{width:100%;height:100%;object-fit:contain;display:block;}
+  .photoCell video{width:100%;height:100%;object-fit:contain;display:block;background:#0E0C1B;}
   .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
   .photoCell .photoPanelLabel.photoPanelLabelNew{color:#0E0C1B;background:var(--gold);font-weight:700;animation:badgePulse 1.7s ease-in-out infinite;}
   .photoCell .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:18px 10px 8px 10px;background:linear-gradient(transparent, rgba(6,4,16,.88));font-size:11px;color:var(--ink);line-height:1.3;}
@@ -246,13 +238,6 @@
   .thoughtText{font-size:32px;line-height:1.5;color:var(--ink);font-weight:400;}
   .thoughtSource{margin-top:20px;font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:2px;font-size:14px;text-transform:uppercase;}
 
-  .photoBox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
-  .photoBox img{max-height:52vh;max-width:100%;border-radius:12px;border:1px solid var(--line);box-shadow:0 0 60px rgba(0,0,0,.5);object-fit:cover;animation:kenBurns 8s ease-out forwards;}
-  .photoGrid{display:flex;gap:28px;justify-content:center;align-items:stretch;width:100%;}
-  .photoCell{display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;min-width:0;}
-  .photoCell img{width:100%;height:56vh;border-radius:12px;border:1px solid var(--line);box-shadow:0 0 50px rgba(0,0,0,.5);object-fit:cover;animation:kenBurns 9s ease-out forwards;}
-  @keyframes kenBurns{from{transform:scale(1);}to{transform:scale(1.06);}}
-  .photoCaption{font-size:20px;color:var(--muted);}
 
   .zmanimGrid{display:flex;flex-direction:column;gap:16px;}
   .zmanRow{display:flex;justify-content:space-between;align-items:center;padding:14px 6px;border-bottom:1px solid var(--line);}
@@ -1892,6 +1877,14 @@ function cacheFlyerImgOrientation(imgEl){
 // calls silently fail (ReferenceError).
 window.cacheFlyerImgOrientation = cacheFlyerImgOrientation;
 
+// Fires only once every <source> child of the <video> has failed (the
+// browser already tries each <source> in order on its own before this).
+function handleVideoError(videoEl){
+  if(!videoEl) return;
+  videoEl.style.display = 'none';
+}
+window.handleVideoError = handleVideoError;
+
 // When two flyer cells sit side by side and are both showing a landscape
 // (wider-than-tall) image at once, stack them one on top of the other
 // instead — a horizontal flyer squeezed into a narrow vertical column reads
@@ -2057,7 +2050,13 @@ async function fetchDriveFolderPhotos(){
     return {
       url: isVideo
         ? `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${folder.apiKey}`
+        // Fallback source tried by the <video> tag if the API endpoint above
+        // fails to play (some browsers are picky about the googleapis.com
+        // streaming response) — this direct-download host serves the same
+        // file with different headers and often succeeds where the other fails.
         : `https://lh3.googleusercontent.com/d/${f.id}`,
+      fallbackUrl: isVideo ? `https://drive.google.com/uc?export=download&id=${f.id}` : null,
+      mimeType: f.mimeType || '',
       caption: '',
       type: isVideo ? 'video' : 'image'
     };
@@ -2108,7 +2107,7 @@ function buildWeightedPhotoItems(){
     weight: (n - i) <= 5 ? 6 : 2
   }));
   driveFolderPhotos.forEach(p => {
-    items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type });
+    items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type, mimeType: p.mimeType, fallbackUrl: p.fallbackUrl });
   });
   (config.galleryPhotos || []).forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: false, weight: 1 });
@@ -2153,8 +2152,17 @@ function renderPhotoCellMarkup(item){
     // autoplay requires muted in every modern browser; loop keeps it filling
     // the cell's whole dwell time whether the clip is 3 seconds or 3 minutes,
     // since the cell gets swapped out on the same timer as photos regardless.
+    // A plain src="..." with no MIME type left some browsers unsure how to
+    // handle the googleapis.com stream and silently refusing to play it —
+    // an explicit <source type="..."> (from the file's real mimeType) fixes
+    // that. A second <source> (a different Drive download host) is included
+    // as a fallback the browser will try automatically if the first fails.
+    const mime = escapeAttr(item.mimeType || 'video/mp4');
     return `
-      <video src="${escapeAttr(item.url)}" autoplay muted loop playsinline preload="auto" onerror="this.style.display='none';"></video>
+      <video autoplay muted loop playsinline preload="auto" data-fallback="${item.fallbackUrl ? escapeAttr(item.fallbackUrl) : ''}" onerror="handleVideoError(this)">
+        <source src="${escapeAttr(item.url)}" type="${mime}">
+        ${item.fallbackUrl ? `<source src="${escapeAttr(item.fallbackUrl)}" type="${mime}">` : ''}
+      </video>
       ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
   }
   const src = item.isCustom ? item.url : fullResUrl(item.url);
