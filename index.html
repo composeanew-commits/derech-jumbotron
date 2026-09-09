@@ -194,7 +194,7 @@
   .bigCard .zmanimGrid{gap:5px;}
   .bigCard .zmanRow{padding:5px 2px;}
   .bigCard .zmanLabel{font-size:11px;}
-  .bigCard .zmanTime{font-size:14px;}
+  .bigCard .zmanTime{font-size:10px;}
   .bigCard .scheduleList{gap:3px;}
   .bigCard .schedRow{padding:3px 2px;gap:10px;}
   .bigCard .schedTime{font-size:10px;min-width:52px;}
@@ -242,8 +242,8 @@
   .zmanimGrid{display:flex;flex-direction:column;gap:16px;}
   .zmanRow{display:flex;justify-content:space-between;align-items:center;padding:14px 6px;border-bottom:1px solid var(--line);}
   .zmanRow:last-child{border-bottom:none;}
-  .zmanLabel{font-family:'Poppins',sans-serif;font-weight:600;font-size:24px;color:var(--ink);}
-  .zmanTime{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:32px;color:var(--gold);}
+  .zmanLabel{font-family:'Poppins',sans-serif;font-weight:600;font-size:22px;color:var(--ink);}
+  .zmanTime{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:var(--gold);}
   /* Small labeled divider between today's zmanim and the upcoming Shabbos's
      candle lighting / havdalah, so it's clear at a glance which Shabbos
      (which Parsha) those two rows belong to. */
@@ -295,6 +295,19 @@
   .rmBtn{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
   .addBtn, .saveBtn{background:var(--gold);color:#0E0C1B;border:none;border-radius:6px;padding:10px 18px;font-family:'Rubik';font-weight:700;cursor:pointer;font-size:14px;}
   .addBtn{background:var(--panel2);color:var(--gold);border:1px solid var(--gold-dim);}
+  /* Photo library grid: small thumbnail cards so every uploaded photo is
+     visible at a glance, instead of one big stacked preview per photo. */
+  .photoGrid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:12px;margin-bottom:14px;}
+  .photoCard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;position:relative;}
+  .photoThumbWrap{width:100%;aspect-ratio:1/1;border-radius:7px;overflow:hidden;background:var(--panel);display:flex;align-items:center;justify-content:center;margin-bottom:8px;position:relative;}
+  .photoThumbWrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photoThumbEmpty{font-size:11px;color:var(--muted);text-align:center;padding:6px;}
+  .photoThumbBad{font-size:10px;color:var(--red);text-align:center;padding:6px;line-height:1.3;}
+  .photoCardRmBtn{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:rgba(14,12,27,.75);border:none;color:#fff;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .photoCardRmBtn:hover{background:var(--red);}
+  .photoCard .field{margin-bottom:6px;}
+  .photoCard .field label{font-size:10px;}
+  .photoCard input{padding:6px 8px;font-size:12px;}
   .saveRow{position:sticky;bottom:0;background:var(--panel);padding:16px 26px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
   .saveStatus{font-size:13px;color:var(--muted);}
   .colorSwatch{display:flex;gap:8px;margin-top:6px;}
@@ -448,7 +461,7 @@
         <div id="qDriveStatus" class="hint" style="margin-top:8px;"></div>
         <div class="hint" style="margin-top:8px;">Any photo or video dropped into that Drive folder shows up in the rotation automatically — no need to copy/paste individual links. Videos play automatically (muted, on loop) for their turn in the rotation. Needs a free Google API key with the Drive API enabled.</div>
       </div>
-      <div id="photosList"></div>
+      <div id="photosList" class="photoGrid"></div>
       <button class="addBtn" id="addPhoto">+ Add Photo (URL)</button>
       <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, Drive link set to "anyone with link," etc.)</div>
     </div>
@@ -2315,6 +2328,19 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.value);
 }
 
+// Loads a photo-library thumbnail into a .photoThumbWrap element, showing a
+// small loading/empty/error state instead of leaving a broken image.
+function loadPhotoThumb(wrap, url){
+  if(!wrap) return;
+  const val = (url||'').trim();
+  if(!val){ wrap.innerHTML = `<div class="photoThumbEmpty">No image yet</div>`; return; }
+  wrap.innerHTML = `<div class="photoThumbEmpty">Loading…</div>`;
+  const img = new Image();
+  img.onload = ()=>{ wrap.innerHTML = ''; wrap.appendChild(img); };
+  img.onerror = ()=>{ wrap.innerHTML = `<div class="photoThumbBad">⚠ Link isn't loading as an image</div>`; };
+  img.src = normalizeImageUrl(val);
+}
+
 function populateModal(){
   document.getElementById('qDriveFolderUrl').value = (config.driveFolder && config.driveFolder.url) || '';
   document.getElementById('qDriveApiKey').value = (config.driveFolder && config.driveFolder.apiKey) || '';
@@ -2429,52 +2455,35 @@ function populateModal(){
     shoutoutsList.appendChild(div);
   });
 
+  // Photo library: a grid of small thumbnail cards (instead of one big
+  // stacked preview per photo) so every uploaded photo is visible at a
+  // glance, with its own delete button, right on the thumbnail.
   const photosList = document.getElementById('photosList');
   photosList.innerHTML = '';
   (config.photos||[]).forEach((p,i)=>{
     const div = document.createElement('div');
-    div.className = 'listItem';
-    div.innerHTML = `<button class="rmBtn" data-remove="photo" data-idx="${i}">✕</button>
-      <div class="field"><label>Image URL</label><input data-field="photoUrl" data-idx="${i}" value="${escapeAttr(p.url)}"></div>
-      <div class="photoRowPreviewWrap" style="display:none;margin:-4px 0 10px 0;">
-        <img class="photoRowPreviewImg" style="max-width:100%;max-height:120px;border-radius:8px;border:1px solid var(--line);display:block;">
-        <div class="photoRowPreviewMsg hint" style="margin:6px 0 0 0;"></div>
+    div.className = 'photoCard';
+    div.innerHTML = `<button class="photoCardRmBtn" data-remove="photo" data-idx="${i}" title="Delete photo">✕</button>
+      <div class="photoThumbWrap" data-idx="${i}">
+        <div class="photoThumbEmpty">No image yet</div>
       </div>
-      <div class="field"><label>Caption</label><input data-field="photoCaption" data-idx="${i}" value="${escapeAttr(p.caption||'')}"></div>`;
+      <div class="field"><label>Image URL</label><input data-field="photoUrl" data-idx="${i}" value="${escapeAttr(p.url)}" placeholder="Paste image link"></div>
+      <div class="field"><label>Caption</label><input data-field="photoCaption" data-idx="${i}" value="${escapeAttr(p.caption||'')}" placeholder="Optional"></div>`;
     photosList.appendChild(div);
+    loadPhotoThumb(div.querySelector('.photoThumbWrap'), p.url);
   });
 
-  // One delegated listener handles the link-check preview for every photo
-  // row (present and future), same pattern as the flyer/quick-add fields.
+  // One delegated listener re-checks the thumbnail as the URL is edited,
+  // same pattern as the flyer/quick-add fields.
   if(!photosList.dataset.wired){
     photosList.dataset.wired = '1';
     let photoRowPreviewDebounce = null;
     photosList.addEventListener('input', (e)=>{
       if(e.target.dataset.field !== 'photoUrl') return;
       clearTimeout(photoRowPreviewDebounce);
-      const row = e.target.closest('.listItem');
-      const wrap = row.querySelector('.photoRowPreviewWrap');
-      const img = row.querySelector('.photoRowPreviewImg');
-      const msg = row.querySelector('.photoRowPreviewMsg');
+      const wrap = e.target.closest('.photoCard').querySelector('.photoThumbWrap');
       const val = e.target.value.trim();
-      if(!val){ wrap.style.display = 'none'; return; }
-      photoRowPreviewDebounce = setTimeout(()=>{
-        wrap.style.display = '';
-        msg.textContent = 'Checking link…';
-        msg.style.color = 'var(--muted)';
-        img.style.display = 'none';
-        img.onload = ()=>{
-          img.style.display = 'block';
-          msg.textContent = '✓ This link loads as an image — good to go.';
-          msg.style.color = 'var(--green)';
-        };
-        img.onerror = ()=>{
-          img.style.display = 'none';
-          msg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
-          msg.style.color = 'var(--red)';
-        };
-        img.src = normalizeImageUrl(val);
-      }, 500);
+      photoRowPreviewDebounce = setTimeout(()=> loadPhotoThumb(wrap, val), 500);
     });
   }
 
@@ -2519,7 +2528,18 @@ document.getElementById('addTeam').onclick = ()=>{
   populateModal();
 };
 document.getElementById('addShoutout').onclick = ()=>{ syncFormToConfig(); config.shoutouts.push(''); populateModal(); };
-document.getElementById('addPhoto').onclick = ()=>{ syncFormToConfig(); config.photos.push({url:'', caption:''}); populateModal(); };
+document.getElementById('addPhoto').onclick = ()=>{
+  syncFormToConfig();
+  config.photos.push({url:'', caption:''});
+  populateModal();
+  // Jump straight into the new photo's URL field — no need to click into it.
+  const inputs = document.querySelectorAll('#photosList [data-field="photoUrl"]');
+  const newest = inputs[inputs.length-1];
+  if(newest){
+    newest.scrollIntoView({block:'center', behavior:'smooth'});
+    newest.focus();
+  }
+};
 document.getElementById('addCountdown').onclick = ()=>{
   syncFormToConfig();
   const today = new Date().toISOString().slice(0,10);
