@@ -251,6 +251,12 @@
   .zmanRow:last-child{border-bottom:none;}
   .zmanLabel{font-family:'Poppins',sans-serif;font-weight:600;font-size:24px;color:var(--ink);}
   .zmanTime{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:32px;color:var(--gold);}
+  /* Small labeled divider between today's zmanim and the upcoming Shabbos's
+     candle lighting / havdalah, so it's clear at a glance which Shabbos
+     (which Parsha) those two rows belong to. */
+  .zmanimDivider{display:flex;align-items:center;gap:10px;margin-top:2px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);}
+  .zmanimDivider::before,.zmanimDivider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .bigCard .zmanimDivider{font-size:11px;letter-spacing:1.5px;}
 
   .scheduleList{display:flex;flex-direction:column;gap:12px;}
   .schedRow{display:flex;gap:22px;align-items:baseline;padding:10px 6px;border-bottom:1px solid var(--line);}
@@ -1070,7 +1076,7 @@ const DEFAULT_SCHEDULE = `7:00 AM - Wake Up
 // ^ Placeholder daily schedule shown until you enter the real one in Quick Update — edit
 // freely, it'll then be used as the standing default every day until changed again.
 
-let autoZmanim = {candleLighting:'', havdalah:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
+let autoZmanim = {candleLighting:'', havdalah:'', parsha:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
 let autoHistory = '';
 let autoYahrzeit = null;
 
@@ -1081,7 +1087,7 @@ function fmtZmanTime(d){
 }
 
 function computeAutoZmanim(){
-  const blank = {candleLighting:'', havdalah:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
+  const blank = {candleLighting:'', havdalah:'', parsha:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
   let location;
   try{
     location = Location.lookup('Jerusalem');
@@ -1091,8 +1097,12 @@ function computeAutoZmanim(){
   }
   const today = new Date();
 
-  // This week's Shabbos-specific times (candle lighting / havdalah).
-  let candle = '', havdalah = '';
+  // This week's Shabbos-specific times (candle lighting / havdalah), plus
+  // which Parsha that candle lighting is actually for — so "Candle
+  // Lighting" on screen is never ambiguous about which Shabbos it belongs
+  // to (it's always the very next one, but Parshas Noach reads a lot
+  // clearer than just trusting that).
+  let candle = '', havdalah = '', parsha = '';
   try{
     const events = HebrewCalendar.calendar({
       start: today,
@@ -1100,7 +1110,8 @@ function computeAutoZmanim(){
       location,
       candlelighting: true,
       candleLightingMins: 40,   // Jerusalem custom: 40 minutes before sunset
-      havdalahMins: 42          // three medium stars (common practice)
+      havdalahMins: 42,         // three medium stars (common practice)
+      sedrot: true              // also emit the weekly Parsha event, so we can label the candle lighting with it
     });
     for(const ev of events){
       const desc = (ev.getDesc && ev.getDesc()) || '';
@@ -1113,6 +1124,9 @@ function computeAutoZmanim(){
       // silently returning blank candle/havdalah every time), which is why
       // Zmanim never showed up even on a normal Friday. Skip anything
       // without a real timestamp instead of crashing on it.
+      if(!parsha && (evFlags & flags.PARSHA_HASHAVUA)){
+        parsha = desc;
+      }
       if(!(ev.eventTime instanceof Date)) continue;
       // Match on the library's own event flags rather than sniffing the
       // description text: a plain /candle/i regex also matches Chanukah's
@@ -1152,7 +1166,7 @@ function computeAutoZmanim(){
     console.error('daily zmanim calc failed', e);
   }
 
-  return {...blank, candleLighting: candle, havdalah, ...daily};
+  return {...blank, candleLighting: candle, havdalah, parsha, ...daily};
 }
 
 function computeAutoYahrzeitHistory(){
@@ -1565,22 +1579,32 @@ function buildSpotlightItems(){
 
   {
     const z = config.zmanim || {};
-    const rows = [];
     const candle = (z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting;
     const havdalah = (z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah;
     const sofZmanShema = (z.sofZmanShema && z.sofZmanShema.trim()) || autoZmanim.sofZmanShma;
-    // Today's halachic day, in order — then this week's Shabbos-specific
-    // times tacked on at the end.
-    if(autoZmanim.sunrise) rows.push(['Netz (Sunrise)', autoZmanim.sunrise]);
-    if(sofZmanShema) rows.push(['Sof Zman Shema', sofZmanShema]);
-    if(autoZmanim.sofZmanTfilla) rows.push(['Sof Zman Tefilah', autoZmanim.sofZmanTfilla]);
-    if(autoZmanim.chatzot) rows.push(['Chatzos', autoZmanim.chatzot]);
-    if(autoZmanim.shkiah) rows.push(['Shkiah (Sunset)', autoZmanim.shkiah]);
-    if(autoZmanim.tzeit) rows.push(['Tzeis HaKochavim', autoZmanim.tzeit]);
-    if(candle) rows.push(['Candle Lighting', candle]);
-    if(havdalah) rows.push(['Shabbos Ends', havdalah]);
-    if(rows.length){
-      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'Today', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`, accent:'var(--gold)'});
+    // Today's halachic day, in order...
+    const todayRows = [];
+    if(autoZmanim.sunrise) todayRows.push(['Netz (Sunrise)', autoZmanim.sunrise]);
+    if(sofZmanShema) todayRows.push(['Sof Zman Shema', sofZmanShema]);
+    if(autoZmanim.sofZmanTfilla) todayRows.push(['Sof Zman Tefilah', autoZmanim.sofZmanTfilla]);
+    if(autoZmanim.chatzot) todayRows.push(['Chatzos', autoZmanim.chatzot]);
+    if(autoZmanim.shkiah) todayRows.push(['Shkiah (Sunset)', autoZmanim.shkiah]);
+    if(autoZmanim.tzeit) todayRows.push(['Tzeis HaKochavim', autoZmanim.tzeit]);
+    // ...then this week's Shabbos-specific times, set off with a small
+    // labeled divider naming the actual Parsha so it's never ambiguous
+    // which Shabbos "Candle Lighting" below is for.
+    const shabbosRows = [];
+    if(candle) shabbosRows.push(['Candle Lighting', candle]);
+    if(havdalah) shabbosRows.push(['Shabbos Ends', havdalah]);
+
+    const todayHtml = todayRows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('');
+    const shabbosLabel = autoZmanim.parsha || 'This Shabbos';
+    const shabbosHtml = shabbosRows.length
+      ? `<div class="zmanimDivider">${escapeHtml(shabbosLabel)}</div>` + shabbosRows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')
+      : '';
+
+    if(todayRows.length || shabbosRows.length){
+      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'Today', body:`<div class="zmanimGrid">${todayHtml}${shabbosHtml}</div>`, accent:'var(--gold)'});
     }
   }
 
