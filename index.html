@@ -448,9 +448,16 @@
     </div>
 
     <div class="tabPanel" data-panel="photos">
+      <div class="hint" style="margin-top:0;">Paste a Google Drive FOLDER link below and every photo inside it shuffles onto the board automatically — no need to add them one by one. The board rechecks the folder every few minutes on its own, so photos you drop in later show up too, no re-saving needed.</div>
+      <div class="field"><label>Auto-Pull From a Google Drive Folder</label><input id="driveFolderUrl" placeholder="https://drive.google.com/drive/folders/..."></div>
+      <div class="hint" style="margin-top:0;">Make sure the folder is shared as "Anyone with the link" can view (right-click the folder in Drive → Share).</div>
+      <button class="addBtn" id="refreshDriveFolder">↻ Refresh From Folder Now</button>
+      <div class="hint" id="driveFolderStatus" style="margin-top:8px;"></div>
+
+      <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:22px 0 6px 0;">Or Add Individual Photos</label>
       <div id="photosList"></div>
       <button class="addBtn" id="addPhoto">+ Add Photo (URL)</button>
-      <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, Drive link set to "anyone with link," etc.)</div>
+      <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, a Google Drive file link, etc.) — Drive "share" links are automatically converted so they display correctly.</div>
     </div>
 
     <div class="tabPanel" data-panel="ticker">
@@ -525,6 +532,116 @@ async function uploadImageToImgbb(file){
     throw new Error((data && data.error && data.error.message) || 'Upload failed — check your imgbb API key');
   }
   return data.data.url;
+}
+
+// ===================== GOOGLE DRIVE — auto-pull photos from a shared folder =====================
+// Lets you paste ONE Google Drive folder link and have every photo inside it show up on the
+// board automatically, shuffled in with the rest — no need to add each photo one by one, and
+// no need to touch anything again as more photos get added to the folder later (the board
+// rechecks the folder every few minutes on its own, and again each time the page loads).
+//   1. Go to https://console.cloud.google.com/apis/credentials (any Google account works).
+//   2. Create a project if you don't have one yet (top-left project picker > New Project).
+//   3. Click "+ Create Credentials" > "API key". Copy the key it shows you.
+//   4. Click into that key to edit it > under "API restrictions" choose "Restrict key" >
+//      tick only "Google Drive API" > Save. (This makes it safe to leave in this public file —
+//      it can't be used for anything except reading file lists from Drive.)
+//   5. Still in the Cloud Console, use the search bar up top to find "Google Drive API",
+//      open it, and click "Enable" if it isn't already.
+//   6. Paste the key below in place of 'PASTE_YOUR_DRIVE_API_KEY_HERE'.
+// Until you do this, individually-pasted Drive photo links still work fine (see
+// imageUrlCandidates below) — only the "auto-pull a whole folder" feature needs this key.
+const DRIVE_API_KEY = 'PASTE_YOUR_DRIVE_API_KEY_HERE';
+
+function isDriveApiConfigured(){
+  return !!(DRIVE_API_KEY && !DRIVE_API_KEY.includes('PASTE_'));
+}
+
+// Accepts any of the URL shapes Drive hands out when you "Share" a single FILE
+// (.../file/d/ID/view, .../open?id=ID, .../uc?id=ID) and pulls out just the file ID.
+function extractDriveFileId(url){
+  if(!url) return null;
+  const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+
+// Accepts any of the URL shapes Drive hands out when you "Share" a FOLDER
+// (.../drive/folders/ID, .../folders/ID?usp=...) and pulls out just the folder ID.
+function extractDriveFolderId(url){
+  if(!url) return null;
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
+  return m ? m[1] : null;
+}
+
+// A Google Drive "share" link opens a viewer PAGE, not an image file, so pasting one straight
+// into an <img src> shows nothing — this is why Drive links haven't been working. This builds
+// a short list of URL shapes to try instead, ordered from "most likely to just work" down to
+// the original link as a last resort, paired with imgWithFallback() below which tries each one
+// in turn until an image actually loads. Non-Drive links pass through untouched.
+function imageUrlCandidates(url){
+  if(!url) return [];
+  const fileId = extractDriveFileId(url);
+  if(!fileId) return [url];
+  return [
+    `https://lh3.googleusercontent.com/d/${fileId}=w1600`,
+    `https://drive.google.com/uc?export=view&id=${fileId}`,
+    url
+  ];
+}
+
+// Renders an <img> that automatically retries the next candidate URL (see imageUrlCandidates
+// above) if one fails to load, instead of just showing a broken image.
+function imgWithFallback(url, extraAttrs){
+  const candidates = imageUrlCandidates(url);
+  const first = candidates[0] || '';
+  const rest = candidates.slice(1);
+  return `<img src="${escapeAttr(first)}" data-fallbacks="${escapeAttr(JSON.stringify(rest))}" ${extraAttrs||''} onerror="const fb=JSON.parse(this.dataset.fallbacks||'[]'); if(fb.length){ this.src=fb.shift(); this.dataset.fallbacks=JSON.stringify(fb); } else { this.onerror=null; this.style.display='none'; }">`;
+}
+
+// Calls the Drive API to list every image directly inside a folder (paginating past the
+// 1000-file-per-page cap just in case) and returns [{url, caption}].
+async function fetchDriveFolderPhotos(folderId){
+  if(!isDriveApiConfigured()){
+    throw new Error("Drive auto-pull isn't set up yet — paste a free Drive API key near the top of the script (see the comment above DRIVE_API_KEY).");
+  }
+  let files = [];
+  let pageToken = '';
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
+      key: DRIVE_API_KEY,
+      fields: 'nextPageToken, files(id, name, thumbnailLink)',
+      pageSize: '1000',
+      orderBy: 'createdTime'
+    });
+    if(pageToken) params.set('pageToken', pageToken);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
+    const data = await res.json();
+    if(!res.ok){
+      throw new Error((data && data.error && data.error.message) || 'Could not read that Drive folder — make sure it\'s shared as "Anyone with the link"');
+    }
+    files = files.concat(data.files || []);
+    pageToken = data.nextPageToken || '';
+  } while(pageToken);
+  return files.map(f => ({
+    // thumbnailLink comes back capped small (like ...=s220); swap in a bigger size for the board.
+    url: (f.thumbnailLink || '').replace(/=s\d+$/, '=s1600'),
+    caption: ''
+  })).filter(p => p.url);
+}
+
+// Re-reads whatever folder link is currently saved, pulls the current photo list from Drive,
+// and stores it in config.driveFolderPhotos so it shuffles in with everything else. Called on
+// page load, every few minutes automatically, and whenever "Refresh From Folder Now" is clicked.
+async function refreshDriveFolderPhotos(){
+  const folderId = extractDriveFolderId((config && config.driveFolderUrl) || '');
+  if(!folderId) return {ok:false, error:'No folder link saved yet'};
+  try{
+    const photos = await fetchDriveFolderPhotos(folderId);
+    config.driveFolderPhotos = photos;
+    return {ok:true, count: photos.length};
+  }catch(e){
+    return {ok:false, error: e.message || 'Could not reach Google Drive'};
+  }
 }
 
 const DEFAULT_TRIVIA = [
@@ -1112,6 +1229,8 @@ const DEFAULT_CONFIG = {
   shoutouts: ['Welcome to the Derech Jumbotron! Add your first shoutout from the gear icon.'],
   photos: [],
   galleryPhotos: DEFAULT_GALLERY_PHOTOS.map(([url,caption])=>({url,caption})),
+  driveFolderUrl: '',
+  driveFolderPhotos: [],
   ticker: 'Welcome to the Derech Jumbotron \u2014 tap the gear icon to update scores, add shoutouts, and manage countdowns.',
   triviaBank: DEFAULT_TRIVIA.map(([q,a,cat])=>({q,a,cat})),
   riddleBank: DEFAULT_RIDDLES.map(([r,a])=>({r,a})),
@@ -1176,6 +1295,7 @@ function mergeStoredConfig(stored){
   if(!merged.waysBank || !merged.waysBank.length) merged.waysBank = structuredClone(DEFAULT_CONFIG.waysBank);
   if(!merged.countdowns) merged.countdowns = [];
   if(!merged.flyers) merged.flyers = [];
+  if(!merged.driveFolderPhotos) merged.driveFolderPhotos = [];
   return merged;
 }
 
@@ -1674,7 +1794,7 @@ function renderFlyerMarkup(item, urgent){
   if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
   return `
     ${urgent ? `<div class="flyerUrgentBadge">Happening Soon</div>` : ''}
-    <img src="${escapeAttr(item.url)}" alt="event flyer" onerror="this.style.display='none';" onload="onFlyerImageLoad(this)">
+    ${imgWithFallback(item.url, 'alt="event flyer" onload="onFlyerImageLoad(this)"')}
     <div class="photoCaptionBar flyerCaptionBar">
       <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
       ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
@@ -1815,7 +1935,10 @@ let photoCellTimers = [];
 // shows up sometimes as a lower-weight "side thing" \u2014 never picked so often
 // that it crowds out new uploads, never removed from the mix entirely either.
 function buildWeightedPhotoItems(){
-  const customs = config.photos || [];
+  // Manually-pasted photos and anything auto-pulled from a Drive folder are treated
+  // identically here — both shuffle into the board "like all the rest," with whichever
+  // were added most recently (to either source) weighted to show up more often.
+  const customs = (config.photos || []).concat(config.driveFolderPhotos || []);
   const n = customs.length;
   const items = customs.map((p, i) => ({
     url: p.url, caption: p.caption, isCustom: true,
@@ -1851,7 +1974,7 @@ function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   return `
-    <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
+    ${imgWithFallback(src, 'alt="board photo"')}
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
@@ -1936,6 +2059,7 @@ function syncFormToConfig(){
     config.leagueName = document.getElementById('leagueName').value;
   }
   if(document.getElementById('tickerInput')) config.ticker = document.getElementById('tickerInput').value;
+  if(document.getElementById('driveFolderUrl')) config.driveFolderUrl = document.getElementById('driveFolderUrl').value.trim();
   if(document.getElementById('qzCandle')){
     config.zmanim = {
       candleLighting: document.getElementById('qzCandle').value,
@@ -2076,6 +2200,16 @@ function populateModal(){
     shoutoutsList.appendChild(div);
   });
 
+  const driveFolderUrlInput = document.getElementById('driveFolderUrl');
+  if(driveFolderUrlInput) driveFolderUrlInput.value = config.driveFolderUrl || '';
+  const driveFolderStatus = document.getElementById('driveFolderStatus');
+  if(driveFolderStatus){
+    const n = (config.driveFolderPhotos || []).length;
+    driveFolderStatus.textContent = config.driveFolderUrl
+      ? (n ? `${n} photo${n===1?'':'s'} currently pulled in from that folder.` : "No photos found there yet — click Refresh, and make sure it's shared as “Anyone with the link.”")
+      : '';
+  }
+
   const photosList = document.getElementById('photosList');
   photosList.innerHTML = '';
   (config.photos||[]).forEach((p,i)=>{
@@ -2129,6 +2263,25 @@ document.getElementById('addTeam').onclick = ()=>{
 };
 document.getElementById('addShoutout').onclick = ()=>{ syncFormToConfig(); config.shoutouts.push(''); populateModal(); };
 document.getElementById('addPhoto').onclick = ()=>{ syncFormToConfig(); config.photos.push({url:'', caption:''}); populateModal(); };
+
+document.getElementById('refreshDriveFolder').onclick = async ()=>{
+  syncFormToConfig();
+  const status = document.getElementById('driveFolderStatus');
+  if(!config.driveFolderUrl){ status.textContent = 'Paste a folder link above first.'; return; }
+  status.textContent = 'Checking the folder\u2026';
+  const result = await refreshDriveFolderPhotos();
+  if(result.ok){
+    status.textContent = `\u2713 Found ${result.count} photo${result.count===1?'':'s'} \u2014 saving\u2026`;
+    paintTicker();
+    startRotation();
+    const saveResult = await saveConfig();
+    status.textContent = saveResult.ok
+      ? `\u2713 ${result.count} photo${result.count===1?'':'s'} pulled in and saved to the shared board.`
+      : `Found ${result.count} photo${result.count===1?'':'s'}, but couldn't save to the shared board yet \u2014 ${saveResult.error || 'try again'}`;
+  } else {
+    status.textContent = `\u26a0 ${result.error}`;
+  }
+};
 document.getElementById('addCountdown').onclick = ()=>{
   syncFormToConfig();
   const today = new Date().toISOString().slice(0,10);
@@ -2324,6 +2477,21 @@ document.getElementById('saveAll').onclick = async ()=>{
   }
 };
 
+// Drive-folder photos refresh silently in the background — on load, and every few
+// minutes after that — so a board left running on a kiosk screen keeps picking up newly
+// added photos without anyone needing to open the gear icon again. Silent because a flaky
+// connection or a not-yet-configured API key shouldn't interrupt or nag whoever's watching
+// the board; the gear icon's Photos tab is where any real problem becomes visible.
+const DRIVE_FOLDER_REFRESH_MS = 10 * 60 * 1000;
+async function silentDriveFolderRefresh(){
+  if(!config || !config.driveFolderUrl) return;
+  const result = await refreshDriveFolderPhotos();
+  if(result.ok){
+    if(!document.getElementById('modalOverlay').classList.contains('open')) startRotation();
+    if(firebaseReady) saveConfig();
+  }
+}
+
 async function startBoard(){
   dayOfYear = computeDayOfYear();
   await loadConfig();
@@ -2334,6 +2502,8 @@ async function startBoard(){
   paintDayBadge();
   paintTicker();
   startRotation();
+  silentDriveFolderRefresh();
+  setInterval(silentDriveFolderRefresh, DRIVE_FOLDER_REFRESH_MS);
 }
 
 (async function init(){
