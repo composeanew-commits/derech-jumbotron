@@ -77,7 +77,7 @@
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
      This is the dominant element on screen — the flyer gets its own panel,
      entirely separate from the smaller photo column beside it. */
-  .flyerPanel{flex:2.3;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
+  .flyerPanel{flex:2.6;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
   /* When two flyers are both landscape/horizontal, stacking them on top of
      each other (instead of side by side) makes far better use of the
      central space — a wide landscape image gets to be wide instead of
@@ -100,10 +100,18 @@
 
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
-  .photoPanel{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .photoPanel{flex:0.7;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
   .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
+  .photoCell img.kb1{animation-name:kenBurns1;}
+  .photoCell img.kb2{animation-name:kenBurns2;}
+  .photoCell img.kb3{animation-name:kenBurns3;}
+  .photoCell img.kb4{animation-name:kenBurns4;}
+  @keyframes kenBurns1{from{transform:scale(1) translate(0,0);}to{transform:scale(1.12) translate(-1.5%,0);}}
+  @keyframes kenBurns2{from{transform:scale(1.1) translate(1.5%,1%);}to{transform:scale(1) translate(0,0);}}
+  @keyframes kenBurns3{from{transform:scale(1) translate(0,-1%);}to{transform:scale(1.14) translate(1.5%,1%);}}
+  @keyframes kenBurns4{from{transform:scale(1.08) translate(-1%,0);}to{transform:scale(1) translate(0.5%,-0.5%);}}
   .photoCell video{width:100%;height:100%;object-fit:cover;display:block;background:#0E0C1B;}
   .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
   .photoCell .photoPanelLabel.photoPanelLabelNew{color:#0E0C1B;background:var(--gold);font-weight:700;animation:badgePulse 1.7s ease-in-out infinite;}
@@ -2005,7 +2013,7 @@ function startFlyerRotation(){
 // ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
 // Never shows flyers — purely candid photos, stacked in a couple of cells,
 // each rotating independently.
-const PHOTO_CELL_COUNT = 2;
+const PHOTO_CELL_COUNT = 3;
 const PHOTO_DURATION = 8000;
 let photoCellTimers = [];
 
@@ -2127,6 +2135,17 @@ function pickWeightedPhoto(items, avoidUrls){
 
 // cellIdx -> url currently shown in that cell, so other cells avoid repeating it.
 let currentlyShownPhotoUrls = {};
+// Short history of recently shown urls (across all cells), so a photo that
+// just rotated out of a cell doesn't immediately reappear a moment later in
+// another cell — makes the shuffle feel like it's working through the whole
+// set rather than re-picking the same handful at random.
+let recentPhotoUrls = [];
+const RECENT_PHOTO_HISTORY = 6;
+function rememberShownPhoto(url){
+  if(!url) return;
+  recentPhotoUrls.push(url);
+  if(recentPhotoUrls.length > RECENT_PHOTO_HISTORY) recentPhotoUrls.shift();
+}
 
 function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
@@ -2139,17 +2158,24 @@ function renderPhotoCellMarkup(item){
       ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
   }
   const src = item.isCustom ? item.url : fullResUrl(item.url);
+  const kb = 'kb' + (1 + Math.floor(Math.random()*4));
   return `
-    <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
+    <img class="${kb}" src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
 function pickNextForCell(cellIdx){
   const pool = buildWeightedPhotoItems();
-  const avoid = Object.keys(currentlyShownPhotoUrls)
+  const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
     .map(k => currentlyShownPhotoUrls[k]);
-  return pickWeightedPhoto(pool, avoid);
+  // Prefer avoiding both what's on screen right now AND what's shown up
+  // recently; fall back to just on-screen avoidance if that empties the pool.
+  const avoidBoth = [...new Set([...onScreen, ...recentPhotoUrls])];
+  const wide = pool.filter(it => !avoidBoth.includes(it.url));
+  const item = pickWeightedPhoto(wide.length ? wide : pool, onScreen);
+  rememberShownPhoto(item ? item.url : null);
+  return item;
 }
 
 function paintPhotoCell(cellIdx, animate){
