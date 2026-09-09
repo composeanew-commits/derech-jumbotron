@@ -486,7 +486,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script type="module">
-import { HDate, HebrewCalendar, Location } from 'https://esm.run/@hebcal/core';
+import { HDate, HebrewCalendar, Location, flags } from 'https://esm.run/@hebcal/core';
 
 const TEAM_COLORS = ['#D6503F','#3E7CB1','#4E9B5C','#8B82C9','#F0B84D','#D673A8'];
 
@@ -1061,8 +1061,22 @@ function computeAutoZmanim(){
     let candle = '', havdalah = '';
     for(const ev of events){
       const desc = (ev.getDesc && ev.getDesc()) || '';
-      if(!candle && /candle/i.test(desc)) candle = ev.eventTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'});
-      if(!havdalah && /havdalah/i.test(desc)) havdalah = ev.eventTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'});
+      const evFlags = (ev.getFlags && ev.getFlags()) || 0;
+      // Match on the library's own event flags rather than sniffing the
+      // description text: a plain /candle/i regex also matches Chanukah's
+      // nightly "Chanukah: N Candles" events (a different, earlier-in-the-
+      // evening lighting), which would silently hijack the display's
+      // "candle lighting" slot the first time Chanukah falls inside this
+      // 8-day window. Skip those explicitly and key off LIGHT_CANDLES /
+      // LIGHT_CANDLES_TZEIS instead, which only cover Erev Shabbat / Erev
+      // Yom Tov candle lighting.
+      if(evFlags & flags.CHANUKAH_CANDLES) continue;
+      if(!candle && (evFlags & (flags.LIGHT_CANDLES | flags.LIGHT_CANDLES_TZEIS))){
+        candle = ev.eventTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'});
+      }
+      if(!havdalah && /havdalah/i.test(desc)){
+        havdalah = ev.eventTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'});
+      }
     }
     return {candleLighting: candle, havdalah};
   }catch(e){
@@ -1117,6 +1131,13 @@ const DEFAULT_CONFIG = {
 
 let config = null;
 let dayOfYear = 0;
+// Tracks the calendar day (Y-M-D, local time) that zmanim/dayOfYear/history/
+// yahrzeit were last computed for. The board is meant to run for days at a
+// stretch without a reload, so everything date-dependent — candle lighting,
+// havdalah, "today in history", yahrzeit, and the day/Hebrew-date badge —
+// needs to be recomputed whenever the day actually changes, not just once
+// at page load (see refreshDailyState below).
+let lastComputedDateKey = '';
 
 function computeDayOfYear(){
   const now = new Date();
@@ -2424,17 +2445,38 @@ document.getElementById('saveAll').onclick = async ()=>{
   }
 };
 
-async function startBoard(){
+// Recomputes everything that depends on "what day is it" (candle lighting /
+// havdalah, day-of-year picks for trivia/word/quote-of-the-day, "today in
+// history", yahrzeit, and the header day badge) and repaints them. Cheap to
+// call often — it only actually recomputes when the local calendar day has
+// changed since the last time (unless force is true), so polling it is fine.
+function refreshDailyState(force){
+  const now = new Date();
+  const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  if(!force && key === lastComputedDateKey) return;
+  lastComputedDateKey = key;
   dayOfYear = computeDayOfYear();
-  await loadConfig();
   autoZmanim = computeAutoZmanim();
   const auto = computeAutoYahrzeitHistory();
   autoHistory = auto.history;
   autoYahrzeit = auto.yahrzeit;
   paintDayBadge();
-  paintTicker();
+  if(config) paintTicker();
+}
+
+async function startBoard(){
+  await loadConfig();
+  refreshDailyState(true);
   startDriveFolderPolling();
   startRotation();
+  // Belt-and-suspenders against the board running for days without a
+  // reload: check once a minute for a date rollover, and also re-check the
+  // moment the tab/screen wakes up (kiosk displays are often left to sleep
+  // and wake rather than reload).
+  setInterval(()=> refreshDailyState(false), 60*1000);
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') refreshDailyState(false);
+  });
 }
 
 (async function init(){
