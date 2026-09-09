@@ -99,6 +99,7 @@
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
   .photoCell img{width:100%;height:100%;object-fit:cover;display:block;animation:kenBurns 10s ease-out forwards;}
+  .photoCell video{width:100%;height:100%;object-fit:cover;display:block;background:#0E0C1B;}
   .photoCell .photoPanelLabel{position:absolute;top:8px;left:8px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);background:rgba(14,12,27,.7);padding:4px 9px;border-radius:14px;}
   .photoCell .photoPanelLabel.photoPanelLabelNew{color:#0E0C1B;background:var(--gold);font-weight:700;animation:badgePulse 1.7s ease-in-out infinite;}
   .photoCell .photoCaptionBar{position:absolute;bottom:0;left:0;right:0;padding:18px 10px 8px 10px;background:linear-gradient(transparent, rgba(6,4,16,.88));font-size:11px;color:var(--ink);line-height:1.3;}
@@ -441,7 +442,7 @@
         <div class="field"><label>Google API Key</label><input id="qDriveApiKey" placeholder="From Google Cloud Console"></div>
         <button class="addBtn" id="qDriveTest" type="button">Connect Folder</button>
         <div id="qDriveStatus" class="hint" style="margin-top:8px;"></div>
-        <div class="hint" style="margin-top:8px;">Any photo dropped into that Drive folder shows up in the rotation automatically — no need to copy/paste individual links. Needs a free Google API key with the Drive API enabled.</div>
+        <div class="hint" style="margin-top:8px;">Any photo or video dropped into that Drive folder shows up in the rotation automatically — no need to copy/paste individual links. Videos play automatically (muted, on loop) for their turn in the rotation. Needs a free Google API key with the Drive API enabled.</div>
       </div>
       <div id="photosList"></div>
       <button class="addBtn" id="addPhoto">+ Add Photo (URL)</button>
@@ -1420,23 +1421,50 @@ function buildScheduleSpotlightItem(){
 }
 
 // ================= SPOTLIGHT CAROUSEL =================
-// Everything that only needs to show for a few seconds at a time — Zmanim,
-// standings, shoutouts, trivia, riddle, word, quote, today's trait, history,
-// yahrzeit — takes turns in this one compact card instead of each claiming
-// its own permanent space.
-let spotlightItems = [];
+// Slot 0 is pinned to Zmanim + today's Schedule — it never shows anything
+// else, so those two are always findable in the same spot. (If both are
+// configured they alternate between just the two of them; if only one is
+// configured, that one just sits there.) Slots 1 and 2 share a pool of
+// everything else — standings, shoutouts, trivia, riddle, word, quote,
+// today's trait, history, yahrzeit — taking turns the same way the whole
+// carousel used to.
+let pinnedItems = [];
+let rotatingItems = [];
 const SPOTLIGHT_DURATION = 10000;
-const SPOTLIGHT_SLOTS = 3;
+const ROTATING_SLOTS = [1, 2];
 let shuffledQueue = [];
 let queuePos = 0;
+let pinnedQueuePos = 0;
 let slotTimers = [null, null, null];
 let slotRevealTimers = [null, null, null];
 
-// Shuffles a fresh copy of spotlightItems and resets the read pointer. Slots
-// pull from this shared queue one at a time, so the same item never shows in
-// two slots at once, and every item gets a turn before anything repeats.
+// Persist the rotation's position across page refreshes/kiosk reloads, so a
+// reload picks up right where the carousel left off instead of restarting
+// the tour from the top. Keyed by stable content-type keys (not array index,
+// since which items exist can change as content is added/removed) — see the
+// `key:` on each item pushed below.
+const SPOTLIGHT_STATE_KEY = 'derechJumbotronSpotlightState';
+function loadSpotlightState(){
+  try{
+    const raw = localStorage.getItem(SPOTLIGHT_STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveSpotlightState(){
+  try{
+    localStorage.setItem(SPOTLIGHT_STATE_KEY, JSON.stringify({
+      order: shuffledQueue.map(it => it.key),
+      pos: queuePos,
+      pinnedPos: pinnedQueuePos
+    }));
+  }catch(e){ /* storage unavailable (private browsing, etc.) — just skip persisting */ }
+}
+
+// Shuffles a fresh copy of rotatingItems and resets the read pointer. Slots
+// 1 and 2 pull from this shared queue one at a time, so the same item never
+// shows in both at once, and every item gets a turn before anything repeats.
 function reshuffleSpotlightQueue(){
-  shuffledQueue = [...spotlightItems];
+  shuffledQueue = [...rotatingItems];
   for(let i = shuffledQueue.length - 1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
     [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
@@ -1445,13 +1473,26 @@ function reshuffleSpotlightQueue(){
 }
 
 function nextSpotlightQueueItem(){
-  if(!spotlightItems.length) return null;
+  if(!rotatingItems.length) return null;
   if(queuePos >= shuffledQueue.length) reshuffleSpotlightQueue();
-  return shuffledQueue[queuePos++];
+  const item = shuffledQueue[queuePos++];
+  saveSpotlightState();
+  return item;
+}
+
+// Slot 0 just alternates through its (at most 2-item) pinned list in order —
+// no shuffling needed for a list that short.
+function nextPinnedItem(){
+  if(!pinnedItems.length) return null;
+  const item = pinnedItems[pinnedQueuePos % pinnedItems.length];
+  pinnedQueuePos++;
+  saveSpotlightState();
+  return item;
 }
 
 function buildSpotlightItems(){
-  const items = [];
+  const pinned = [];
+  const rotating = [];
 
   {
     const z = config.zmanim || {};
@@ -1462,23 +1503,23 @@ function buildSpotlightItems(){
     if(havdalah) rows.push(['Shabbos Ends', havdalah]);
     if(z.sofZmanShema) rows.push(['Sof Zman Shema', z.sofZmanShema]);
     if(rows.length){
-      items.push({eyebrow:'Zmanim \u2014 Jerusalem', title:'This Week', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`, accent:'var(--gold)'});
+      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'This Week', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`, accent:'var(--gold)'});
     }
   }
 
   {
     const scheduleItem = buildScheduleSpotlightItem();
-    if(scheduleItem) items.push({...scheduleItem, accent:'var(--blue)'});
+    if(scheduleItem) pinned.push({...scheduleItem, key:'schedule', accent:'var(--blue)'});
   }
 
   if(config.leagueActive && config.teams && config.teams.length){
     const body = (config.leagueName ? `<div class="leagueName">${escapeHtml(config.leagueName)}</div>` : '') + renderTeamBars();
-    items.push({eyebrow:'League Standings', title:'Team Points', body, accent:'var(--green)'});
+    rotating.push({key:'standings', eyebrow:'League Standings', title:'Team Points', body, accent:'var(--green)'});
   }
 
   if(config.shoutouts && config.shoutouts.length){
     const body = `<div class="shoutoutBox">${config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
-    items.push({eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)'});
+    rotating.push({key:'shoutouts', eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)'});
   }
 
   if(config.triviaBank && config.triviaBank.length){
@@ -1486,7 +1527,7 @@ function buildSpotlightItems(){
     const body = `${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
       <div class="qText">${escapeHtml(t.q)}</div>
       <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
-    items.push({eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true, accent:'var(--red)'});
+    rotating.push({key:'trivia', eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true, accent:'var(--red)'});
   }
 
   if(config.riddleBank && config.riddleBank.length){
@@ -1502,7 +1543,7 @@ function buildSpotlightItems(){
         <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
         <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
       </div>` : ''}`;
-    items.push({eyebrow:'Riddle of the Day', title:'Figure It Out', body, accent:'var(--purple-light)'});
+    rotating.push({key:'riddle', eyebrow:'Riddle of the Day', title:'Figure It Out', body, accent:'var(--purple-light)'});
   }
 
   if(config.wordBank && config.wordBank.length){
@@ -1513,7 +1554,7 @@ function buildSpotlightItems(){
       <div class="translit">${escapeHtml(w.translit)}</div>
       <div class="meaning">${escapeHtml(w.meaning)}</div>
     </div>`;
-    items.push({eyebrow:'Word of the Day', title:'Milah HaYom', body, accent:'var(--blue)'});
+    rotating.push({key:'word', eyebrow:'Word of the Day', title:'Milah HaYom', body, accent:'var(--blue)'});
   }
 
   if(config.quoteBank && config.quoteBank.length){
@@ -1523,26 +1564,26 @@ function buildSpotlightItems(){
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
       ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
-    items.push({eyebrow:'Thought of the Day', title:'Something to Chew On', body, accent:'var(--green)'});
+    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Something to Chew On', body, accent:'var(--green)'});
   }
 
   if(config.waysBank && config.waysBank.length){
     const w = config.waysBank[dayOfYear % config.waysBank.length];
-    items.push({eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)'});
+    rotating.push({key:'ways', eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)'});
   }
 
   {
     const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
-    if(text) items.push({eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`, accent:'var(--purple-light)'});
+    if(text) rotating.push({key:'history', eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`, accent:'var(--purple-light)'});
   }
 
   {
     const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
     const y = manual ? config.yahrzeit : autoYahrzeit;
-    if(y) items.push({eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)'});
+    if(y) rotating.push({key:'yahrzeit', eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)'});
   }
 
-  return items;
+  return {pinned, rotating};
 }
 
 function paintSpotlightSlot(slotIdx, item){
@@ -1572,36 +1613,80 @@ function paintSpotlightSlot(slotIdx, item){
   }
 }
 
+function advancePinnedSlot(){
+  paintSpotlightSlot(0, nextPinnedItem());
+  clearTimeout(slotTimers[0]);
+  slotTimers[0] = setTimeout(advancePinnedSlot, SPOTLIGHT_DURATION);
+}
+
 function advanceSpotlightSlot(slotIdx){
   paintSpotlightSlot(slotIdx, nextSpotlightQueueItem());
   clearTimeout(slotTimers[slotIdx]);
   slotTimers[slotIdx] = setTimeout(()=>advanceSpotlightSlot(slotIdx), SPOTLIGHT_DURATION);
 }
 
-// Fills 2-3 cards at once (however many distinct items exist, capped at
-// SPOTLIGHT_SLOTS) so several pieces of content are visible simultaneously
-// instead of everyone waiting through one long rotation to see everything.
+// Slot 0 gets Zmanim/Schedule only; slots 1-2 split the rest of the pool
+// between them so several different pieces of content are visible at once.
 // Each slot then keeps advancing independently, staggered so they don't all
 // change in the same instant.
 function startSpotlightRotation(){
-  spotlightItems = buildSpotlightItems();
-  reshuffleSpotlightQueue();
+  const built = buildSpotlightItems();
+  pinnedItems = built.pinned;
+  rotatingItems = built.rotating;
+
+  // Resume from wherever the rotation left off (previous page load, or a
+  // config save that re-triggered this) as long as the same set of content
+  // is still around. If content was added/removed since then, the saved
+  // order no longer lines up, so fall back to a fresh shuffle.
+  const saved = loadSpotlightState();
+  const rotatingKeys = rotatingItems.map(it => it.key);
+  const savedOrder = saved && Array.isArray(saved.order) ? saved.order : null;
+  const sameSet = !!savedOrder && savedOrder.length === rotatingKeys.length &&
+    rotatingKeys.every(k => savedOrder.includes(k));
+  if(sameSet){
+    const byKey = {};
+    rotatingItems.forEach(it => { byKey[it.key] = it; });
+    shuffledQueue = savedOrder.map(k => byKey[k]);
+    queuePos = Math.min(Math.max(saved.pos || 0, 0), shuffledQueue.length);
+  } else {
+    reshuffleSpotlightQueue();
+  }
+  pinnedQueuePos = (saved && Number.isFinite(saved.pinnedPos)) ? saved.pinnedPos : 0;
+
   slotTimers.forEach(t => clearTimeout(t));
   slotTimers = [null, null, null];
-  const activeSlots = spotlightItems.length ? Math.min(SPOTLIGHT_SLOTS, spotlightItems.length) : 1;
-  for(let s = 0; s < SPOTLIGHT_SLOTS; s++){
+
+  const card0 = document.getElementById('spotlightCard0');
+  if(card0){
+    if(pinnedItems.length){
+      card0.style.display = '';
+      paintSpotlightSlot(0, nextPinnedItem());
+      if(pinnedItems.length > 1){
+        slotTimers[0] = setTimeout(advancePinnedSlot, SPOTLIGHT_DURATION);
+      }
+    } else if(!rotatingItems.length){
+      // Nothing configured anywhere yet — keep slot 0 as the lone placeholder.
+      card0.style.display = '';
+      paintSpotlightSlot(0, null);
+    } else {
+      card0.style.display = 'none';
+    }
+  }
+
+  const activeRotatingSlots = rotatingItems.length ? Math.min(ROTATING_SLOTS.length, rotatingItems.length) : 0;
+  ROTATING_SLOTS.forEach((s, i) => {
     const card = document.getElementById('spotlightCard' + s);
-    if(!card) continue;
-    if(s < activeSlots){
+    if(!card) return;
+    if(i < activeRotatingSlots){
       card.style.display = '';
-      paintSpotlightSlot(s, spotlightItems.length ? nextSpotlightQueueItem() : null);
-      if(spotlightItems.length > 1){
-        slotTimers[s] = setTimeout(()=>advanceSpotlightSlot(s), SPOTLIGHT_DURATION + s * 2000);
+      paintSpotlightSlot(s, nextSpotlightQueueItem());
+      if(rotatingItems.length > 1){
+        slotTimers[s] = setTimeout(()=>advanceSpotlightSlot(s), SPOTLIGHT_DURATION + i * 2000);
       }
     } else {
       card.style.display = 'none';
     }
-  }
+  });
 }
 
 let countdownRefresh = null;
@@ -1798,15 +1883,29 @@ function extractDriveFolderId(url){
 async function fetchDriveFolderPhotos(){
   const folder = config.driveFolder;
   if(!folder || !folder.folderId || !folder.apiKey){ driveFolderPhotos = []; return; }
-  const q = encodeURIComponent(`'${folder.folderId}' in parents and mimeType contains 'image/' and trashed = false`);
-  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&key=${folder.apiKey}&fields=files(id,name)&pageSize=200`;
+  // Pull both images and videos out of the folder. Images are shown via
+  // Drive's lh3 thumbnail host (fast, no API key needed at render time);
+  // videos have no equivalent direct-play host, so they're streamed straight
+  // from the Drive API's alt=media endpoint (supports Range requests, so
+  // <video> can play/seek it like any normal video file).
+  const q = encodeURIComponent(`'${folder.folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed = false`);
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&key=${folder.apiKey}&fields=files(id,name,mimeType)&pageSize=200`;
   const res = await fetch(url);
   if(!res.ok){
     const body = await res.json().catch(()=>({}));
     throw new Error((body.error && body.error.message) || `Drive API error (${res.status})`);
   }
   const data = await res.json();
-  driveFolderPhotos = (data.files || []).map(f => ({ url: `https://lh3.googleusercontent.com/d/${f.id}`, caption: '' }));
+  driveFolderPhotos = (data.files || []).map(f => {
+    const isVideo = (f.mimeType || '').startsWith('video/');
+    return {
+      url: isVideo
+        ? `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${folder.apiKey}`
+        : `https://lh3.googleusercontent.com/d/${f.id}`,
+      caption: '',
+      type: isVideo ? 'video' : 'image'
+    };
+  });
 }
 
 // Refresh periodically so new photos dropped into the folder show up
@@ -1833,7 +1932,9 @@ document.getElementById('qDriveTest').onclick = async ()=>{
   config.driveFolder = { url, apiKey, folderId };
   try{
     await fetchDriveFolderPhotos();
-    status.textContent = `✓ Connected — found ${driveFolderPhotos.length} photo(s) in the folder.`;
+    const vidCount = driveFolderPhotos.filter(p=>p.type==='video').length;
+    const picCount = driveFolderPhotos.length - vidCount;
+    status.textContent = `✓ Connected — found ${picCount} photo(s)${vidCount ? ` and ${vidCount} video(s)` : ''} in the folder.`;
     status.style.color = 'var(--green)';
     syncFormToConfig();
     await quickSaveIndicator('Saving…');
@@ -1851,7 +1952,7 @@ function buildWeightedPhotoItems(){
     weight: (n - i) <= 5 ? 6 : 2
   }));
   driveFolderPhotos.forEach(p => {
-    items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4 });
+    items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type });
   });
   (config.galleryPhotos || []).forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: false, weight: 1 });
@@ -1881,6 +1982,14 @@ let currentlyShownPhotoUrls = {};
 
 function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
+  if(item.type === 'video'){
+    // autoplay requires muted in every modern browser; loop keeps it filling
+    // the cell's whole dwell time whether the clip is 3 seconds or 3 minutes,
+    // since the cell gets swapped out on the same timer as photos regardless.
+    return `
+      <video src="${escapeAttr(item.url)}" autoplay muted loop playsinline preload="auto" onerror="this.style.display='none';"></video>
+      ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
+  }
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   return `
     <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
