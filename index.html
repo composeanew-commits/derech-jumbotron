@@ -77,13 +77,14 @@
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
      This is the dominant element on screen — the flyer gets its own panel,
      entirely separate from the smaller photo column beside it. */
-  /* Default layout is two cells side by side (good for portrait/vertical
-     flyers). When the flyers currently on screen are landscape/horizontal,
-     .flyerPanel.stacked switches this to a column so they sit one on top
-     of the other instead of being squeezed skinny side by side. */
   .flyerPanel{flex:2.3;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
+  /* When two flyers are both landscape/horizontal, stacking them on top of
+     each other (instead of side by side) makes far better use of the
+     central space — a wide landscape image gets to be wide instead of
+     being squeezed into a narrow vertical sliver. Toggled via JS once each
+     flyer's real image dimensions are known (see updateFlyerPanelLayout). */
   .flyerPanel.stacked{flex-direction:column;}
-  .flyerCell{flex:1;min-width:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease, box-shadow .5s ease, border-color .5s ease;}
+  .flyerCell{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .38s ease;}
   .flyerCell.fadeOut{opacity:0;}
   /* Flyers must always be shown in full — never cropped — no matter if the
      upload is portrait or landscape. */
@@ -91,20 +92,6 @@
   .flyerCell .flyerEventName{font-size:20px;}
   .flyerCell .flyerWhen{font-size:14px;}
   .flyerCell .flyerCaptionBar{padding:34px 20px 14px 20px;}
-
-  /* A flyer whose event is imminent ("urgent") takes over the whole panel
-     alone and gets a hot, pulsing frame so it's unmissable — the same
-     visual language as the "today" countdown chips. It automatically drops
-     back into the normal rotation once the event has passed. */
-  .flyerCell.flyerUrgent{border-color:var(--red);animation:flyerUrgentPulse 1.8s ease-in-out infinite;}
-  @keyframes flyerUrgentPulse{0%,100%{box-shadow:0 0 40px rgba(0,0,0,.25), 0 0 0 rgba(214,80,63,0);}50%{box-shadow:0 0 40px rgba(0,0,0,.25), 0 0 46px rgba(214,80,63,.55);}}
-  .flyerUrgentBadge{position:absolute;top:14px;left:14px;z-index:3;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 12px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,.4);animation:badgePulse 1.7s ease-in-out infinite;}
-
-  /* When a flyer is left on screen without anything to rotate to (just one
-     active flyer, or a lone leftover cell), give it a slow idle breathing
-     animation so the panel still feels alive instead of a static, dead image. */
-  .flyerCell.flyerIdle{animation:flyerIdleBreathe 5s ease-in-out infinite;}
-  @keyframes flyerIdleBreathe{0%,100%{box-shadow:0 0 40px rgba(0,0,0,.25);border-color:var(--line);}50%{box-shadow:0 0 46px rgba(240,184,77,.28);border-color:var(--gold-dim);}}
 
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
@@ -127,20 +114,16 @@
   /* Compact, energizing countdown strip — every active countdown gets a
      chip; wraps onto extra rows instead of squeezing chips unreadably
      small, so nothing upcoming ever gets hidden. */
-  .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;margin:0 24px;}
+  .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:0 24px;}
   .countdownStrip.active{display:flex;}
-  /* Chip is laid out sideways — name to the left, flip numbers to the right
-     — instead of the name stacked on top of the numbers. That keeps each
-     chip short, so the header strip (and the whole top banner) stays a lot
-     less tall than the old stacked version. */
-  .countdownChip{flex:0 1 auto;min-width:190px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:10px;padding:7px 14px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;text-align:left;gap:10px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  .countdownChip{flex:0 1 auto;min-width:170px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
      whole sidebar. */
-  .countdownStrip.compact .countdownChip{padding:5px 10px;flex-basis:170px;gap:8px;}
-  .countdownStrip.compact .countdownChipName{font-size:12px;}
-  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:3px 5px;min-width:26px;}
-  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:13px;}
+  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
+  .countdownStrip.compact .countdownChipName{font-size:13px;}
+  .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
+  .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
   @keyframes heroGlow{0%,100%{box-shadow:0 0 16px rgba(240,184,77,.10);}50%{box-shadow:0 0 30px rgba(240,184,77,.30);}}
   @keyframes heroSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -153,11 +136,11 @@
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;line-height:1.2;text-align:left;flex-shrink:1;}
-  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:5px;flex-shrink:0;justify-content:flex-end;}
-  .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;background:rgba(14,12,27,.55);border-radius:7px;border:1px solid var(--line);text-align:center;}
-  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--gold);line-height:1;}
-  .countdownChipFlips .flipLabel{font-size:6.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:1px;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;text-align:center;}
+  .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
+  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
+  .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
+  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
 
   /* Single rotating spotlight card, fills the rest of the sidebar below the
      countdown strip. Fixed to the available height \u2014 nothing here ever
@@ -390,6 +373,10 @@
       <button class="addBtn" id="qShoutoutAdd">+ Add & Save</button>
       <div style="height:20px;"></div>
       <div class="field"><label>Quick-Add a Photo (paste URL)</label><input id="qPhotoUrl" placeholder="Image URL"></div>
+      <div id="qPhotoUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
+        <img id="qPhotoUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
+        <div id="qPhotoUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
+      </div>
       <div class="field"><label>Caption (optional)</label><input id="qPhotoCaption" placeholder="Caption"></div>
       <button class="addBtn" id="qPhotoAdd">+ Add & Save</button>
       <div class="saveStatus" id="quickStatus" style="margin-top:12px;"></div>
@@ -448,16 +435,9 @@
     </div>
 
     <div class="tabPanel" data-panel="photos">
-      <div class="hint" style="margin-top:0;">Paste a Google Drive FOLDER link below and every photo inside it shuffles onto the board automatically — no need to add them one by one. The board rechecks the folder every few minutes on its own, so photos you drop in later show up too, no re-saving needed.</div>
-      <div class="field"><label>Auto-Pull From a Google Drive Folder</label><input id="driveFolderUrl" placeholder="https://drive.google.com/drive/folders/..."></div>
-      <div class="hint" style="margin-top:0;">Make sure the folder is shared as "Anyone with the link" can view (right-click the folder in Drive → Share).</div>
-      <button class="addBtn" id="refreshDriveFolder">↻ Refresh From Folder Now</button>
-      <div class="hint" id="driveFolderStatus" style="margin-top:8px;"></div>
-
-      <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:22px 0 6px 0;">Or Add Individual Photos</label>
       <div id="photosList"></div>
       <button class="addBtn" id="addPhoto">+ Add Photo (URL)</button>
-      <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, a Google Drive file link, etc.) — Drive "share" links are automatically converted so they display correctly.</div>
+      <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, Drive link set to "anyone with link," etc.)</div>
     </div>
 
     <div class="tabPanel" data-panel="ticker">
@@ -532,116 +512,6 @@ async function uploadImageToImgbb(file){
     throw new Error((data && data.error && data.error.message) || 'Upload failed — check your imgbb API key');
   }
   return data.data.url;
-}
-
-// ===================== GOOGLE DRIVE — auto-pull photos from a shared folder =====================
-// Lets you paste ONE Google Drive folder link and have every photo inside it show up on the
-// board automatically, shuffled in with the rest — no need to add each photo one by one, and
-// no need to touch anything again as more photos get added to the folder later (the board
-// rechecks the folder every few minutes on its own, and again each time the page loads).
-//   1. Go to https://console.cloud.google.com/apis/credentials (any Google account works).
-//   2. Create a project if you don't have one yet (top-left project picker > New Project).
-//   3. Click "+ Create Credentials" > "API key". Copy the key it shows you.
-//   4. Click into that key to edit it > under "API restrictions" choose "Restrict key" >
-//      tick only "Google Drive API" > Save. (This makes it safe to leave in this public file —
-//      it can't be used for anything except reading file lists from Drive.)
-//   5. Still in the Cloud Console, use the search bar up top to find "Google Drive API",
-//      open it, and click "Enable" if it isn't already.
-//   6. Paste the key below in place of 'PASTE_YOUR_DRIVE_API_KEY_HERE'.
-// Until you do this, individually-pasted Drive photo links still work fine (see
-// imageUrlCandidates below) — only the "auto-pull a whole folder" feature needs this key.
-const DRIVE_API_KEY = 'PASTE_YOUR_DRIVE_API_KEY_HERE';
-
-function isDriveApiConfigured(){
-  return !!(DRIVE_API_KEY && !DRIVE_API_KEY.includes('PASTE_'));
-}
-
-// Accepts any of the URL shapes Drive hands out when you "Share" a single FILE
-// (.../file/d/ID/view, .../open?id=ID, .../uc?id=ID) and pulls out just the file ID.
-function extractDriveFileId(url){
-  if(!url) return null;
-  const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]{10,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-  return m ? m[1] : null;
-}
-
-// Accepts any of the URL shapes Drive hands out when you "Share" a FOLDER
-// (.../drive/folders/ID, .../folders/ID?usp=...) and pulls out just the folder ID.
-function extractDriveFolderId(url){
-  if(!url) return null;
-  const m = url.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
-  return m ? m[1] : null;
-}
-
-// A Google Drive "share" link opens a viewer PAGE, not an image file, so pasting one straight
-// into an <img src> shows nothing — this is why Drive links haven't been working. This builds
-// a short list of URL shapes to try instead, ordered from "most likely to just work" down to
-// the original link as a last resort, paired with imgWithFallback() below which tries each one
-// in turn until an image actually loads. Non-Drive links pass through untouched.
-function imageUrlCandidates(url){
-  if(!url) return [];
-  const fileId = extractDriveFileId(url);
-  if(!fileId) return [url];
-  return [
-    `https://lh3.googleusercontent.com/d/${fileId}=w1600`,
-    `https://drive.google.com/uc?export=view&id=${fileId}`,
-    url
-  ];
-}
-
-// Renders an <img> that automatically retries the next candidate URL (see imageUrlCandidates
-// above) if one fails to load, instead of just showing a broken image.
-function imgWithFallback(url, extraAttrs){
-  const candidates = imageUrlCandidates(url);
-  const first = candidates[0] || '';
-  const rest = candidates.slice(1);
-  return `<img src="${escapeAttr(first)}" data-fallbacks="${escapeAttr(JSON.stringify(rest))}" ${extraAttrs||''} onerror="const fb=JSON.parse(this.dataset.fallbacks||'[]'); if(fb.length){ this.src=fb.shift(); this.dataset.fallbacks=JSON.stringify(fb); } else { this.onerror=null; this.style.display='none'; }">`;
-}
-
-// Calls the Drive API to list every image directly inside a folder (paginating past the
-// 1000-file-per-page cap just in case) and returns [{url, caption}].
-async function fetchDriveFolderPhotos(folderId){
-  if(!isDriveApiConfigured()){
-    throw new Error("Drive auto-pull isn't set up yet — paste a free Drive API key near the top of the script (see the comment above DRIVE_API_KEY).");
-  }
-  let files = [];
-  let pageToken = '';
-  do {
-    const params = new URLSearchParams({
-      q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
-      key: DRIVE_API_KEY,
-      fields: 'nextPageToken, files(id, name, thumbnailLink)',
-      pageSize: '1000',
-      orderBy: 'createdTime'
-    });
-    if(pageToken) params.set('pageToken', pageToken);
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
-    const data = await res.json();
-    if(!res.ok){
-      throw new Error((data && data.error && data.error.message) || 'Could not read that Drive folder — make sure it\'s shared as "Anyone with the link"');
-    }
-    files = files.concat(data.files || []);
-    pageToken = data.nextPageToken || '';
-  } while(pageToken);
-  return files.map(f => ({
-    // thumbnailLink comes back capped small (like ...=s220); swap in a bigger size for the board.
-    url: (f.thumbnailLink || '').replace(/=s\d+$/, '=s1600'),
-    caption: ''
-  })).filter(p => p.url);
-}
-
-// Re-reads whatever folder link is currently saved, pulls the current photo list from Drive,
-// and stores it in config.driveFolderPhotos so it shuffles in with everything else. Called on
-// page load, every few minutes automatically, and whenever "Refresh From Folder Now" is clicked.
-async function refreshDriveFolderPhotos(){
-  const folderId = extractDriveFolderId((config && config.driveFolderUrl) || '');
-  if(!folderId) return {ok:false, error:'No folder link saved yet'};
-  try{
-    const photos = await fetchDriveFolderPhotos(folderId);
-    config.driveFolderPhotos = photos;
-    return {ok:true, count: photos.length};
-  }catch(e){
-    return {ok:false, error: e.message || 'Could not reach Google Drive'};
-  }
 }
 
 const DEFAULT_TRIVIA = [
@@ -1229,8 +1099,6 @@ const DEFAULT_CONFIG = {
   shoutouts: ['Welcome to the Derech Jumbotron! Add your first shoutout from the gear icon.'],
   photos: [],
   galleryPhotos: DEFAULT_GALLERY_PHOTOS.map(([url,caption])=>({url,caption})),
-  driveFolderUrl: '',
-  driveFolderPhotos: [],
   ticker: 'Welcome to the Derech Jumbotron \u2014 tap the gear icon to update scores, add shoutouts, and manage countdowns.',
   triviaBank: DEFAULT_TRIVIA.map(([q,a,cat])=>({q,a,cat})),
   riddleBank: DEFAULT_RIDDLES.map(([r,a])=>({r,a})),
@@ -1295,7 +1163,6 @@ function mergeStoredConfig(stored){
   if(!merged.waysBank || !merged.waysBank.length) merged.waysBank = structuredClone(DEFAULT_CONFIG.waysBank);
   if(!merged.countdowns) merged.countdowns = [];
   if(!merged.flyers) merged.flyers = [];
-  if(!merged.driveFolderPhotos) merged.driveFolderPhotos = [];
   return merged;
 }
 
@@ -1722,16 +1589,7 @@ function startRotation(){
 // Its own dedicated panel — never mixed in with the photo column. Rotates
 // only among active event flyers, weighted so a closer/high-priority event
 // shows up more often. If nothing's active it shows a simple empty state.
-//
-// "Urgent" mode: a flyer whose event is happening within the next 24 hours
-// takes over the WHOLE panel by itself — no sharing space — cycles faster,
-// and gets a hot pulsing frame + badge so it can't be missed. The instant
-// its event time passes it stops being urgent on its own; the panel quietly
-// drops it back into the normal shared rotation. Nothing is ever deleted
-// from the board itself, it just stops taking over the screen.
 const FLYER_DURATION = 14000;
-const FLYER_URGENT_DURATION = 8000;
-const FLYER_MODE_CHECK_INTERVAL = 15000;
 let flyerTimer = null;
 
 // Flyers get a target the same way countdown entries do (falls back to end
@@ -1758,16 +1616,6 @@ function getActiveFlyers(){
     .sort((a,b)=> (a.target||Infinity) - (b.target||Infinity));
 }
 
-// A flyer is "urgent" — worth taking over the whole panel — only while its
-// event is imminent (within 24h) and hasn't happened yet. The moment the
-// event time passes, it naturally falls out of this list and rejoins the
-// normal shared rotation below (still active until the usual 24h-after
-// cutoff in getActiveFlyers).
-function getUrgentFlyers(activeFlyers){
-  const now = new Date();
-  return activeFlyers.filter(f => f.target && (f.target - now) > 0 && (f.target - now) <= 24*3600*1000);
-}
-
 function formatRelativeTime(target){
   const diff = target - new Date();
   if(diff <= 0) return 'Happening now';
@@ -1790,39 +1638,46 @@ function pickWeightedFlyer(flyers){
   return flyers[flyers.length - 1];
 }
 
-function renderFlyerMarkup(item, urgent){
+function renderFlyerMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
   return `
-    ${urgent ? `<div class="flyerUrgentBadge">Happening Soon</div>` : ''}
-    ${imgWithFallback(item.url, 'alt="event flyer" onload="onFlyerImageLoad(this)"')}
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onload="updateFlyerPanelLayout();" onerror="this.style.display='none'; updateFlyerPanelLayout();">
     <div class="photoCaptionBar flyerCaptionBar">
       <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
       ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
     </div>`;
 }
 
-// Once a flyer image finishes loading we know whether it's portrait or
-// landscape. The leading cell (cell 0) drives the panel's layout: portrait
-// flyers get the default side-by-side layout, landscape flyers switch the
-// panel to stacked (one on top of the other) — see .flyerPanel.stacked.
-function onFlyerImageLoad(img){
+// When both flyer cells are showing a landscape (wider-than-tall) image at
+// once, stack them one on top of the other instead of side by side — a
+// horizontal flyer squeezed into a narrow vertical column reads far worse
+// than the same flyer given the panel's full width. Runs every time either
+// image finishes loading (or fails), since orientation isn't known until
+// then; re-checks both cells' current images and flips the layout class.
+function updateFlyerPanelLayout(){
   const panel = document.getElementById('flyerPanel');
-  const cell = img.closest('.flyerCell');
-  if(!panel || !cell || cell.id !== 'flyerCell0') return;
-  const landscape = img.naturalWidth > img.naturalHeight;
-  panel.classList.toggle('stacked', landscape);
+  if(!panel) return;
+  const cell0 = document.getElementById('flyerCell0');
+  const cell1 = document.getElementById('flyerCell1');
+  const showingSecond = !!(cell1 && cell1.style.display !== 'none');
+  if(!showingSecond){
+    panel.classList.remove('stacked');
+    return;
+  }
+  const img0 = cell0 && cell0.querySelector('img');
+  const img1 = cell1 && cell1.querySelector('img');
+  const isLoadedLandscape = (img)=> !!(img && img.style.display !== 'none' && img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth >= img.naturalHeight);
+  panel.classList.toggle('stacked', isLoadedLandscape(img0) && isLoadedLandscape(img1));
 }
 
-// Up to 2 flyers can share the center panel at once when nothing is urgent.
-// With only one active flyer, cell 1 is hidden and cell 0 stretches to fill
-// the whole panel. Each cell avoids whatever the other cell is currently
-// showing, so two different flyers sit cleanly together instead of
-// duplicating one flyer in both spots.
+// Up to 2 flyers can share the center panel at once. With only one active
+// flyer, cell 1 is hidden and cell 0 stretches to fill the whole panel —
+// still the single, uncrowded centerpiece. With 2+ active flyers, both
+// cells show (each avoiding whatever the other cell is currently showing),
+// so two different flyers sit cleanly side by side instead of the panel
+// ever looking cluttered.
 let flyerCellTimers = [null, null];
 let currentlyShownFlyerUrls = {};
-let flyerModeCheckTimer = null;
-let flyerPanelMode = null;   // 'urgent' | 'normal' | 'empty'
-let flyerPanelCellCount = 0; // how many cells were showing last render
 
 function pickNextFlyerForCell(cellIdx, activeFlyers){
   if(!activeFlyers.length) return null;
@@ -1834,16 +1689,15 @@ function pickNextFlyerForCell(cellIdx, activeFlyers){
   return pickWeightedFlyer(candidates);
 }
 
-function paintFlyerCell(cellIdx, activeFlyers, urgent, idle, animate){
+function paintFlyerCell(cellIdx, animate){
   const cell = document.getElementById('flyerCell'+cellIdx);
   if(!cell) return;
   const render = ()=>{
+    const activeFlyers = getActiveFlyers();
     const item = pickNextFlyerForCell(cellIdx, activeFlyers);
     currentlyShownFlyerUrls[cellIdx] = item ? item.url : null;
-    cell.innerHTML = renderFlyerMarkup(item, urgent);
+    cell.innerHTML = renderFlyerMarkup(item);
     cell.classList.remove('fadeOut');
-    cell.classList.toggle('flyerUrgent', !!urgent);
-    cell.classList.toggle('flyerIdle', !urgent && !!idle);
   };
   if(animate){
     cell.classList.add('fadeOut');
@@ -1853,74 +1707,31 @@ function paintFlyerCell(cellIdx, activeFlyers, urgent, idle, animate){
   }
 }
 
-function advanceFlyerCell(cellIdx, urgent){
-  const activeFlyers = urgent ? getUrgentFlyers(getActiveFlyers()) : getActiveFlyers();
-  paintFlyerCell(cellIdx, activeFlyers, urgent, false, true);
-  const duration = urgent ? FLYER_URGENT_DURATION : FLYER_DURATION;
-  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx, urgent), duration + (cellIdx===1 ? 3000 : 0));
+function advanceFlyerCell(cellIdx){
+  paintFlyerCell(cellIdx, true);
+  flyerCellTimers[cellIdx] = setTimeout(()=>advanceFlyerCell(cellIdx), FLYER_DURATION);
 }
 
 function startFlyerRotation(){
   const panel = document.getElementById('flyerPanel');
   if(!panel) return;
+  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
+  panel.classList.remove('stacked');
   flyerCellTimers.forEach(t=>clearTimeout(t));
   flyerCellTimers = [null, null];
   currentlyShownFlyerUrls = {};
-  panel.classList.remove('stacked');
-  panel.innerHTML = `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
-  const cell1 = document.getElementById('flyerCell1');
 
   const activeFlyers = getActiveFlyers();
-  const urgentFlyers = getUrgentFlyers(activeFlyers);
+  const showSecond = activeFlyers.length >= 2;
+  const cell1 = document.getElementById('flyerCell1');
+  if(cell1) cell1.style.display = showSecond ? '' : 'none';
 
-  if(urgentFlyers.length){
-    // Urgent mode: whichever flyer(s) are imminent take the ENTIRE panel,
-    // more frequently than normal, with nothing else sharing the space.
-    flyerPanelMode = 'urgent';
-    flyerPanelCellCount = 1;
-    if(cell1) cell1.style.display = 'none';
-    const rotate = urgentFlyers.length > 1;
-    paintFlyerCell(0, urgentFlyers, true, !rotate, false);
-    if(rotate) flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0, true), FLYER_URGENT_DURATION);
-  } else if(activeFlyers.length > 2){
-    // Plenty to rotate through: normal fading rotation, two at a time.
-    flyerPanelMode = 'normal';
-    flyerPanelCellCount = 2;
-    if(cell1) cell1.style.display = '';
-    paintFlyerCell(0, activeFlyers, false, false, false);
-    paintFlyerCell(1, activeFlyers, false, false, false);
-    flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0, false), FLYER_DURATION);
-    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1, false), FLYER_DURATION + 3000);
-  } else if(activeFlyers.length === 2){
-    // Exactly two, nothing else to rotate to — show both, side by side or
-    // stacked depending on orientation, and leave them put. A slow idle
-    // glow keeps the panel feeling alive instead of a dead static image.
-    flyerPanelMode = 'normal';
-    flyerPanelCellCount = 2;
-    if(cell1) cell1.style.display = '';
-    paintFlyerCell(0, activeFlyers, false, true, false);
-    paintFlyerCell(1, activeFlyers, false, true, false);
-  } else {
-    // 0 or 1 active flyer.
-    flyerPanelMode = activeFlyers.length ? 'normal' : 'empty';
-    flyerPanelCellCount = 1;
-    if(cell1) cell1.style.display = 'none';
-    paintFlyerCell(0, activeFlyers, false, activeFlyers.length===1, false);
+  paintFlyerCell(0, false);
+  flyerCellTimers[0] = setTimeout(()=>advanceFlyerCell(0), FLYER_DURATION);
+  if(showSecond){
+    paintFlyerCell(1, false);
+    flyerCellTimers[1] = setTimeout(()=>advanceFlyerCell(1), FLYER_DURATION + 3000);
   }
-
-  // An event starting or ending shouldn't have to wait for the current
-  // slide to finish — recheck periodically and re-render the whole panel
-  // the moment urgent/normal status (or the active flyer count) changes.
-  clearInterval(flyerModeCheckTimer);
-  flyerModeCheckTimer = setInterval(()=>{
-    const nowActive = getActiveFlyers();
-    const nowUrgent = getUrgentFlyers(nowActive);
-    const nextMode = nowUrgent.length ? 'urgent' : (nowActive.length ? 'normal' : 'empty');
-    const nextCellCount = nowUrgent.length ? 1 : (nowActive.length >= 2 ? 2 : 1);
-    if(nextMode !== flyerPanelMode || nextCellCount !== flyerPanelCellCount){
-      startFlyerRotation();
-    }
-  }, FLYER_MODE_CHECK_INTERVAL);
 }
 
 // ================= PHOTO COLUMN (a separate, smaller "nice to look at" strip) =================
@@ -1935,10 +1746,7 @@ let photoCellTimers = [];
 // shows up sometimes as a lower-weight "side thing" \u2014 never picked so often
 // that it crowds out new uploads, never removed from the mix entirely either.
 function buildWeightedPhotoItems(){
-  // Manually-pasted photos and anything auto-pulled from a Drive folder are treated
-  // identically here — both shuffle into the board "like all the rest," with whichever
-  // were added most recently (to either source) weighted to show up more often.
-  const customs = (config.photos || []).concat(config.driveFolderPhotos || []);
+  const customs = config.photos || [];
   const n = customs.length;
   const items = customs.map((p, i) => ({
     url: p.url, caption: p.caption, isCustom: true,
@@ -1974,7 +1782,7 @@ function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   return `
-    ${imgWithFallback(src, 'alt="board photo"')}
+    <img src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
@@ -2059,7 +1867,6 @@ function syncFormToConfig(){
     config.leagueName = document.getElementById('leagueName').value;
   }
   if(document.getElementById('tickerInput')) config.ticker = document.getElementById('tickerInput').value;
-  if(document.getElementById('driveFolderUrl')) config.driveFolderUrl = document.getElementById('driveFolderUrl').value.trim();
   if(document.getElementById('qzCandle')){
     config.zmanim = {
       candleLighting: document.getElementById('qzCandle').value,
@@ -2200,16 +2007,6 @@ function populateModal(){
     shoutoutsList.appendChild(div);
   });
 
-  const driveFolderUrlInput = document.getElementById('driveFolderUrl');
-  if(driveFolderUrlInput) driveFolderUrlInput.value = config.driveFolderUrl || '';
-  const driveFolderStatus = document.getElementById('driveFolderStatus');
-  if(driveFolderStatus){
-    const n = (config.driveFolderPhotos || []).length;
-    driveFolderStatus.textContent = config.driveFolderUrl
-      ? (n ? `${n} photo${n===1?'':'s'} currently pulled in from that folder.` : "No photos found there yet — click Refresh, and make sure it's shared as “Anyone with the link.”")
-      : '';
-  }
-
   const photosList = document.getElementById('photosList');
   photosList.innerHTML = '';
   (config.photos||[]).forEach((p,i)=>{
@@ -2263,25 +2060,6 @@ document.getElementById('addTeam').onclick = ()=>{
 };
 document.getElementById('addShoutout').onclick = ()=>{ syncFormToConfig(); config.shoutouts.push(''); populateModal(); };
 document.getElementById('addPhoto').onclick = ()=>{ syncFormToConfig(); config.photos.push({url:'', caption:''}); populateModal(); };
-
-document.getElementById('refreshDriveFolder').onclick = async ()=>{
-  syncFormToConfig();
-  const status = document.getElementById('driveFolderStatus');
-  if(!config.driveFolderUrl){ status.textContent = 'Paste a folder link above first.'; return; }
-  status.textContent = 'Checking the folder\u2026';
-  const result = await refreshDriveFolderPhotos();
-  if(result.ok){
-    status.textContent = `\u2713 Found ${result.count} photo${result.count===1?'':'s'} \u2014 saving\u2026`;
-    paintTicker();
-    startRotation();
-    const saveResult = await saveConfig();
-    status.textContent = saveResult.ok
-      ? `\u2713 ${result.count} photo${result.count===1?'':'s'} pulled in and saved to the shared board.`
-      : `Found ${result.count} photo${result.count===1?'':'s'}, but couldn't save to the shared board yet \u2014 ${saveResult.error || 'try again'}`;
-  } else {
-    status.textContent = `\u26a0 ${result.error}`;
-  }
-};
 document.getElementById('addCountdown').onclick = ()=>{
   syncFormToConfig();
   const today = new Date().toISOString().slice(0,10);
@@ -2344,6 +2122,38 @@ if(flyerUrlInput){
         flyerUrlPreviewMsg.style.color = 'var(--red)';
       };
       flyerUrlPreviewImg.src = val;
+    }, 500);
+  });
+}
+
+// Same live "does this link actually load as an image" check as the flyer
+// field above, applied to the Quick-Add photo URL field.
+const qPhotoUrlInput = document.getElementById('qPhotoUrl');
+const qPhotoUrlPreviewWrap = document.getElementById('qPhotoUrlPreviewWrap');
+const qPhotoUrlPreviewImg = document.getElementById('qPhotoUrlPreviewImg');
+const qPhotoUrlPreviewMsg = document.getElementById('qPhotoUrlPreviewMsg');
+if(qPhotoUrlInput){
+  let qPhotoPreviewDebounce = null;
+  qPhotoUrlInput.addEventListener('input', ()=>{
+    clearTimeout(qPhotoPreviewDebounce);
+    const val = qPhotoUrlInput.value.trim();
+    if(!val){ qPhotoUrlPreviewWrap.style.display = 'none'; return; }
+    qPhotoPreviewDebounce = setTimeout(()=>{
+      qPhotoUrlPreviewWrap.style.display = '';
+      qPhotoUrlPreviewMsg.textContent = 'Checking link…';
+      qPhotoUrlPreviewMsg.style.color = 'var(--muted)';
+      qPhotoUrlPreviewImg.style.display = 'none';
+      qPhotoUrlPreviewImg.onload = ()=>{
+        qPhotoUrlPreviewImg.style.display = 'block';
+        qPhotoUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
+        qPhotoUrlPreviewMsg.style.color = 'var(--green)';
+      };
+      qPhotoUrlPreviewImg.onerror = ()=>{
+        qPhotoUrlPreviewImg.style.display = 'none';
+        qPhotoUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
+        qPhotoUrlPreviewMsg.style.color = 'var(--red)';
+      };
+      qPhotoUrlPreviewImg.src = val;
     }, 500);
   });
 }
@@ -2420,6 +2230,7 @@ document.getElementById('qPhotoAdd').onclick = async ()=>{
   config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim()});
   document.getElementById('qPhotoUrl').value = '';
   document.getElementById('qPhotoCaption').value = '';
+  qPhotoUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…');
 };
 
@@ -2477,21 +2288,6 @@ document.getElementById('saveAll').onclick = async ()=>{
   }
 };
 
-// Drive-folder photos refresh silently in the background — on load, and every few
-// minutes after that — so a board left running on a kiosk screen keeps picking up newly
-// added photos without anyone needing to open the gear icon again. Silent because a flaky
-// connection or a not-yet-configured API key shouldn't interrupt or nag whoever's watching
-// the board; the gear icon's Photos tab is where any real problem becomes visible.
-const DRIVE_FOLDER_REFRESH_MS = 10 * 60 * 1000;
-async function silentDriveFolderRefresh(){
-  if(!config || !config.driveFolderUrl) return;
-  const result = await refreshDriveFolderPhotos();
-  if(result.ok){
-    if(!document.getElementById('modalOverlay').classList.contains('open')) startRotation();
-    if(firebaseReady) saveConfig();
-  }
-}
-
 async function startBoard(){
   dayOfYear = computeDayOfYear();
   await loadConfig();
@@ -2502,8 +2298,6 @@ async function startBoard(){
   paintDayBadge();
   paintTicker();
   startRotation();
-  silentDriveFolderRefresh();
-  setInterval(silentDriveFolderRefresh, DRIVE_FOLDER_REFRESH_MS);
 }
 
 (async function init(){
