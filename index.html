@@ -2782,6 +2782,16 @@ async function startBoard(){
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState === 'visible') refreshDailyState(false);
   });
+
+  // Kiosk auto-update: the laptop leaves this tab open indefinitely, so a
+  // push to GitHub never reaches the screen on its own — the browser just
+  // keeps running the HTML/JS it loaded at launch. Every 15 minutes, do a
+  // full navigation with a cache-busting query param so the tab always
+  // ends up on whatever is currently live on GitHub Pages, not a cached
+  // copy of the old page.
+  setInterval(()=>{
+    location.href = location.pathname + '?v=' + Date.now();
+  }, 15*60*1000);
 }
 
 (async function init(){
