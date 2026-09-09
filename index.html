@@ -1063,6 +1063,15 @@ function computeAutoZmanim(){
     for(const ev of events){
       const desc = (ev.getDesc && ev.getDesc()) || '';
       const evFlags = (ev.getFlags && ev.getFlags()) || 0;
+      // Some holiday events (e.g. "Erev Rosh Hashana") carry the same
+      // LIGHT_CANDLES flag as a real Friday-night candle lighting, but
+      // they're plain HolidayEvents with no actual clock time attached —
+      // ev.eventTime is undefined for them. Calling .toLocaleTimeString()
+      // on that threw and aborted this whole function (caught below,
+      // silently returning blank candle/havdalah every time), which is why
+      // Zmanim never showed up even on a normal Friday. Skip anything
+      // without a real timestamp instead of crashing on it.
+      if(!(ev.eventTime instanceof Date)) continue;
       // Match on the library's own event flags rather than sniffing the
       // description text: a plain /candle/i regex also matches Chanukah's
       // nightly "Chanukah: N Candles" events (a different, earlier-in-the-
