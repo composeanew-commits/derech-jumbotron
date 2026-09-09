@@ -360,8 +360,8 @@
       <div class="hint" style="margin-top:0;">The fastest way to do a full day's update in one place.</div>
       <div class="field"><label>Candle Lighting (leave blank to auto-fill for Jerusalem)</label><input id="qzCandle" type="time"></div>
       <div class="field"><label>Shabbos Ends (Havdalah) — leave blank to auto-fill for Jerusalem</label><input id="qzHavdalah" type="time"></div>
-      <div class="field"><label>Sof Zman Krias Shema (today)</label><input id="qzShema" type="time"></div>
-      <div class="hint">Candle lighting/havdalah auto-fill using Jerusalem's 40-minutes-before-shkia custom — only fill these in if you need to override that.</div>
+      <div class="field"><label>Sof Zman Krias Shema (today) — leave blank to auto-fill for Jerusalem</label><input id="qzShema" type="time"></div>
+      <div class="hint">Candle lighting, havdalah, and sof zman shema all auto-fill for Jerusalem — only fill these in if you need to override that. Netz, sof zman tefilah, chatzos, shkiah, and tzeis hakochavim are calculated automatically for today and shown alongside them, no setup needed.</div>
       <div class="field"><label>Today's Schedule (one line per activity, e.g. "7:30 - Shacharis")</label><textarea id="qSchedule" rows="6" placeholder="7:30 - Shacharis
 8:15 - Breakfast
 9:00 - Seder"></textarea></div>
@@ -487,7 +487,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script type="module">
-import { HDate, HebrewCalendar, Location, flags } from 'https://esm.run/@hebcal/core';
+import { HDate, HebrewCalendar, Location, Zmanim, flags } from 'https://esm.run/@hebcal/core';
 
 const TEAM_COLORS = ['#D6503F','#3E7CB1','#4E9B5C','#8B82C9','#F0B84D','#D673A8'];
 
@@ -1043,14 +1043,30 @@ const DEFAULT_SCHEDULE = `7:00 AM - Wake Up
 // ^ Placeholder daily schedule shown until you enter the real one in Quick Update — edit
 // freely, it'll then be used as the standing default every day until changed again.
 
-let autoZmanim = {candleLighting:'', havdalah:''};
+let autoZmanim = {candleLighting:'', havdalah:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
 let autoHistory = '';
 let autoYahrzeit = null;
 
+// Formats a Zmanim-class Date result (or gracefully returns '' if that
+// particular zman didn't compute for some reason) in Jerusalem local time.
+function fmtZmanTime(d){
+  return d instanceof Date ? d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'}) : '';
+}
+
 function computeAutoZmanim(){
+  const blank = {candleLighting:'', havdalah:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
+  let location;
   try{
-    const location = Location.lookup('Jerusalem');
-    const today = new Date();
+    location = Location.lookup('Jerusalem');
+  }catch(e){
+    console.error('zmanim location lookup failed', e);
+    return blank;
+  }
+  const today = new Date();
+
+  // This week's Shabbos-specific times (candle lighting / havdalah).
+  let candle = '', havdalah = '';
+  try{
     const events = HebrewCalendar.calendar({
       start: today,
       end: new Date(today.getTime() + 8*86400000),
@@ -1059,7 +1075,6 @@ function computeAutoZmanim(){
       candleLightingMins: 40,   // Jerusalem custom: 40 minutes before sunset
       havdalahMins: 42          // three medium stars (common practice)
     });
-    let candle = '', havdalah = '';
     for(const ev of events){
       const desc = (ev.getDesc && ev.getDesc()) || '';
       const evFlags = (ev.getFlags && ev.getFlags()) || 0;
@@ -1088,11 +1103,29 @@ function computeAutoZmanim(){
         havdalah = ev.eventTime.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Jerusalem'});
       }
     }
-    return {candleLighting: candle, havdalah};
   }catch(e){
-    console.error('auto zmanim calc failed', e);
-    return {candleLighting:'', havdalah:''};
+    console.error('candle/havdalah calc failed', e);
   }
+
+  // Today's halachic day times — sunrise, sof zman shema/tefilah, chatzos,
+  // shkiah, tzeis. Computed separately from the block above so a problem in
+  // one doesn't blank out the other.
+  let daily = {sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
+  try{
+    const zman = new Zmanim(location, today, false);
+    daily = {
+      sunrise: fmtZmanTime(zman.sunrise()),
+      sofZmanShma: fmtZmanTime(zman.sofZmanShma()),
+      sofZmanTfilla: fmtZmanTime(zman.sofZmanTfilla()),
+      chatzot: fmtZmanTime(zman.chatzot()),
+      shkiah: fmtZmanTime(zman.sunset()),
+      tzeit: fmtZmanTime(zman.tzeit())
+    };
+  }catch(e){
+    console.error('daily zmanim calc failed', e);
+  }
+
+  return {...blank, candleLighting: candle, havdalah, ...daily};
 }
 
 function computeAutoYahrzeitHistory(){
@@ -1508,11 +1541,19 @@ function buildSpotlightItems(){
     const rows = [];
     const candle = (z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting;
     const havdalah = (z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah;
+    const sofZmanShema = (z.sofZmanShema && z.sofZmanShema.trim()) || autoZmanim.sofZmanShma;
+    // Today's halachic day, in order — then this week's Shabbos-specific
+    // times tacked on at the end.
+    if(autoZmanim.sunrise) rows.push(['Netz (Sunrise)', autoZmanim.sunrise]);
+    if(sofZmanShema) rows.push(['Sof Zman Shema', sofZmanShema]);
+    if(autoZmanim.sofZmanTfilla) rows.push(['Sof Zman Tefilah', autoZmanim.sofZmanTfilla]);
+    if(autoZmanim.chatzot) rows.push(['Chatzos', autoZmanim.chatzot]);
+    if(autoZmanim.shkiah) rows.push(['Shkiah (Sunset)', autoZmanim.shkiah]);
+    if(autoZmanim.tzeit) rows.push(['Tzeis HaKochavim', autoZmanim.tzeit]);
     if(candle) rows.push(['Candle Lighting', candle]);
     if(havdalah) rows.push(['Shabbos Ends', havdalah]);
-    if(z.sofZmanShema) rows.push(['Sof Zman Shema', z.sofZmanShema]);
     if(rows.length){
-      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'This Week', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`, accent:'var(--gold)'});
+      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'Today', body:`<div class="zmanimGrid">${rows.map(([l,v])=>`<div class="zmanRow"><span class="zmanLabel">${escapeHtml(l)}</span><span class="zmanTime">${escapeHtml(v)}</span></div>`).join('')}</div>`, accent:'var(--gold)'});
     }
   }
 
