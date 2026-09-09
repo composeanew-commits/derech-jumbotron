@@ -435,6 +435,14 @@
     </div>
 
     <div class="tabPanel" data-panel="photos">
+      <div style="border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px;">
+        <label style="display:block;margin-bottom:8px;">Auto-import from a Google Drive folder</label>
+        <div class="field"><label>Folder link (shared "Anyone with the link")</label><input id="qDriveFolderUrl" placeholder="https://drive.google.com/drive/folders/..."></div>
+        <div class="field"><label>Google API Key</label><input id="qDriveApiKey" placeholder="From Google Cloud Console"></div>
+        <button class="addBtn" id="qDriveTest" type="button">Connect Folder</button>
+        <div id="qDriveStatus" class="hint" style="margin-top:8px;"></div>
+        <div class="hint" style="margin-top:8px;">Any photo dropped into that Drive folder shows up in the rotation automatically — no need to copy/paste individual links. Needs a free Google API key with the Drive API enabled.</div>
+      </div>
       <div id="photosList"></div>
       <button class="addBtn" id="addPhoto">+ Add Photo (URL)</button>
       <div class="hint" style="margin-top:14px;">Paste a direct image URL (from a shared album, Drive link set to "anyone with link," etc.)</div>
@@ -1751,6 +1759,69 @@ let photoCellTimers = [];
 // if it's one of the 5 most recent uploads), while the built-in gallery still
 // shows up sometimes as a lower-weight "side thing" \u2014 never picked so often
 // that it crowds out new uploads, never removed from the mix entirely either.
+// ================= GOOGLE DRIVE FOLDER AUTO-IMPORT =================
+// Lets a whole shared Drive folder feed the photo rotation directly,
+// instead of copy/pasting one link per photo. Uses the public Drive v3
+// REST API with a plain API key (no OAuth) — works from the browser as
+// long as the folder is shared "Anyone with the link".
+let driveFolderPhotos = [];
+
+function extractDriveFolderId(url){
+  if(!url) return null;
+  const u = url.trim();
+  const m = u.match(/\/folders\/([a-zA-Z0-9_-]+)/) || u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  return /^[a-zA-Z0-9_-]{10,}$/.test(u) ? u : null;
+}
+
+async function fetchDriveFolderPhotos(){
+  const folder = config.driveFolder;
+  if(!folder || !folder.folderId || !folder.apiKey){ driveFolderPhotos = []; return; }
+  const q = encodeURIComponent(`'${folder.folderId}' in parents and mimeType contains 'image/' and trashed = false`);
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&key=${folder.apiKey}&fields=files(id,name)&pageSize=200`;
+  const res = await fetch(url);
+  if(!res.ok){
+    const body = await res.json().catch(()=>({}));
+    throw new Error((body.error && body.error.message) || `Drive API error (${res.status})`);
+  }
+  const data = await res.json();
+  driveFolderPhotos = (data.files || []).map(f => ({ url: `https://lh3.googleusercontent.com/d/${f.id}`, caption: '' }));
+}
+
+// Refresh periodically so new photos dropped into the folder show up
+// without anyone needing to touch the board.
+const DRIVE_FOLDER_REFRESH_MS = 5 * 60 * 1000;
+function startDriveFolderPolling(){
+  if(!config.driveFolder || !config.driveFolder.folderId || !config.driveFolder.apiKey) return;
+  fetchDriveFolderPhotos().catch(e => console.warn('Drive folder fetch failed', e));
+  setInterval(()=> fetchDriveFolderPhotos().catch(e => console.warn('Drive folder fetch failed', e)), DRIVE_FOLDER_REFRESH_MS);
+}
+
+document.getElementById('qDriveTest').onclick = async ()=>{
+  const status = document.getElementById('qDriveStatus');
+  const url = document.getElementById('qDriveFolderUrl').value.trim();
+  const apiKey = document.getElementById('qDriveApiKey').value.trim();
+  const folderId = extractDriveFolderId(url);
+  if(!folderId || !apiKey){
+    status.textContent = 'Paste a folder link and an API key first.';
+    status.style.color = 'var(--red)';
+    return;
+  }
+  status.textContent = 'Connecting…';
+  status.style.color = 'var(--muted)';
+  config.driveFolder = { url, apiKey, folderId };
+  try{
+    await fetchDriveFolderPhotos();
+    status.textContent = `✓ Connected — found ${driveFolderPhotos.length} photo(s) in the folder.`;
+    status.style.color = 'var(--green)';
+    syncFormToConfig();
+    await quickSaveIndicator('Saving…');
+  }catch(e){
+    status.textContent = `⚠ ${e.message}`;
+    status.style.color = 'var(--red)';
+  }
+};
+
 function buildWeightedPhotoItems(){
   const customs = config.photos || [];
   const n = customs.length;
@@ -1758,6 +1829,9 @@ function buildWeightedPhotoItems(){
     url: p.url, caption: p.caption, isCustom: true,
     weight: (n - i) <= 5 ? 6 : 2
   }));
+  driveFolderPhotos.forEach(p => {
+    items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4 });
+  });
   (config.galleryPhotos || []).forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: false, weight: 1 });
   });
@@ -1916,6 +1990,8 @@ function syncFormToConfig(){
 }
 
 function populateModal(){
+  document.getElementById('qDriveFolderUrl').value = (config.driveFolder && config.driveFolder.url) || '';
+  document.getElementById('qDriveApiKey').value = (config.driveFolder && config.driveFolder.apiKey) || '';
   document.getElementById('qzCandle').value = (config.zmanim && config.zmanim.candleLighting) || '';
   document.getElementById('qzHavdalah').value = (config.zmanim && config.zmanim.havdalah) || '';
   document.getElementById('qzShema').value = (config.zmanim && config.zmanim.sofZmanShema) || '';
@@ -2357,6 +2433,7 @@ async function startBoard(){
   autoYahrzeit = auto.yahrzeit;
   paintDayBadge();
   paintTicker();
+  startDriveFolderPolling();
   startRotation();
 }
 
