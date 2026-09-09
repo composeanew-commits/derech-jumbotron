@@ -138,9 +138,9 @@
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
   .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;text-align:center;}
   .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
-  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
+  .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;display:flex;align-items:baseline;gap:4px;}
   .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
-  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+  .countdownChipFlips .flipLabel{font-size:7px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:0;}
 
   /* Single rotating spotlight card, fills the rest of the sidebar below the
      countdown strip. Fixed to the available height \u2014 nothing here ever
@@ -1669,6 +1669,12 @@ function updateFlyerPanelLayout(){
   const isLoadedLandscape = (img)=> !!(img && img.style.display !== 'none' && img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth >= img.naturalHeight);
   panel.classList.toggle('stacked', isLoadedLandscape(img0) && isLoadedLandscape(img1));
 }
+// This script is type="module", so top-level functions aren't on `window`
+// by default — but the flyer <img> tags call this via an inline
+// onload="..." HTML attribute, which runs in the global scope. Without this
+// line that call silently fails (ReferenceError), which is why landscape
+// flyers were never actually stacking.
+window.updateFlyerPanelLayout = updateFlyerPanelLayout;
 
 // Up to 2 flyers can share the center panel at once. With only one active
 // flyer, cell 1 is hidden and cell 0 stretches to fill the whole panel —
