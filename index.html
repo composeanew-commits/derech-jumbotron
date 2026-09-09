@@ -1869,6 +1869,18 @@ document.querySelectorAll('.tab').forEach(tab=>{
 // `config`, BEFORE we do anything (add/remove row, change color, etc.) that
 // triggers a re-render via populateModal(). Without this, any text you'd
 // typed but not yet explicitly saved would get wiped out by the re-render.
+// Google Drive "share" links (drive.google.com/file/d/ID/view, .../open?id=ID,
+// etc.) are viewer PAGES, not the image itself — an <img> tag can't load them,
+// which is why Drive photos silently never appeared. Rewrite them to Drive's
+// actual direct-image host whenever we save a URL.
+function normalizeImageUrl(url){
+  if(!url) return url;
+  const u = url.trim();
+  const m = u.match(/drive\.google\.com\/(?:file\/d\/([^/?]+)|open\?id=([^&]+)|uc\?(?:export=view&)?id=([^&]+))/);
+  const id = m && (m[1] || m[2] || m[3]);
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : u;
+}
+
 function syncFormToConfig(){
   if(document.getElementById('leagueActive')){
     config.leagueActive = document.getElementById('leagueActive').checked;
@@ -1891,13 +1903,13 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="teamName"]').forEach(el=> config.teams[Number(el.dataset.idx)].name = el.value);
   document.querySelectorAll('[data-field="teamPoints"]').forEach(el=> config.teams[Number(el.dataset.idx)].points = Number(el.value)||0);
   document.querySelectorAll('[data-field="shoutout"]').forEach(el=> config.shoutouts[Number(el.dataset.idx)] = el.value);
-  document.querySelectorAll('[data-field="photoUrl"]').forEach(el=> config.photos[Number(el.dataset.idx)].url = el.value);
+  document.querySelectorAll('[data-field="photoUrl"]').forEach(el=> config.photos[Number(el.dataset.idx)].url = normalizeImageUrl(el.value));
   document.querySelectorAll('[data-field="photoCaption"]').forEach(el=> config.photos[Number(el.dataset.idx)].caption = el.value);
   document.querySelectorAll('[data-field="cdName"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].name = el.value);
   document.querySelectorAll('[data-field="cdDate"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].date = el.value);
   document.querySelectorAll('[data-field="cdTime"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].time = el.value);
   document.querySelectorAll('[data-field="flyerName"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventName = el.value);
-  document.querySelectorAll('[data-field="flyerUrlEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].url = el.value);
+  document.querySelectorAll('[data-field="flyerUrlEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].url = normalizeImageUrl(el.value));
   document.querySelectorAll('[data-field="flyerDateEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventDate = el.value);
   document.querySelectorAll('[data-field="flyerTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventTime = el.value);
   document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.value);
@@ -2022,9 +2034,47 @@ function populateModal(){
     div.className = 'listItem';
     div.innerHTML = `<button class="rmBtn" data-remove="photo" data-idx="${i}">✕</button>
       <div class="field"><label>Image URL</label><input data-field="photoUrl" data-idx="${i}" value="${escapeAttr(p.url)}"></div>
+      <div class="photoRowPreviewWrap" style="display:none;margin:-4px 0 10px 0;">
+        <img class="photoRowPreviewImg" style="max-width:100%;max-height:120px;border-radius:8px;border:1px solid var(--line);display:block;">
+        <div class="photoRowPreviewMsg hint" style="margin:6px 0 0 0;"></div>
+      </div>
       <div class="field"><label>Caption</label><input data-field="photoCaption" data-idx="${i}" value="${escapeAttr(p.caption||'')}"></div>`;
     photosList.appendChild(div);
   });
+
+  // One delegated listener handles the link-check preview for every photo
+  // row (present and future), same pattern as the flyer/quick-add fields.
+  if(!photosList.dataset.wired){
+    photosList.dataset.wired = '1';
+    let photoRowPreviewDebounce = null;
+    photosList.addEventListener('input', (e)=>{
+      if(e.target.dataset.field !== 'photoUrl') return;
+      clearTimeout(photoRowPreviewDebounce);
+      const row = e.target.closest('.listItem');
+      const wrap = row.querySelector('.photoRowPreviewWrap');
+      const img = row.querySelector('.photoRowPreviewImg');
+      const msg = row.querySelector('.photoRowPreviewMsg');
+      const val = e.target.value.trim();
+      if(!val){ wrap.style.display = 'none'; return; }
+      photoRowPreviewDebounce = setTimeout(()=>{
+        wrap.style.display = '';
+        msg.textContent = 'Checking link…';
+        msg.style.color = 'var(--muted)';
+        img.style.display = 'none';
+        img.onload = ()=>{
+          img.style.display = 'block';
+          msg.textContent = '✓ This link loads as an image — good to go.';
+          msg.style.color = 'var(--green)';
+        };
+        img.onerror = ()=>{
+          img.style.display = 'none';
+          msg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
+          msg.style.color = 'var(--red)';
+        };
+        img.src = normalizeImageUrl(val);
+      }, 500);
+    });
+  }
 
   document.getElementById('tickerInput').value = config.ticker || '';
 
@@ -2129,7 +2179,7 @@ if(flyerUrlInput){
         flyerUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
         flyerUrlPreviewMsg.style.color = 'var(--red)';
       };
-      flyerUrlPreviewImg.src = val;
+      flyerUrlPreviewImg.src = normalizeImageUrl(val);
     }, 500);
   });
 }
@@ -2161,7 +2211,7 @@ if(qPhotoUrlInput){
         qPhotoUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
         qPhotoUrlPreviewMsg.style.color = 'var(--red)';
       };
-      qPhotoUrlPreviewImg.src = val;
+      qPhotoUrlPreviewImg.src = normalizeImageUrl(val);
     }, 500);
   });
 }
@@ -2188,6 +2238,8 @@ document.getElementById('addFlyer').onclick = async ()=>{
       return;
     }
   }
+
+  if(!flyerPickedFile) url = normalizeImageUrl(url);
 
   syncFormToConfig();
   config.flyers.push({eventName, url, eventDate, eventTime, priority});
@@ -2232,7 +2284,7 @@ document.getElementById('qShoutoutAdd').onclick = async ()=>{
 };
 
 document.getElementById('qPhotoAdd').onclick = async ()=>{
-  const url = document.getElementById('qPhotoUrl').value.trim();
+  const url = normalizeImageUrl(document.getElementById('qPhotoUrl').value.trim());
   if(!url) return;
   syncFormToConfig();
   config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim()});
