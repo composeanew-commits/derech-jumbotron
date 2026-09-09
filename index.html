@@ -2160,6 +2160,20 @@ function paintPhotoCell(cellIdx, animate){
     currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
     cell.innerHTML = renderPhotoCellMarkup(item);
     cell.classList.remove('fadeOut');
+    // The declarative `autoplay` attribute is enough in most browsers, but
+    // kiosk/webview browsers are inconsistent about honoring it on a
+    // <video> that was just inserted via innerHTML (rather than present at
+    // initial page load) — the symptom is exactly a frozen first frame,
+    // never actually playing. Explicitly kicking off playback here is the
+    // reliable fix; .muted is also re-set as a JS property (not just the
+    // HTML attribute) since that's what some browsers actually check before
+    // allowing autoplay without a user gesture.
+    const vid = cell.querySelector('video');
+    if(vid){
+      vid.muted = true;
+      const playPromise = vid.play();
+      if(playPromise && playPromise.catch) playPromise.catch(()=>{ /* autoplay blocked; video still shows its first frame */ });
+    }
   };
   if(animate){
     cell.classList.add('fadeOut');
