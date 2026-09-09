@@ -829,7 +829,6 @@ const DEFAULT_WORDS = [
 ["טהרה","Taharah","Purity — clarity, free of what muddies it.","Frum"],
 ["סבבה","Sababa","\"Cool\" / \"all good\" — everyday slang you'll hear constantly.","Modern"],
 ["אחלה","Achla","\"Great\" / \"awesome.\"","Modern"],
-["יאללה","Yalla","\"Let's go\" — used to hurry people along.","Modern"],
 ["כיף","Keif","\"Fun,\" as in \"that was fun.\"","Modern"],
 ["מה נשמע","Mah Nishma","\"What's up?\" — a very common casual greeting.","Modern"],
 ["תודה רבה","Toda Raba","\"Thank you very much.\"","Modern"],
@@ -1278,6 +1277,10 @@ function mergeStoredConfig(stored){
   if(!merged.triviaBank || !merged.triviaBank.length) merged.triviaBank = structuredClone(DEFAULT_CONFIG.triviaBank);
   if(!merged.riddleBank || !merged.riddleBank.length) merged.riddleBank = structuredClone(DEFAULT_CONFIG.riddleBank);
   if(!merged.wordBank || !merged.wordBank.length) merged.wordBank = structuredClone(DEFAULT_CONFIG.wordBank);
+  // One-time cleanup: "Yalla" was removed from the word pool, but boards
+  // that already saved it in their own wordBank won't pick that up from
+  // DEFAULT_CONFIG alone, so filter it out of whatever was stored too.
+  merged.wordBank = merged.wordBank.filter(w => (w.translit || '').trim().toLowerCase() !== 'yalla');
   if(!merged.quoteBank || !merged.quoteBank.length) merged.quoteBank = structuredClone(DEFAULT_CONFIG.quoteBank);
   if(!merged.waysBank || !merged.waysBank.length) merged.waysBank = structuredClone(DEFAULT_CONFIG.waysBank);
   if(!merged.countdowns) merged.countdowns = [];
@@ -2112,12 +2115,26 @@ document.getElementById('qDriveTest').onclick = async ()=>{
   }
 };
 
+// Manually pasted URLs (Quick-Add / photo list) don't come with a Drive
+// mimeType attached, so guess from the file extension or Drive's own
+// video-preview URL shape. Anything that matches gets routed through the
+// same <video> render path used by the folder auto-import feature, instead
+// of always falling into the <img> path.
+function guessIsVideoUrl(url){
+  if(!url) return false;
+  const u = url.toLowerCase();
+  if(/\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/.test(u)) return true;
+  if(u.includes('drive.google.com') && /\/preview(\?|$)/.test(u)) return true;
+  return false;
+}
+
 function buildWeightedPhotoItems(){
   const customs = config.photos || [];
   const n = customs.length;
   const items = customs.map((p, i) => ({
     url: p.url, caption: p.caption, isCustom: true,
-    weight: (n - i) <= 5 ? 6 : 2
+    weight: (n - i) <= 5 ? 6 : 2,
+    type: guessIsVideoUrl(p.url) ? 'video' : 'image'
   }));
   driveFolderPhotos.forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type, mimeType: p.mimeType, fallbackUrl: p.fallbackUrl });
