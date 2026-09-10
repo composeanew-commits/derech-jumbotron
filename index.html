@@ -72,12 +72,12 @@
   /* Narrow sidebar: countdown strip (compact, top) + one rotating spotlight
      card filling the rest. Deliberately sized well below the photo panel so
      flyers/photos stay the clear focal point of the screen. */
-  .mainPanel{flex:0.8;min-width:0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;}
+  .mainPanel{flex:0.55;min-width:0;position:relative;display:flex;flex-direction:column;gap:14px;min-height:0;}
 
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
      This is the dominant element on screen — the flyer gets its own panel,
      entirely separate from the smaller photo column beside it. */
-  .flyerPanel{flex:2.6;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
+  .flyerPanel{flex:2.75;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
   /* When two flyers are both landscape/horizontal, stacking them on top of
      each other (instead of side by side) makes far better use of the
      central space — a wide landscape image gets to be wide instead of
@@ -100,7 +100,7 @@
 
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
-  .photoPanel{flex:0.7;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .photoPanel{flex:0.8;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
   .photoCell.fadeOut{opacity:0;}
   .photoCell img{width:100%;height:100%;object-fit:contain;display:block;}
@@ -401,7 +401,7 @@
     </div>
 
     <div class="tabPanel" data-panel="flyers">
-      <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen, counts down on its own automatically, and shows up more and more often as the date gets closer, so nobody misses it.</div>
+      <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen and shows up more and more often as the date gets closer, so nobody misses it.</div>
       <div class="field"><label>Event Name</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
 
       <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Flyer Image</label>
@@ -420,6 +420,7 @@
         <div class="field"><label>Event Date (optional — leave blank if you just want it in rotation)</label><input id="flyerDate" type="date"></div>
         <div class="field"><label>Event Time (optional)</label><input id="flyerTime" type="time"></div>
       </div>
+      <div class="toggleRow"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
       <div class="field">
         <label>How much should it stand out?</label>
         <select id="flyerPriority">
@@ -442,7 +443,7 @@
     </div>
 
     <div class="tabPanel" data-panel="countdown">
-      <div class="hint" style="margin-top:0;">Add one or several. Each one shows up as its own slide in the rotation, counting down to any date and time — great for a same-day activity or a three-week-out event. Time is optional; leave it blank and it'll count down to the end of that day. (Event Flyers get their own countdown automatically — no need to add those here too.)</div>
+      <div class="hint" style="margin-top:0;">Add one or several. Each one shows up as its own slide in the rotation, counting down to any date and time — great for a same-day activity or a three-week-out event. Time is optional; leave it blank and it'll count down to the end of that day. (Want a countdown for an Event Flyer instead? Check "Also show a countdown chip" on that flyer in the Flyers tab — no need to add it here too.)</div>
       <div id="countdownList"></div>
       <button class="addBtn" id="addCountdown">+ Add Countdown</button>
     </div>
@@ -1371,11 +1372,12 @@ function tickClock(){
 setInterval(tickClock, 1000);
 tickClock();
 
-// ================= COUNTDOWNS (manual + auto-generated from Event Flyers) =================
+// ================= COUNTDOWNS (manual + opted-in Event Flyers) =================
 // A countdown chip can come from two places: something typed directly into
 // the Countdown tab, or an Event Flyer with a date attached (added on the
-// Flyers tab). Flyers never need to be re-entered as a separate countdown —
-// this merges both sources into one sorted, live-updating list.
+// Flyers tab) that's had its "Also show a countdown chip" box checked.
+// Flyers don't get a countdown chip by default — this merges both opted-in
+// sources into one sorted, live-updating list.
 function getCountdownUrgency(target){
   const diff = target - new Date();
   if(diff <= 24*3600*1000) return 'today';
@@ -1408,12 +1410,14 @@ function getCountdownEntries(){
     }))
     .filter(c=>c.target);
 
-  const fromFlyers = (config.flyers||[]).map((f,i)=>({
-    key: 'f'+i,
-    name: (f.eventName && f.eventName.trim()) || 'Upcoming Event',
-    target: flyerTarget(f),
-    fromFlyer: true
-  })).filter(c=>c.target);
+  const fromFlyers = (config.flyers||[])
+    .filter(f=>f.showCountdown)
+    .map((f,i)=>({
+      key: 'f'+i,
+      name: (f.eventName && f.eventName.trim()) || 'Upcoming Event',
+      target: flyerTarget(f),
+      fromFlyer: true
+    })).filter(c=>c.target);
 
   return [...manual, ...fromFlyers]
     .map(c=>({...c, urgency: getCountdownUrgency(c.target)}))
@@ -2342,6 +2346,7 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="flyerUrlEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].url = normalizeImageUrl(el.value));
   document.querySelectorAll('[data-field="flyerDateEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventDate = el.value);
   document.querySelectorAll('[data-field="flyerTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventTime = el.value);
+  document.querySelectorAll('[data-field="flyerShowCountdownEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showCountdown = el.checked);
   document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.value);
 }
 
@@ -2440,6 +2445,7 @@ function populateModal(){
           <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
           <div class="field"><label>Time (optional)</label><input type="time" data-field="flyerTimeEdit" data-idx="${i}" value="${escapeAttr(f.eventTime||'')}"></div>
         </div>
+        <div class="toggleRow"><input type="checkbox" data-field="flyerShowCountdownEdit" data-idx="${i}" id="flyerShowCountdownEdit${i}" ${f.showCountdown ? 'checked' : ''}><label for="flyerShowCountdownEdit${i}" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
         <div class="field">
           <label>How much should it stand out?</label>
           <select data-field="flyerPriorityEdit" data-idx="${i}">
@@ -2661,6 +2667,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const eventDate = document.getElementById('flyerDate').value;
   const eventTime = document.getElementById('flyerTime').value;
   const priority = document.getElementById('flyerPriority').value;
+  const showCountdown = document.getElementById('flyerShowCountdown').checked;
   const status = document.getElementById('flyerStatus');
 
   if(!url && !flyerPickedFile){
@@ -2681,12 +2688,13 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeImageUrl(url);
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, eventDate, eventTime, priority});
+  config.flyers.push({eventName, url, eventDate, eventTime, priority, showCountdown});
   document.getElementById('flyerEventName').value = '';
   document.getElementById('flyerUrl').value = '';
   document.getElementById('flyerDate').value = '';
   document.getElementById('flyerTime').value = '';
   document.getElementById('flyerPriority').value = 'normal';
+  document.getElementById('flyerShowCountdown').checked = false;
   resetFlyerFilePicker();
   flyerUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…', 'flyerStatus');
