@@ -101,7 +101,8 @@
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
   .photoPanel{flex:0.8;min-width:0;display:flex;flex-direction:column;gap:6px;}
-  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease;}
+  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .38s ease, flex-grow .45s ease;}
+  .photoCell.tall{flex-grow:2;}
   .photoCell.fadeOut{opacity:0;}
   .photoCell img{width:100%;height:100%;object-fit:contain;display:block;}
   .photoCell video{width:100%;height:100%;object-fit:contain;display:block;background:#0E0C1B;}
@@ -127,7 +128,7 @@
      touch so more chips fit per row without the strip taking over the
      whole sidebar. */
   .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
-  .countdownStrip.compact .countdownChipName{font-size:13px;}
+  .countdownStrip.compact .countdownChipName{font-size:11px;line-height:1.15;}
   .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
   .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
   .countdownChip::before{content:'';position:absolute;inset:-70%;background:radial-gradient(circle, rgba(240,184,77,.18), transparent 60%);animation:heroSpin 9s linear infinite;pointer-events:none;}
@@ -142,7 +143,7 @@
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;text-align:center;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:13px;color:var(--ink);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:break-word;max-width:100%;line-height:1.2;text-align:center;}
   .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
   .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
   .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
@@ -2264,6 +2265,17 @@ function pickNextForCell(cellIdx){
 // waiting for 'ended' and move on anyway.
 const VIDEO_FALLBACK_DURATION = 90000;
 
+// A photo/video that's noticeably taller than it is wide gets more vertical
+// room instead of being letterboxed down to fit a normal cell: its cell's
+// flex-grow doubles (see .photoCell.tall), which — since all three cells
+// live in one flex column — quietly takes that extra height from the other
+// two rather than needing any grid rework.
+const TALL_ASPECT_THRESHOLD = 1.15; // height must exceed width by this ratio
+function applyCellAspect(cell, w, h){
+  if(!w || !h) return;
+  cell.classList.toggle('tall', h > w * TALL_ASPECT_THRESHOLD);
+}
+
 function paintPhotoCell(cellIdx, animate, extraDelayMs){
   const cell = document.getElementById('photoCell'+cellIdx);
   if(!cell) return;
@@ -2281,30 +2293,78 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
     // reliable fix; .muted is also re-set as a JS property (not just the
     // HTML attribute) since that's what some browsers actually check before
     // allowing autoplay without a user gesture.
+    const img = cell.querySelector('img');
+    if(img){
+      const checkAspect = ()=> applyCellAspect(cell, img.naturalWidth, img.naturalHeight);
+      if(img.complete && img.naturalWidth) checkAspect();
+      else img.addEventListener('load', checkAspect);
+    }
     const vid = cell.querySelector('video');
     if(vid){
       vid.muted = true;
-      const playPromise = vid.play();
-      if(playPromise && playPromise.catch) playPromise.catch(()=>{ /* autoplay blocked; video still shows its first frame */ });
-
-      // Videos play all the way through instead of getting cut off after
-      // the same fixed duration a photo gets — this cell only advances once
-      // the clip actually finishes (or the fallback cap below kicks in).
+      let started = false;
       let advanced = false;
+      let triedFallback = false;
       const goNext = ()=>{
         if(advanced) return;
         advanced = true;
         advancePhotoCell(cellIdx);
       };
+      // A single play() call right after insertion isn't always enough —
+      // some browsers reject that very first attempt (before the element
+      // has really finished attaching/decoding) and never try again on
+      // their own. Re-attempt whenever more data becomes available.
+      const tryPlay = ()=>{
+        const p = vid.play();
+        if(p && p.catch) p.catch(()=>{ /* will retry below */ });
+      };
+      tryPlay();
+      vid.addEventListener('loadeddata', ()=>{ if(vid.paused) tryPlay(); });
+      vid.addEventListener('canplay', ()=>{ if(vid.paused) tryPlay(); });
+      vid.addEventListener('playing', ()=>{ started = true; });
+
+      // Videos play all the way through instead of getting cut off after
+      // the same fixed duration a photo gets — this cell only advances once
+      // the clip actually finishes (or the fallback cap below kicks in).
       vid.addEventListener('ended', goNext);
       vid.addEventListener('error', goNext);
       // Once the real length is known, tighten the fallback timer to match
       // it (plus a small cushion) rather than waiting out the full 90s cap.
       vid.addEventListener('loadedmetadata', ()=>{
+        applyCellAspect(cell, vid.videoWidth, vid.videoHeight);
         if(advanced || !vid.duration || !isFinite(vid.duration)) return;
         clearTimeout(photoCellTimers[cellIdx]);
         photoCellTimers[cellIdx] = setTimeout(goNext, (vid.duration*1000) + 600);
       });
+
+      // Some streams — the Google Drive alt=media endpoint especially —
+      // can render a first frame and then silently stall with no `error`
+      // event ever firing, which used to leave the cell stuck on that
+      // still frame for up to the full 90s cap below. Check twice instead:
+      // once to swap in the fallback source (item.fallbackUrl, already
+      // present as a second <source> but browsers only try it automatically
+      // on a hard load error, not a silent stall) if playback genuinely
+      // hasn't started yet, and again after giving that a fair shot before
+      // finally treating it like a normal error and moving on.
+      const checkStalled = ()=>{
+        if(advanced || started) return;
+        if(item.fallbackUrl && !triedFallback){
+          triedFallback = true;
+          vid.querySelectorAll('source').forEach(s=>s.remove());
+          const src = document.createElement('source');
+          src.src = item.fallbackUrl;
+          src.type = item.mimeType || 'video/mp4';
+          vid.appendChild(src);
+          vid.load();
+          tryPlay();
+          setTimeout(checkStalled, 7000);
+        } else {
+          handleVideoError(vid);
+          goNext();
+        }
+      };
+      setTimeout(checkStalled, 7000);
+
       photoCellTimers[cellIdx] = setTimeout(goNext, VIDEO_FALLBACK_DURATION);
     } else {
       photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION + (extraDelayMs||0));
@@ -2338,8 +2398,7 @@ function startPhotoRotation(){
 }
 
 function paintTicker(){
-  const warning = firebaseReady ? '' : '⚠ Firebase is not configured — nothing will save or sync. Open the file and paste your firebaseConfig values in near the top of the script (see the setup comments there).   •   ';
-  document.getElementById('tickerText').textContent = warning + (config.ticker || '');
+  document.getElementById('tickerText').textContent = config.ticker || '';
 }
 function paintDayBadge(){
   const d = new Date();
