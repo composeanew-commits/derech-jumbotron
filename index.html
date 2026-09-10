@@ -292,6 +292,20 @@
   .toggleRow{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .toggleRow input{width:auto;}
   .listItem{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;position:relative;}
+  .flyerSummaryRow{display:flex;align-items:center;gap:12px;cursor:pointer;padding-right:26px;}
+  .flyerThumbSmall{width:52px;height:52px;flex-shrink:0;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--panel);display:block;}
+  .flyerThumbSmall.empty{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;padding:4px;}
+  .flyerSummaryInfo{min-width:0;flex:1;}
+  .flyerSummaryName{font-family:'Poppins',sans-serif;font-weight:700;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .flyerSummaryMeta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .flyerSummaryChevron{flex-shrink:0;color:var(--muted);font-size:13px;transition:transform .2s ease;}
+  .flyerListItem.expanded .flyerSummaryChevron{transform:rotate(180deg);}
+  .flyerExpandBody{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
+  .flyerDeleteConfirm{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:10px;}
+  .flyerDeleteConfirm span{font-size:12px;color:var(--muted);margin-right:auto;}
+  .miniBtn{border:none;border-radius:6px;padding:7px 13px;font-family:'Rubik';font-weight:700;font-size:12.5px;cursor:pointer;}
+  .miniBtn.danger{background:var(--red);color:#fff;}
+  .miniBtn.neutral{background:var(--line);color:var(--ink);}
   .rmBtn{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
   .addBtn, .saveBtn{background:var(--gold);color:#0E0C1B;border:none;border-radius:6px;padding:10px 18px;font-family:'Rubik';font-weight:700;cursor:pointer;font-size:14px;}
   .addBtn{background:var(--panel2);color:var(--gold);border:1px solid var(--gold-dim);}
@@ -402,7 +416,6 @@
 
     <div class="tabPanel" data-panel="flyers">
       <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen and shows up more and more often as the date gets closer, so nobody misses it.</div>
-      <div class="field"><label>Event Name</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
 
       <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Flyer Image</label>
       <div class="fileDrop" id="flyerFileDrop">
@@ -420,7 +433,10 @@
         <div class="field"><label>Event Date (optional — leave blank if you just want it in rotation)</label><input id="flyerDate" type="date"></div>
         <div class="field"><label>Event Time (optional)</label><input id="flyerTime" type="time"></div>
       </div>
-      <div class="toggleRow"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
+      <div class="toggleRow"><input type="checkbox" id="flyerShowOnBoard" checked><label for="flyerShowOnBoard" style="margin:0;font-size:14px;">Show this flyer on the board</label></div>
+      <div class="hint" style="margin-top:-6px;">Uncheck this to save the flyer without posting it \u2014 handy for prepping something ahead of time.</div>
+      <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
+      <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
       <div class="field">
         <label>How much should it stand out?</label>
         <select id="flyerPriority">
@@ -1827,6 +1843,11 @@ function getActiveFlyers(){
   const now = new Date();
   return (config.flyers||[])
     .map((f,i)=>({...f, idx:i, target: flyerTarget(f)}))
+    // Flyers explicitly turned off ("Show this flyer on the board" unchecked)
+    // never appear, regardless of date — lets a flyer be saved/prepped
+    // without going live. Older saved flyers have no showOnBoard field at
+    // all, so only an explicit `false` opts a flyer out.
+    .filter(f=> f.showOnBoard !== false)
     // Flyers with no date attached never expire and always stay in rotation.
     // Dated flyers keep showing for a day after the event, then drop out
     // (still editable/removable in the Flyers tab).
@@ -2132,7 +2153,16 @@ function guessIsVideoUrl(url){
   return false;
 }
 
-function buildWeightedPhotoItems(){
+// Two separate pools instead of one combined one: an "older" pool (the
+// built-in gallery photos bundled with the board) and a "newer" pool
+// (anything actually added by a person — Quick-Add / the Photos tab — plus
+// whatever's synced in live from a connected Drive folder). Kept apart so a
+// cell can be pinned to just one or the other (see OLD_PHOTOS_CELL_INDEX).
+function buildOlderPhotoItems(){
+  return (config.galleryPhotos || []).map(p => ({ url: p.url, caption: p.caption, isCustom: false, weight: 1 }));
+}
+
+function buildNewerPhotoItems(){
   const customs = config.photos || [];
   const n = customs.length;
   const items = customs.map((p, i) => ({
@@ -2142,9 +2172,6 @@ function buildWeightedPhotoItems(){
   }));
   driveFolderPhotos.forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type, mimeType: p.mimeType, fallbackUrl: p.fallbackUrl });
-  });
-  (config.galleryPhotos || []).forEach(p => {
-    items.push({ url: p.url, caption: p.caption, isCustom: false, weight: 1 });
   });
   return items;
 }
@@ -2183,9 +2210,9 @@ function rememberShownPhoto(url){
 function renderPhotoCellMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
   if(item.type === 'video'){
-    // autoplay requires muted in every modern browser; loop keeps it filling
-    // the cell's whole dwell time whether the clip is 3 seconds or 3 minutes,
-    // since the cell gets swapped out on the same timer as photos regardless.
+    // autoplay requires muted in every modern browser. No `loop` here —
+    // the cell now waits for the video's own 'ended' event before moving
+    // on (see paintPhotoCell), so looping would mean it never finishes.
     // A plain src="..." with no MIME type left some browsers unsure how to
     // handle the googleapis.com stream and silently refusing to play it —
     // an explicit <source type="..."> (from the file's real mimeType) fixes
@@ -2193,7 +2220,7 @@ function renderPhotoCellMarkup(item){
     // as a fallback the browser will try automatically if the first fails.
     const mime = escapeAttr(item.mimeType || 'video/mp4');
     return `
-      <video autoplay muted loop playsinline preload="auto" data-fallback="${item.fallbackUrl ? escapeAttr(item.fallbackUrl) : ''}" onerror="handleVideoError(this)">
+      <video autoplay muted playsinline preload="auto" data-fallback="${item.fallbackUrl ? escapeAttr(item.fallbackUrl) : ''}" onerror="handleVideoError(this)">
         <source src="${escapeAttr(item.url)}" type="${mime}">
         ${item.fallbackUrl ? `<source src="${escapeAttr(item.fallbackUrl)}" type="${mime}">` : ''}
       </video>
@@ -2206,8 +2233,19 @@ function renderPhotoCellMarkup(item){
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
+// Cell 0 (the first of the three photo squares) only ever shows the older,
+// built-in gallery photos; the other two cells only ever show newer photos
+// (added by a person, or synced from Drive) — so at a glance one square is
+// always "the archive" and the other two are always "what's fresh."
+const OLD_PHOTOS_CELL_INDEX = 0;
+
 function pickNextForCell(cellIdx){
-  const pool = buildWeightedPhotoItems();
+  const isOldCell = cellIdx === OLD_PHOTOS_CELL_INDEX;
+  let pool = isOldCell ? buildOlderPhotoItems() : buildNewerPhotoItems();
+  // If the intended pool for this cell is empty (e.g. no custom photos have
+  // been added yet, or the built-in gallery was cleared), fall back to the
+  // other pool rather than leaving the cell permanently blank.
+  if(!pool.length) pool = isOldCell ? buildNewerPhotoItems() : buildOlderPhotoItems();
   const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
     .map(k => currentlyShownPhotoUrls[k]);
@@ -2220,7 +2258,13 @@ function pickNextForCell(cellIdx){
   return item;
 }
 
-function paintPhotoCell(cellIdx, animate){
+// A video that's stuck (autoplay silently blocked, still buffering, or a
+// source that renders a first frame but never actually progresses) must
+// not freeze that cell forever — this is the outer cap before we give up
+// waiting for 'ended' and move on anyway.
+const VIDEO_FALLBACK_DURATION = 90000;
+
+function paintPhotoCell(cellIdx, animate, extraDelayMs){
   const cell = document.getElementById('photoCell'+cellIdx);
   if(!cell) return;
   const render = ()=>{
@@ -2228,6 +2272,7 @@ function paintPhotoCell(cellIdx, animate){
     currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
     cell.innerHTML = renderPhotoCellMarkup(item);
     cell.classList.remove('fadeOut');
+    clearTimeout(photoCellTimers[cellIdx]);
     // The declarative `autoplay` attribute is enough in most browsers, but
     // kiosk/webview browsers are inconsistent about honoring it on a
     // <video> that was just inserted via innerHTML (rather than present at
@@ -2241,6 +2286,28 @@ function paintPhotoCell(cellIdx, animate){
       vid.muted = true;
       const playPromise = vid.play();
       if(playPromise && playPromise.catch) playPromise.catch(()=>{ /* autoplay blocked; video still shows its first frame */ });
+
+      // Videos play all the way through instead of getting cut off after
+      // the same fixed duration a photo gets — this cell only advances once
+      // the clip actually finishes (or the fallback cap below kicks in).
+      let advanced = false;
+      const goNext = ()=>{
+        if(advanced) return;
+        advanced = true;
+        advancePhotoCell(cellIdx);
+      };
+      vid.addEventListener('ended', goNext);
+      vid.addEventListener('error', goNext);
+      // Once the real length is known, tighten the fallback timer to match
+      // it (plus a small cushion) rather than waiting out the full 90s cap.
+      vid.addEventListener('loadedmetadata', ()=>{
+        if(advanced || !vid.duration || !isFinite(vid.duration)) return;
+        clearTimeout(photoCellTimers[cellIdx]);
+        photoCellTimers[cellIdx] = setTimeout(goNext, (vid.duration*1000) + 600);
+      });
+      photoCellTimers[cellIdx] = setTimeout(goNext, VIDEO_FALLBACK_DURATION);
+    } else {
+      photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION + (extraDelayMs||0));
     }
   };
   if(animate){
@@ -2253,7 +2320,6 @@ function paintPhotoCell(cellIdx, animate){
 
 function advancePhotoCell(cellIdx){
   paintPhotoCell(cellIdx, true);
-  photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION);
 }
 
 function startPhotoRotation(){
@@ -2265,11 +2331,10 @@ function startPhotoRotation(){
   photoCellTimers = [];
   currentlyShownPhotoUrls = {};
   for(let i=0;i<PHOTO_CELL_COUNT;i++){
-    paintPhotoCell(i);
-    // Staggered so both cells don't change in lockstep.
-    photoCellTimers[i] = setTimeout(()=>advancePhotoCell(i), PHOTO_DURATION + i*1800);
+    // Staggered (photos only — a video's own length naturally staggers it)
+    // so cells don't all change in lockstep.
+    paintPhotoCell(i, false, i*1800);
   }
-
 }
 
 function paintTicker(){
@@ -2347,6 +2412,7 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="flyerDateEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventDate = el.value);
   document.querySelectorAll('[data-field="flyerTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventTime = el.value);
   document.querySelectorAll('[data-field="flyerShowCountdownEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showCountdown = el.checked);
+  document.querySelectorAll('[data-field="flyerShowOnBoardEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showOnBoard = el.checked);
   document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.value);
 }
 
@@ -2423,44 +2489,66 @@ function populateModal(){
         ? `${activeCount} flyer${activeCount>1?'s':''} currently active \u2014 taking over the main screen right now.`
         : `No flyers are currently active on the board (either none have a valid upcoming date, or their images aren't loading \u2014 check below).`;
       flyersList.appendChild(statusDiv);
+      const tipDiv = document.createElement('div');
+      tipDiv.className = 'hint';
+      tipDiv.style.marginTop = '2px';
+      tipDiv.textContent = 'Tap a flyer below to edit it.';
+      flyersList.appendChild(tipDiv);
     }
     (config.flyers||[]).forEach((f,i)=>{
       const target = flyerTarget(f);
       const isActive = activeFlyerUrls.has(f.url);
+      const state = flyerUiState[i] || (flyerUiState[i] = {expanded:false, confirmingDelete:false});
       const div = document.createElement('div');
-      div.className = 'listItem';
+      div.className = 'listItem flyerListItem' + (state.expanded ? ' expanded' : '');
       div.innerHTML = `
-        <button class="rmBtn" data-remove="flyer" data-idx="${i}">✕</button>
-        <div style="margin-bottom:10px;">
-          <span class="priorityPill ${f.priority==='high' ? 'high' : 'normal'}">${f.priority==='high' ? 'High Priority' : 'Normal'}</span>
-          ${isActive ? `<span class="priorityPill" style="background:var(--green);color:#fff;">● Live on board now</span>` : ''}
-          ${target ? `<span class="hint" style="display:inline;margin:0 0 0 8px;">${escapeHtml(formatRelativeTime(target))}</span>` : ''}
+        <div class="flyerSummaryRow" data-flyer-toggle="${i}">
+          ${f.url
+            ? `<img class="flyerThumbSmall" data-thumb-idx="${i}" src="${escapeAttr(f.url)}">`
+            : `<div class="flyerThumbSmall empty">No image</div>`}
+          <div class="flyerSummaryInfo">
+            <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
+            <div class="flyerSummaryMeta">
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· High priority' : ''}
+            </div>
+          </div>
+          <div class="flyerSummaryChevron">▾</div>
         </div>
-        <img class="flyerThumb" data-thumb-idx="${i}" src="${escapeAttr(f.url||'')}" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid var(--line);display:${f.url ? 'block':'none'};margin-bottom:6px;">
-        <div class="hint" data-thumb-status="${i}" style="margin-top:0;"></div>
-        <div class="field"><label>Event Name</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
-        <div class="field"><label>Flyer Image URL</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
-        <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
-        <div class="row">
-          <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
-          <div class="field"><label>Time (optional)</label><input type="time" data-field="flyerTimeEdit" data-idx="${i}" value="${escapeAttr(f.eventTime||'')}"></div>
-        </div>
-        <div class="toggleRow"><input type="checkbox" data-field="flyerShowCountdownEdit" data-idx="${i}" id="flyerShowCountdownEdit${i}" ${f.showCountdown ? 'checked' : ''}><label for="flyerShowCountdownEdit${i}" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
-        <div class="field">
-          <label>How much should it stand out?</label>
-          <select data-field="flyerPriorityEdit" data-idx="${i}">
-            <option value="normal" ${f.priority!=='high' ? 'selected':''}>Normal — shows up in the regular rotation</option>
-            <option value="high" ${f.priority==='high' ? 'selected':''}>High Priority — shows up a lot more, especially as it gets close</option>
-          </select>
-        </div>`;
+        <button class="rmBtn" data-flyer-delete-start="${i}" title="Delete this flyer">✕</button>
+        ${state.confirmingDelete ? `
+        <div class="flyerDeleteConfirm">
+          <span>Delete this flyer?</span>
+          <button class="miniBtn neutral" data-flyer-delete-cancel="${i}">Cancel</button>
+          <button class="miniBtn danger" data-flyer-delete-confirm="${i}">Delete</button>
+        </div>` : ''}
+        ${state.expanded ? `
+        <div class="flyerExpandBody">
+          <div class="hint" data-thumb-status="${i}" style="margin-top:0;"></div>
+          <div class="field"><label>Flyer Image URL</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
+          <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
+          <div class="row">
+            <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
+            <div class="field"><label>Time (optional)</label><input type="time" data-field="flyerTimeEdit" data-idx="${i}" value="${escapeAttr(f.eventTime||'')}"></div>
+          </div>
+          <div class="toggleRow"><input type="checkbox" data-field="flyerShowOnBoardEdit" data-idx="${i}" id="flyerShowOnBoardEdit${i}" ${f.showOnBoard===false ? '' : 'checked'}><label for="flyerShowOnBoardEdit${i}" style="margin:0;font-size:14px;">Show this flyer on the board</label></div>
+          <div class="hint" style="margin-top:-6px;">Uncheck to keep this flyer saved without posting it.</div>
+          <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" data-field="flyerShowCountdownEdit" data-idx="${i}" id="flyerShowCountdownEdit${i}" ${f.showCountdown ? 'checked' : ''}><label for="flyerShowCountdownEdit${i}" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
+          <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
+          <div class="field">
+            <label>How much should it stand out?</label>
+            <select data-field="flyerPriorityEdit" data-idx="${i}">
+              <option value="normal" ${f.priority!=='high' ? 'selected':''}>Normal — shows up in the regular rotation</option>
+              <option value="high" ${f.priority==='high' ? 'selected':''}>High Priority — shows up a lot more, especially as it gets close</option>
+            </select>
+          </div>
+        </div>` : ''}`;
       flyersList.appendChild(div);
       const thumbImg = div.querySelector(`[data-thumb-idx="${i}"]`);
       const thumbStatus = div.querySelector(`[data-thumb-status="${i}"]`);
-      if(thumbImg && f.url){
-        thumbImg.onload = ()=>{ thumbStatus.textContent = ''; };
+      if(thumbImg){
         thumbImg.onerror = ()=>{
-          thumbImg.style.display = 'none';
-          thumbStatus.innerHTML = `⚠ <span style="color:var(--red);">This image link isn't loading.</span> If it's from postimages.org, re-copy the "Direct link" (ends in .jpg/.png) rather than the page link, paste it into the Image URL field above, then Save & Publish.`;
+          thumbImg.outerHTML = `<div class="flyerThumbSmall empty">⚠ Broken</div>`;
+          if(thumbStatus) thumbStatus.innerHTML = `⚠ <span style="color:var(--red);">This image link isn't loading.</span> If it's from postimages.org, re-copy the "Direct link" (ends in .jpg/.png) rather than the page link, paste it into the Image URL field above, then Save & Publish.`;
         };
       } else if(thumbStatus && !f.url){
         thumbStatus.textContent = 'No image set for this flyer yet.';
@@ -2543,6 +2631,40 @@ function bindDynamicHandlers(){
       populateModal();
     };
   });
+  document.querySelectorAll('[data-flyer-toggle]').forEach(row=>{
+    row.onclick = ()=>{
+      syncFormToConfig();
+      const idx = Number(row.dataset.flyerToggle);
+      const state = flyerUiState[idx] || (flyerUiState[idx] = {expanded:false, confirmingDelete:false});
+      state.expanded = !state.expanded;
+      populateModal();
+    };
+  });
+  document.querySelectorAll('[data-flyer-delete-start]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const idx = Number(btn.dataset.flyerDeleteStart);
+      const state = flyerUiState[idx] || (flyerUiState[idx] = {expanded:false, confirmingDelete:false});
+      state.confirmingDelete = true;
+      populateModal();
+    };
+  });
+  document.querySelectorAll('[data-flyer-delete-cancel]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const idx = Number(btn.dataset.flyerDeleteCancel);
+      const state = flyerUiState[idx] || (flyerUiState[idx] = {expanded:false, confirmingDelete:false});
+      state.confirmingDelete = false;
+      populateModal();
+    };
+  });
+  document.querySelectorAll('[data-flyer-delete-confirm]').forEach(btn=>{
+    btn.onclick = ()=>{
+      syncFormToConfig();
+      const idx = Number(btn.dataset.flyerDeleteConfirm);
+      config.flyers.splice(idx,1);
+      flyerUiState = {};
+      populateModal();
+    };
+  });
 }
 
 document.getElementById('addTeam').onclick = ()=>{
@@ -2575,6 +2697,11 @@ const flyerFileInput = document.getElementById('flyerFile');
 const flyerFileDrop = document.getElementById('flyerFileDrop');
 const flyerFileLabel = document.getElementById('flyerFileLabel');
 let flyerPickedFile = null;
+// Transient UI state for the settings-panel flyer list — which flyer cards
+// are expanded for editing, and which are mid delete-confirmation. Keyed by
+// array index; not part of saved config, so it resets when the modal
+// reopens (fine, since it's purely a "what's open right now" concern).
+let flyerUiState = {};
 if(flyerFileDrop){
   flyerFileDrop.onclick = ()=> flyerFileInput.click();
   flyerFileInput.onchange = ()=>{
@@ -2668,6 +2795,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const eventTime = document.getElementById('flyerTime').value;
   const priority = document.getElementById('flyerPriority').value;
   const showCountdown = document.getElementById('flyerShowCountdown').checked;
+  const showOnBoard = document.getElementById('flyerShowOnBoard').checked;
   const status = document.getElementById('flyerStatus');
 
   if(!url && !flyerPickedFile){
@@ -2688,13 +2816,14 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeImageUrl(url);
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, eventDate, eventTime, priority, showCountdown});
+  config.flyers.push({eventName, url, eventDate, eventTime, priority, showCountdown, showOnBoard});
   document.getElementById('flyerEventName').value = '';
   document.getElementById('flyerUrl').value = '';
   document.getElementById('flyerDate').value = '';
   document.getElementById('flyerTime').value = '';
   document.getElementById('flyerPriority').value = 'normal';
   document.getElementById('flyerShowCountdown').checked = false;
+  document.getElementById('flyerShowOnBoard').checked = true;
   resetFlyerFilePicker();
   flyerUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…', 'flyerStatus');
