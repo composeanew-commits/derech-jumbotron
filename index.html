@@ -103,16 +103,25 @@
      hairline and the same slow-moving gold/pink sheen used on the brand
      name up in the header, rather than a loud solid-gold sticker. */
   .flyerNeedToKnowBadge{position:absolute;top:18px;left:18px;z-index:2;
-    display:inline-flex;align-items:center;gap:8px;
-    font-family:'Poppins',sans-serif;font-weight:700;font-size:11px;letter-spacing:2.5px;
-    text-transform:uppercase;padding:9px 18px;border-radius:999px;
-    background:rgba(14,12,27,.72);border:1px solid rgba(240,184,77,.45);
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:'Poppins',sans-serif;font-weight:800;font-size:12px;letter-spacing:2.5px;
+    text-transform:uppercase;padding:10px 20px;border-radius:999px;
+    background:rgba(14,12,27,.78);border:1px solid rgba(240,184,77,.55);
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    box-shadow:0 4px 18px rgba(0,0,0,.35);}
-  .flyerNeedToKnowBadge::before{content:'✦';font-size:11px;color:var(--gold);flex-shrink:0;}
+    box-shadow:0 4px 18px rgba(0,0,0,.4), 0 0 0 1px rgba(240,184,77,.08);
+    animation:ntkBadgePulse 2.4s ease-in-out infinite;}
+  .flyerNeedToKnowBadge::before{content:'\2726';font-size:12px;color:var(--gold);flex-shrink:0;animation:ntkStarSpin 5s linear infinite;display:inline-block;}
+  @keyframes ntkStarSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  @keyframes ntkBadgePulse{0%,100%{box-shadow:0 4px 18px rgba(0,0,0,.4), 0 0 0 1px rgba(240,184,77,.08);}50%{box-shadow:0 4px 24px rgba(0,0,0,.45), 0 0 0 5px rgba(240,184,77,.14);}}
   .flyerNeedToKnowBadgeText{background:linear-gradient(90deg, var(--gold), var(--pink) 50%, var(--gold));
     background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
     animation:headerFlow 7s linear infinite;}
+  /* The badge alone is easy to miss on a big shared screen from a distance,
+     so a Need to Know flyer also gets a slow-breathing gold hairline around
+     its entire cell \u2014 unmissable peripherally, still calm enough not to
+     look like an error state. */
+  .flyerCell.flyerCellNeedToKnow{animation:ntkFramePulse 3.2s ease-in-out infinite;}
+  @keyframes ntkFramePulse{0%,100%{box-shadow:0 0 0 2px rgba(240,184,77,.35), 0 0 30px rgba(240,184,77,.12);}50%{box-shadow:0 0 0 2px rgba(240,184,77,.75), 0 0 46px rgba(240,184,77,.28);}}
 
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
@@ -175,7 +184,13 @@
      independently on its own timer, so several different pieces of content
      (zmanim, a shoutout, trivia...) are visible simultaneously. */
   .spotlightGrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;}
-  .bigCard{--accent:var(--gold);flex:1;min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:14px 16px 12px 14px;display:flex;flex-direction:column;transition:border-color .4s ease;}
+  /* A very faint accent-tinted wash in the top corner gives each card type
+     its own "color temperature" at a glance, on top of the border/eyebrow
+     cue that already existed \u2014 subtle enough not to fight the content,
+     but enough that trivia (red), a word (blue), a thought (green) etc.
+     each feel like a distinct little moment rather than identical boxes. */
+  .bigCard{--accent:var(--gold);flex:1;min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:14px 16px 12px 14px;display:flex;flex-direction:column;transition:border-color .4s ease, box-shadow .4s ease;box-shadow:0 6px 22px rgba(0,0,0,.18);}
+  .bigCard::before{content:'';position:absolute;top:0;right:0;width:130px;height:130px;background:radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);pointer-events:none;transition:background .4s ease;}
   .bigCard .widgetTitle{flex-shrink:0;}
   .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
   .bigCard .cardScroll::after{content:'';position:absolute;left:0;right:0;bottom:0;height:20px;background:linear-gradient(transparent, var(--panel2));pointer-events:none;}
@@ -189,14 +204,18 @@
   .spotlightProgressFill{height:100%;width:0%;background:var(--accent);border-radius:2px;animation-name:spotlightFill;animation-timing-function:linear;animation-fill-mode:forwards;}
   @keyframes spotlightFill{from{width:0%;}to{width:100%;}}
 
-  .widgetEyebrow{font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:1.5px;font-size:9px;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-shrink:0;transition:color .4s ease;}
-  .widgetEyebrow::before{content:'';width:10px;height:2px;background:var(--accent);display:inline-block;transition:background .4s ease;}
-  .widgetTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:14px;color:var(--ink);margin:0 0 6px 0;line-height:1.15;}
+  .widgetEyebrow{font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:1.5px;font-size:9px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-shrink:0;transition:color .4s ease;position:relative;z-index:1;}
+  /* Small round glyph chip, one per content type (set via item.icon), instead
+     of a generic dash \u2014 a quicker, friendlier read of "what kind of card
+     is this" than text alone, especially useful from across a room. */
+  .widgetIcon{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--accent) 18%, transparent);border:1px solid color-mix(in srgb, var(--accent) 55%, transparent);font-size:9px;line-height:1;color:var(--accent);transition:background .4s ease, border-color .4s ease, color .4s ease;}
+  .widgetTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:14px;color:var(--ink);margin:0 0 6px 0;line-height:1.15;position:relative;z-index:1;}
 
   /* Compact sizing for the stacked sidebar cards */
   .bigCard .qText{font-size:12.5px;line-height:1.35;}
-  .bigCard .catTag{font-size:8px;padding:2px 7px;margin-bottom:5px;}
-  .bigCard .aReveal{font-size:12.5px;margin-top:8px;padding-top:7px;}
+  .bigCard .catTag{font-size:8px;padding:2px 7px;margin-bottom:6px;}
+  .bigCard .aReveal{font-size:12px;margin-top:8px;padding:8px 10px;gap:7px;border-radius:8px;}
+  .bigCard .aReveal::before{width:15px;height:15px;font-size:9px;}
   .bigCard .prevRiddleWrap{margin-top:9px;padding-top:8px;}
   .bigCard .prevRiddleLabel{font-size:8px;}
   .bigCard .prevRiddleText{font-size:10.5px;margin-bottom:5px;}
@@ -233,10 +252,15 @@
   .leagueName{font-size:16px;color:var(--muted);margin:-18px 0 24px 0;letter-spacing:1px;}
 
   .contentBox{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:44px 50px;}
-  .catTag{display:inline-block;background:rgba(240,184,77,.1);color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:5px 12px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;}
+  .catTag{display:inline-block;background:color-mix(in srgb, var(--accent, var(--gold)) 14%, transparent);color:var(--accent, var(--gold));font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;padding:5px 12px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;border:1px solid color-mix(in srgb, var(--accent, var(--gold)) 35%, transparent);}
   .qText{font-size:32px;font-weight:500;line-height:1.35;color:var(--ink);}
-  .aReveal{margin-top:24px;padding-top:20px;border-top:1px dashed var(--line);font-family:'Poppins',sans-serif;font-weight:700;font-size:28px;color:var(--gold);opacity:0;transition:opacity .6s ease;}
-  .aReveal.show{opacity:1;}
+  /* The answer no longer just fades in place \u2014 it arrives as its own
+     small "unlocked" chip with a check mark, rising slightly and lit with
+     the card's accent glow, so the reveal moment actually reads as a
+     moment rather than a color change on the same line of text. */
+  .aReveal{margin-top:20px;padding:14px 16px;border-radius:10px;border:1px solid color-mix(in srgb, var(--accent, var(--gold)) 45%, transparent);background:color-mix(in srgb, var(--accent, var(--gold)) 10%, transparent);font-family:'Poppins',sans-serif;font-weight:700;font-size:24px;color:var(--ink);opacity:0;transform:translateY(6px) scale(.98);transition:opacity .5s ease, transform .5s cubic-bezier(.2,.9,.2,1), box-shadow .5s ease;display:flex;align-items:flex-start;gap:10px;}
+  .aReveal::before{content:'\2713';flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent, var(--gold));color:#0E0C1B;font-family:'Poppins',sans-serif;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+  .aReveal.show{opacity:1;transform:translateY(0) scale(1);box-shadow:0 0 26px color-mix(in srgb, var(--accent, var(--gold)) 30%, transparent);}
 
   .prevRiddleWrap{margin-top:26px;padding-top:20px;border-top:1px dashed var(--line);}
   .prevRiddleLabel{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
@@ -247,13 +271,21 @@
   .shoutItem{background:linear-gradient(90deg, var(--panel2), transparent);border-left:4px solid var(--gold);padding:18px 24px;border-radius:6px;font-size:24px;font-weight:500;}
 
   .wordBox{text-align:center;}
-  .hebrewWord{font-family:'Rubik',sans-serif;font-weight:900;font-size:88px;color:var(--gold);text-shadow:0 0 30px rgba(240,184,77,.3);direction:rtl;}
+  .hebrewWord{font-family:'Rubik',sans-serif;font-weight:900;font-size:88px;color:var(--accent, var(--gold));text-shadow:0 0 30px color-mix(in srgb, var(--accent, var(--gold)) 40%, transparent);direction:rtl;}
   .translit{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--muted);margin-top:10px;letter-spacing:1px;}
   .meaning{font-size:26px;margin-top:20px;color:var(--ink);max-width:800px;margin-left:auto;margin-right:auto;}
 
-  .thoughtBox{text-align:center;max-width:1000px;margin:0 auto;}
-  .thoughtText{font-size:32px;line-height:1.5;color:var(--ink);font-weight:400;}
-  .thoughtSource{margin-top:20px;font-family:'JetBrains Mono',monospace;color:var(--gold);letter-spacing:2px;font-size:14px;text-transform:uppercase;}
+  /* A large, quiet quotation mark sets these off as a saying being passed
+     down rather than another line of body copy \u2014 and the source line now
+     reads like a citation (a hairline rule + small caps) instead of a
+     generic all-caps label, which matters more once the source is a real
+     sefer/perek reference and not just a name in parentheses. */
+  .thoughtBox{text-align:center;max-width:1000px;margin:0 auto;position:relative;}
+  .thoughtBox::before{content:'\201C';position:absolute;top:-46px;left:50%;transform:translateX(-50%);font-family:'Poppins',sans-serif;font-weight:900;font-size:110px;line-height:1;color:color-mix(in srgb, var(--accent, var(--gold)) 22%, transparent);pointer-events:none;}
+  .thoughtText{font-size:32px;line-height:1.5;color:var(--ink);font-weight:400;position:relative;}
+  .thoughtSource{margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;color:var(--accent, var(--gold));letter-spacing:2px;font-size:14px;text-transform:uppercase;}
+  .thoughtSource::before{content:'';width:28px;height:1px;background:currentColor;opacity:.6;}
+  .bigCard .thoughtBox::before{font-size:56px;top:-22px;}
 
 
   .zmanimGrid{display:flex;flex-direction:column;gap:16px;}
@@ -922,56 +954,56 @@ const DEFAULT_FORTYEIGHT = [
 ];
 
 const DEFAULT_QUOTES = [
-"By failing to prepare, you are preparing to fail. (Benjamin Franklin)",
-"Well done is better than well said. (Benjamin Franklin)",
-"Energy and persistence conquer all things. (Benjamin Franklin)",
-"Diligence is the mother of good luck. (Benjamin Franklin)",
-"Courage is resistance to fear, mastery of fear, not absence of fear. (Mark Twain)",
-"I have not failed. I've just found 10,000 ways that won't work. (Thomas Edison)",
-"Genius is one percent inspiration and ninety-nine percent perspiration. (Thomas Edison)",
-"Believe you can and you're halfway there. (Theodore Roosevelt)",
-"It is hard to fail, but it is worse never to have tried to succeed. (Theodore Roosevelt)",
-"Do what you can, with what you have, where you are. (Theodore Roosevelt)",
-"Success is not final, failure is not fatal: it is the courage to continue that counts. (Winston Churchill)",
-"Never give in — never, never, never. (Winston Churchill)",
-"Whatever you are, be a good one. (Abraham Lincoln)",
-"I will prepare and someday my chance will come. (Abraham Lincoln)",
-"Although the world is full of suffering, it is also full of the overcoming of it. (Helen Keller)",
-"Character cannot be developed in ease and quiet. (Helen Keller)",
-"Do not go where the path may lead, go instead where there is no path and leave a trail. (Ralph Waldo Emerson)",
-"What lies behind us and what lies before us are tiny matters compared to what lies within us. (Ralph Waldo Emerson)",
-"We are what we repeatedly do. Excellence, then, is not an act, but a habit. (Aristotle)",
-"It does not matter how slowly you go as long as you do not stop. (Confucius)",
-"Our greatest glory is not in never falling, but in rising every time we fall. (Confucius)",
-"You have power over your mind, not outside events. Realize this, and you will find strength. (Marcus Aurelius)",
-"You may not control all the events that happen to you, but you can decide not to be reduced by them. (Maya Angelou)",
-"You gain strength, courage, and confidence by every experience in which you really stop to look fear in the face. (Eleanor Roosevelt)",
-"No one can make you feel inferior without your consent. (Eleanor Roosevelt)",
-"It's not whether you get knocked down, it's whether you get up. (Vince Lombardi)",
-"I hated every minute of training, but I said, don't quit. Suffer now and live the rest of your life as a champion. (Muhammad Ali)",
-"Every strike brings me closer to the next home run. (Babe Ruth)",
-"I've failed over and over and over again in my life, and that is why I succeed. (Michael Jordan)",
-"Never underestimate the power of dreams and the influence of the human spirit. (Wilma Rudolph)",
-"Success is to be measured not so much by the position that one has reached in life as by the obstacles which he has overcome. (Booker T. Washington)",
-"The most difficult thing is the decision to act; the rest is merely tenacity. (Amelia Earhart)",
-"In the middle of difficulty lies opportunity. (Albert Einstein)",
-"Whether you think you can, or you think you can't, you're right. (Henry Ford)",
-"Nothing in this world can take the place of persistence. (Calvin Coolidge)",
-"You don't have to be great to start, but you have to start to be great. (Zig Ziglar)",
-"Do not let what you cannot do interfere with what you can do. (John Wooden)",
-"Failure is not fatal, but failure to change might be. (John Wooden)",
-"A life is not important except in the impact it has on other lives. (Jackie Robinson)",
-"It takes an awful lot of determination, dedication, self-discipline, and effort to turn a dream into reality. (Jesse Owens)",
-"If there is no struggle, there is no progress. (Frederick Douglass)",
-"I am not afraid of storms, for I am learning how to sail my ship. (Louisa May Alcott)",
-"The way to get started is to quit talking and begin doing. (Walt Disney)",
-"All our dreams can come true, if we have the courage to pursue them. (Walt Disney)",
-"The only way to do great work is to love what you do. (Steve Jobs)",
-"You are never too old to set another goal or to dream a new dream. (C.S. Lewis)",
-"How wonderful it is that nobody need wait a single moment before starting to improve the world. (Anne Frank)",
-"Trust yourself. Create the kind of self that you will be happy to live with all your life. (Golda Meir)",
-"The opposite of love is not hate, it's indifference. (Elie Wiesel)",
-"If you hear the dogs, keep going. If you see a light shining, keep going. (Harriet Tubman)",
+"By failing to prepare, you are preparing to fail.",
+"Well done is better than well said.",
+"Energy and persistence conquer all things.",
+"Diligence is the mother of good luck.",
+"Courage is resistance to fear, mastery of fear, not absence of fear.",
+"I have not failed. I've just found 10,000 ways that won't work.",
+"Genius is one percent inspiration and ninety-nine percent perspiration.",
+"Believe you can and you're halfway there.",
+"It is hard to fail, but it is worse never to have tried to succeed.",
+"Do what you can, with what you have, where you are.",
+"Success is not final, failure is not fatal: it is the courage to continue that counts.",
+"Never give in — never, never, never.",
+"Whatever you are, be a good one.",
+"I will prepare and someday my chance will come.",
+"Although the world is full of suffering, it is also full of the overcoming of it.",
+"Character cannot be developed in ease and quiet.",
+"Do not go where the path may lead, go instead where there is no path and leave a trail.",
+"What lies behind us and what lies before us are tiny matters compared to what lies within us.",
+"We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+"It does not matter how slowly you go as long as you do not stop.",
+"Our greatest glory is not in never falling, but in rising every time we fall.",
+"You have power over your mind, not outside events. Realize this, and you will find strength.",
+"You may not control all the events that happen to you, but you can decide not to be reduced by them.",
+"You gain strength, courage, and confidence by every experience in which you really stop to look fear in the face.",
+"No one can make you feel inferior without your consent.",
+"It's not whether you get knocked down, it's whether you get up.",
+"I hated every minute of training, but I said, don't quit. Suffer now and live the rest of your life as a champion.",
+"Every strike brings me closer to the next home run.",
+"I've failed over and over and over again in my life, and that is why I succeed.",
+"Never underestimate the power of dreams and the influence of the human spirit.",
+"Success is to be measured not so much by the position that one has reached in life as by the obstacles which he has overcome.",
+"The most difficult thing is the decision to act; the rest is merely tenacity.",
+"In the middle of difficulty lies opportunity.",
+"Whether you think you can, or you think you can't, you're right.",
+"Nothing in this world can take the place of persistence.",
+"You don't have to be great to start, but you have to start to be great.",
+"Do not let what you cannot do interfere with what you can do.",
+"Failure is not fatal, but failure to change might be.",
+"A life is not important except in the impact it has on other lives.",
+"It takes an awful lot of determination, dedication, self-discipline, and effort to turn a dream into reality.",
+"If there is no struggle, there is no progress.",
+"I am not afraid of storms, for I am learning how to sail my ship.",
+"The way to get started is to quit talking and begin doing.",
+"All our dreams can come true, if we have the courage to pursue them.",
+"The only way to do great work is to love what you do.",
+"You are never too old to set another goal or to dream a new dream.",
+"How wonderful it is that nobody need wait a single moment before starting to improve the world.",
+"Trust yourself. Create the kind of self that you will be happy to live with all your life.",
+"The opposite of love is not hate, it's indifference.",
+"If you hear the dogs, keep going. If you see a light shining, keep going.",
 "Growth doesn't feel like growth while it's happening. It usually just feels like discomfort you decided not to run from.",
 "You're not behind. You're exactly where your own path put you — now build from here.",
 "Discipline is just choosing between what you want now and what you want most.",
@@ -1007,26 +1039,26 @@ const DEFAULT_QUOTES = [
 "Every skill you have now was once something you were bad at.",
 "Choose the hard right over the easy wrong — it's rarely the popular option, but it's the one you'll respect later.",
 "You're capable of more than the voice in your head that wants you to quit.",
-"It always seems impossible until it's done. (Nelson Mandela)",
-"The greatest glory in living lies not in never falling, but in rising every time we fall. (Nelson Mandela)",
-"I am not a product of my circumstances. I am a product of my decisions. (Stephen Covey)",
-"You miss 100% of the shots you don't take. (Wayne Gretzky)",
-"The best way to predict the future is to create it. (Abraham Lincoln)",
-"What you do today can improve all your tomorrows. (Ralph Marston)",
-"Fall seven times, stand up eight. (Japanese Proverb)",
-"A river cuts through rock, not because of its power, but because of its persistence. (Jim Watkins)",
-"Difficulties in life do not come to destroy you, but to help you realize your hidden potential. (Anonymous)",
-"Perseverance is not a long race; it is many short races one after another. (Walter Elliot)",
-"Strength does not come from winning. Your struggles develop your strengths. (Arnold Schwarzenegger)",
-"You are braver than you believe, stronger than you seem, and smarter than you think. (A. A. Milne)",
-"The only limit to our realization of tomorrow will be our doubts of today. (Franklin D. Roosevelt)",
-"Hardships often prepare ordinary people for an extraordinary destiny. (C.S. Lewis)",
-"It's not the load that breaks you down, it's the way you carry it. (Lou Holtz)",
-"A champion is defined not by their wins but by how they can recover when they fall. (Serena Williams)",
-"Once you choose hope, anything's possible. (Christopher Reeve)",
-"With the new day comes new strength and new thoughts. (Eleanor Roosevelt)",
-"There is no education like adversity. (Benjamin Disraeli)",
-"The struggle you're in today is developing the strength you need for tomorrow. (Robert Tew)"
+"It always seems impossible until it's done.",
+"The greatest glory in living lies not in never falling, but in rising every time we fall.",
+"I am not a product of my circumstances. I am a product of my decisions.",
+"You miss 100% of the shots you don't take.",
+"The best way to predict the future is to create it.",
+"What you do today can improve all your tomorrows.",
+"Fall seven times, stand up eight.",
+"A river cuts through rock, not because of its power, but because of its persistence.",
+"Difficulties in life do not come to destroy you, but to help you realize your hidden potential.",
+"Perseverance is not a long race; it is many short races one after another.",
+"Strength does not come from winning. Your struggles develop your strengths.",
+"You are braver than you believe, stronger than you seem, and smarter than you think.",
+"The only limit to our realization of tomorrow will be our doubts of today.",
+"Hardships often prepare ordinary people for an extraordinary destiny.",
+"It's not the load that breaks you down, it's the way you carry it.",
+"A champion is defined not by their wins but by how they can recover when they fall.",
+"Once you choose hope, anything's possible.",
+"With the new day comes new strength and new thoughts.",
+"There is no education like adversity.",
+"The struggle you're in today is developing the strength you need for tomorrow."
 ];
 
 const DEFAULT_GALLERY_PHOTOS = [
@@ -1656,23 +1688,23 @@ function buildSpotlightItems(){
       : '';
 
     if(todayRows.length || shabbosRows.length){
-      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'Today', body:`<div class="zmanimGrid">${todayHtml}${shabbosHtml}</div>`, accent:'var(--gold)'});
+      pinned.push({key:'zmanim', eyebrow:'Zmanim \u2014 Jerusalem', title:'Today', body:`<div class="zmanimGrid">${todayHtml}${shabbosHtml}</div>`, accent:'var(--gold)', icon:'\u25F7'});
     }
   }
 
   {
     const scheduleItem = buildScheduleSpotlightItem();
-    if(scheduleItem) pinned.push({...scheduleItem, key:'schedule', accent:'var(--blue)'});
+    if(scheduleItem) pinned.push({...scheduleItem, key:'schedule', accent:'var(--blue)', icon:'\u2261'});
   }
 
   if(config.leagueActive && config.teams && config.teams.length){
     const body = (config.leagueName ? `<div class="leagueName">${escapeHtml(config.leagueName)}</div>` : '') + renderTeamBars();
-    rotating.push({key:'standings', eyebrow:'League Standings', title:'Team Points', body, accent:'var(--green)'});
+    rotating.push({key:'standings', eyebrow:'League Standings', title:'Team Points', body, accent:'var(--green)', icon:'\u25B2'});
   }
 
   if(config.shoutouts && config.shoutouts.length){
     const body = `<div class="shoutoutBox">${config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
-    rotating.push({key:'shoutouts', eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)'});
+    rotating.push({key:'shoutouts', eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)', icon:'\u2726'});
   }
 
   if(config.triviaBank && config.triviaBank.length){
@@ -1680,7 +1712,7 @@ function buildSpotlightItems(){
     const body = `${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
       <div class="qText">${escapeHtml(t.q)}</div>
       <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
-    rotating.push({key:'trivia', eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true, accent:'var(--red)'});
+    rotating.push({key:'trivia', eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true, accent:'var(--red)', icon:'?'});
   }
 
   if(config.riddleBank && config.riddleBank.length){
@@ -1696,7 +1728,7 @@ function buildSpotlightItems(){
         <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
         <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
       </div>` : ''}`;
-    rotating.push({key:'riddle', eyebrow:'Riddle of the Day', title:'Figure It Out', body, accent:'var(--purple-light)'});
+    rotating.push({key:'riddle', eyebrow:'Riddle of the Day', title:'Figure It Out', body, accent:'var(--purple-light)', icon:'\u25C6'});
   }
 
   if(config.wordBank && config.wordBank.length){
@@ -1707,7 +1739,7 @@ function buildSpotlightItems(){
       <div class="translit">${escapeHtml(w.translit)}</div>
       <div class="meaning">${escapeHtml(w.meaning)}</div>
     </div>`;
-    rotating.push({key:'word', eyebrow:'Word of the Day', title:'Milah HaYom', body, accent:'var(--blue)'});
+    rotating.push({key:'word', eyebrow:'Word of the Day', title:'Milah HaYom', body, accent:'var(--blue)', icon:'\u05D0'});
   }
 
   if(config.quoteBank && config.quoteBank.length){
@@ -1717,23 +1749,23 @@ function buildSpotlightItems(){
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
       ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
-    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Something to Chew On', body, accent:'var(--green)'});
+    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Something to Chew On', body, accent:'var(--green)', icon:'\u201C'});
   }
 
   if(config.waysBank && config.waysBank.length){
     const w = config.waysBank[dayOfYear % config.waysBank.length];
-    rotating.push({key:'ways', eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)'});
+    rotating.push({key:'ways', eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)', icon:'\u25B3'});
   }
 
   {
     const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
-    if(text) rotating.push({key:'history', eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`, accent:'var(--purple-light)'});
+    if(text) rotating.push({key:'history', eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`, accent:'var(--purple-light)', icon:'\u2609'});
   }
 
   {
     const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
     const y = manual ? config.yahrzeit : autoYahrzeit;
-    if(y) rotating.push({key:'yahrzeit', eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)'});
+    if(y) rotating.push({key:'yahrzeit', eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)', icon:'\u2727'});
   }
 
   return {pinned, rotating};
@@ -1749,7 +1781,7 @@ function paintSpotlightSlot(slotIdx, item){
   }
   card.style.setProperty('--accent', item.accent || 'var(--gold)');
   card.innerHTML = `
-    <div class="widgetEyebrow">${item.eyebrow}</div>
+    <div class="widgetEyebrow">${item.icon ? `<span class="widgetIcon">${escapeHtml(item.icon)}</span>` : ''}${item.eyebrow}</div>
     <h2 class="widgetTitle">${escapeHtml(item.title)}</h2>
     <div class="cardScroll">${item.body}</div>
     <div class="spotlightMeta">
@@ -2059,7 +2091,10 @@ function renderFlyerPanel(animate){
     panel.innerHTML = flyerCellsMarkup(plan.mode);
     plan.picks.forEach((item, i)=>{
       const cell = document.getElementById('flyerCell'+i);
-      if(cell) cell.innerHTML = renderFlyerMarkup(item);
+      if(cell){
+        cell.innerHTML = renderFlyerMarkup(item);
+        cell.classList.toggle('flyerCellNeedToKnow', !!(item && item.priority === 'high'));
+      }
     });
     lastFlyerUrls = plan.picks.map(p=>p.url);
     updateFlyerPanelLayout();
