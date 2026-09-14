@@ -459,7 +459,13 @@
       <div class="field"><label>Quick-Add a Shoutout / Mazel Tov</label><input id="qShoutout" placeholder="Type it and tap Add"></div>
       <button class="addBtn" id="qShoutoutAdd">+ Add & Save</button>
       <div style="height:20px;"></div>
-      <div class="field"><label>Quick-Add a Photo (paste URL)</label><input id="qPhotoUrl" placeholder="Image URL"></div>
+      <div class="field"><label>Photo or Video?</label>
+        <select id="qPhotoType">
+          <option value="image">Photo</option>
+          <option value="video">Video</option>
+        </select>
+      </div>
+      <div class="field"><label>Quick-Add a Photo or Video (paste URL)</label><input id="qPhotoUrl" placeholder="Image or video URL"></div>
       <div id="qPhotoUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
         <img id="qPhotoUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
         <div id="qPhotoUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
@@ -1584,7 +1590,7 @@ function buildScheduleSpotlightItem(){
       ? `<div class="schedRow"><span class="schedTime">${escapeHtml(time.trim())}</span><span class="schedActivity">${escapeHtml(activity)}</span></div>`
       : `<div class="schedRow"><span class="schedActivity">${escapeHtml(l)}</span></div>`;
   }).join('');
-  return {eyebrow:'Today', title:'Schedule', body:`<div class="scheduleList">${body}</div>`};
+  return {eyebrow:'Today', title:'Daily Schedule', body:`<div class="scheduleList">${body}</div>`};
 }
 
 // ================= SPOTLIGHT CAROUSEL =================
@@ -1749,7 +1755,7 @@ function buildSpotlightItems(){
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
       ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
-    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Something to Chew On', body, accent:'var(--green)', icon:'\u201C'});
+    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Quotes', body, accent:'var(--green)', icon:'\u201C'});
   }
 
   if(config.waysBank && config.waysBank.length){
@@ -2245,7 +2251,12 @@ function buildNewerPhotoItems(includeExtraInfoFlyers){
   const items = customs.map((p, i) => ({
     url: p.url, caption: p.caption, isCustom: true,
     weight: (n - i) <= 5 ? 6 : 2,
-    type: guessIsVideoUrl(p.url) ? 'video' : 'image'
+    // Older saved entries (from before the Photo/Video picker existed) have
+    // no p.type at all, so fall back to guessing from the URL for those;
+    // anything added since is tagged explicitly and shouldn't be re-guessed
+    // (a normalized Drive video URL no longer looks like a video by shape).
+    type: p.type || (guessIsVideoUrl(p.url) ? 'video' : 'image'),
+    mimeType: p.type === 'video' ? 'video/mp4' : undefined
   }));
   driveFolderPhotos.forEach(p => {
     items.push({ url: p.url, caption: p.caption, isCustom: true, weight: 4, type: p.type, mimeType: p.mimeType, fallbackUrl: p.fallbackUrl });
@@ -2537,12 +2548,38 @@ document.querySelectorAll('.tab').forEach(tab=>{
 // etc.) are viewer PAGES, not the image itself — an <img> tag can't load them,
 // which is why Drive photos silently never appeared. Rewrite them to Drive's
 // actual direct-image host whenever we save a URL.
+// Shared by both normalizers below: pulls the file id out of any of the
+// common Google Drive share/open link shapes.
+function extractDriveFileId(url){
+  if(!url) return null;
+  const m = url.trim().match(/drive\.google\.com\/(?:file\/d\/([^/?]+)|open\?id=([^&]+)|uc\?(?:export=view&)?id=([^&]+))/);
+  return m && (m[1] || m[2] || m[3]);
+}
+
 function normalizeImageUrl(url){
   if(!url) return url;
   const u = url.trim();
-  const m = u.match(/drive\.google\.com\/(?:file\/d\/([^/?]+)|open\?id=([^&]+)|uc\?(?:export=view&)?id=([^&]+))/);
-  const id = m && (m[1] || m[2] || m[3]);
+  const id = extractDriveFileId(u);
   return id ? `https://lh3.googleusercontent.com/d/${id}` : u;
+}
+
+// A Drive "share" link (file/d/ID/view) looks identical whether the file is
+// a photo or a video, so a pasted video link used to fall through to
+// normalizeImageUrl above and get rewritten into the lh3 *thumbnail* host —
+// which happily renders a still frame as an <img>, but can never actually
+// play. Videos need the lh3 rewrite skipped entirely in favor of a host
+// that streams the real file: the same uc?export=download host already
+// used elsewhere in this file as the Drive-folder video fallback, which
+// works without needing an API key.
+function normalizeVideoUrl(url){
+  if(!url) return url;
+  const u = url.trim();
+  const id = extractDriveFileId(u);
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : u;
+}
+
+function normalizeMediaUrl(url, isVideo){
+  return isVideo ? normalizeVideoUrl(url) : normalizeImageUrl(url);
 }
 
 function syncFormToConfig(){
@@ -2567,7 +2604,11 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="teamName"]').forEach(el=> config.teams[Number(el.dataset.idx)].name = el.value);
   document.querySelectorAll('[data-field="teamPoints"]').forEach(el=> config.teams[Number(el.dataset.idx)].points = Number(el.value)||0);
   document.querySelectorAll('[data-field="shoutout"]').forEach(el=> config.shoutouts[Number(el.dataset.idx)] = el.value);
-  document.querySelectorAll('[data-field="photoUrl"]').forEach(el=> config.photos[Number(el.dataset.idx)].url = normalizeImageUrl(el.value));
+  document.querySelectorAll('[data-field="photoType"]').forEach(el=> config.photos[Number(el.dataset.idx)].type = el.value === 'video' ? 'video' : 'image');
+  document.querySelectorAll('[data-field="photoUrl"]').forEach(el=>{
+    const p = config.photos[Number(el.dataset.idx)];
+    p.url = normalizeMediaUrl(el.value, p.type === 'video');
+  });
   document.querySelectorAll('[data-field="photoCaption"]').forEach(el=> config.photos[Number(el.dataset.idx)].caption = el.value);
   document.querySelectorAll('[data-field="cdName"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].name = el.value);
   document.querySelectorAll('[data-field="cdDate"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].date = el.value);
@@ -2739,27 +2780,59 @@ function populateModal(){
   (config.photos||[]).forEach((p,i)=>{
     const div = document.createElement('div');
     div.className = 'photoCard';
+    const isVideo = p.type === 'video';
     div.innerHTML = `<button class="photoCardRmBtn" data-remove="photo" data-idx="${i}" title="Delete photo">✕</button>
       <div class="photoThumbWrap" data-idx="${i}">
         <div class="photoThumbEmpty">No image yet</div>
       </div>
-      <div class="field"><label>Image URL</label><input data-field="photoUrl" data-idx="${i}" value="${escapeAttr(p.url)}" placeholder="Paste image link"></div>
+      <div class="field"><label>Photo or Video?</label>
+        <select data-field="photoType" data-idx="${i}">
+          <option value="image" ${!isVideo ? 'selected':''}>Photo</option>
+          <option value="video" ${isVideo ? 'selected':''}>Video</option>
+        </select>
+      </div>
+      <div class="field"><label id="photoUrlLabel${i}">${isVideo ? 'Video URL' : 'Image URL'}</label><input data-field="photoUrl" data-idx="${i}" value="${escapeAttr(p.url)}" placeholder="Paste ${isVideo ? 'video' : 'image'} link"></div>
       <div class="field"><label>Caption</label><input data-field="photoCaption" data-idx="${i}" value="${escapeAttr(p.caption||'')}" placeholder="Optional"></div>`;
     photosList.appendChild(div);
-    loadPhotoThumb(div.querySelector('.photoThumbWrap'), p.url);
+    if(isVideo){
+      div.querySelector('.photoThumbWrap').innerHTML = `<div class="photoThumbEmpty">🎬 Video</div>`;
+    } else {
+      loadPhotoThumb(div.querySelector('.photoThumbWrap'), p.url);
+    }
   });
 
-  // One delegated listener re-checks the thumbnail as the URL is edited,
-  // same pattern as the flyer/quick-add fields.
+  // One delegated listener re-checks the thumbnail as the URL/type is
+  // edited, same pattern as the flyer/quick-add fields. Switching the type
+  // select also re-normalizes the URL already in the box (so flipping a row
+  // from Photo to Video rewrites a Drive link to the playable form instead
+  // of leaving it as the thumbnail-only form).
   if(!photosList.dataset.wired){
     photosList.dataset.wired = '1';
     let photoRowPreviewDebounce = null;
     photosList.addEventListener('input', (e)=>{
       if(e.target.dataset.field !== 'photoUrl') return;
       clearTimeout(photoRowPreviewDebounce);
-      const wrap = e.target.closest('.photoCard').querySelector('.photoThumbWrap');
+      const card = e.target.closest('.photoCard');
+      const wrap = card.querySelector('.photoThumbWrap');
+      const typeSel = card.querySelector('[data-field="photoType"]');
       const val = e.target.value.trim();
-      photoRowPreviewDebounce = setTimeout(()=> loadPhotoThumb(wrap, val), 500);
+      const isVideo = typeSel && typeSel.value === 'video';
+      photoRowPreviewDebounce = setTimeout(()=>{
+        if(isVideo) wrap.innerHTML = `<div class="photoThumbEmpty">🎬 Video</div>`;
+        else loadPhotoThumb(wrap, val);
+      }, 500);
+    });
+    photosList.addEventListener('change', (e)=>{
+      if(e.target.dataset.field !== 'photoType') return;
+      const card = e.target.closest('.photoCard');
+      const urlInput = card.querySelector('[data-field="photoUrl"]');
+      const wrap = card.querySelector('.photoThumbWrap');
+      const label = card.querySelector(`#photoUrlLabel${e.target.dataset.idx}`);
+      const isVideo = e.target.value === 'video';
+      urlInput.value = normalizeMediaUrl(urlInput.value.trim(), isVideo);
+      if(label) label.textContent = isVideo ? 'Video URL' : 'Image URL';
+      if(isVideo) wrap.innerHTML = `<div class="photoThumbEmpty">🎬 Video</div>`;
+      else loadPhotoThumb(wrap, urlInput.value);
     });
   }
 
@@ -2947,30 +3020,50 @@ const qPhotoUrlInput = document.getElementById('qPhotoUrl');
 const qPhotoUrlPreviewWrap = document.getElementById('qPhotoUrlPreviewWrap');
 const qPhotoUrlPreviewImg = document.getElementById('qPhotoUrlPreviewImg');
 const qPhotoUrlPreviewMsg = document.getElementById('qPhotoUrlPreviewMsg');
+const qPhotoTypeSelect = document.getElementById('qPhotoType');
+function runQPhotoPreview(){
+  const val = qPhotoUrlInput.value.trim();
+  if(!val){ qPhotoUrlPreviewWrap.style.display = 'none'; return; }
+  const isVideo = qPhotoTypeSelect.value === 'video';
+  qPhotoUrlPreviewWrap.style.display = '';
+  // A video link can't be sanity-checked with an <img> load — an lh3
+  // thumbnail-style probe would "succeed" on a still frame even when actual
+  // playback is broken, giving false confidence. Just confirm we recognize
+  // it as a Drive link (so it gets the playable-URL rewrite) instead.
+  if(isVideo){
+    qPhotoUrlPreviewImg.style.display = 'none';
+    const isDriveLink = !!extractDriveFileId(val);
+    if(isDriveLink){
+      qPhotoUrlPreviewMsg.textContent = '✓ Recognized as a Drive video link — will be set up to actually play.';
+      qPhotoUrlPreviewMsg.style.color = 'var(--green)';
+    } else {
+      qPhotoUrlPreviewMsg.textContent = 'This will be added as a video. Make sure it\'s a direct video file link (or a Google Drive share link).';
+      qPhotoUrlPreviewMsg.style.color = 'var(--muted)';
+    }
+    return;
+  }
+  qPhotoUrlPreviewMsg.textContent = 'Checking link…';
+  qPhotoUrlPreviewMsg.style.color = 'var(--muted)';
+  qPhotoUrlPreviewImg.style.display = 'none';
+  qPhotoUrlPreviewImg.onload = ()=>{
+    qPhotoUrlPreviewImg.style.display = 'block';
+    qPhotoUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
+    qPhotoUrlPreviewMsg.style.color = 'var(--green)';
+  };
+  qPhotoUrlPreviewImg.onerror = ()=>{
+    qPhotoUrlPreviewImg.style.display = 'none';
+    qPhotoUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
+    qPhotoUrlPreviewMsg.style.color = 'var(--red)';
+  };
+  qPhotoUrlPreviewImg.src = normalizeImageUrl(val);
+}
 if(qPhotoUrlInput){
   let qPhotoPreviewDebounce = null;
   qPhotoUrlInput.addEventListener('input', ()=>{
     clearTimeout(qPhotoPreviewDebounce);
-    const val = qPhotoUrlInput.value.trim();
-    if(!val){ qPhotoUrlPreviewWrap.style.display = 'none'; return; }
-    qPhotoPreviewDebounce = setTimeout(()=>{
-      qPhotoUrlPreviewWrap.style.display = '';
-      qPhotoUrlPreviewMsg.textContent = 'Checking link…';
-      qPhotoUrlPreviewMsg.style.color = 'var(--muted)';
-      qPhotoUrlPreviewImg.style.display = 'none';
-      qPhotoUrlPreviewImg.onload = ()=>{
-        qPhotoUrlPreviewImg.style.display = 'block';
-        qPhotoUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
-        qPhotoUrlPreviewMsg.style.color = 'var(--green)';
-      };
-      qPhotoUrlPreviewImg.onerror = ()=>{
-        qPhotoUrlPreviewImg.style.display = 'none';
-        qPhotoUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
-        qPhotoUrlPreviewMsg.style.color = 'var(--red)';
-      };
-      qPhotoUrlPreviewImg.src = normalizeImageUrl(val);
-    }, 500);
+    qPhotoPreviewDebounce = setTimeout(runQPhotoPreview, 500);
   });
+  if(qPhotoTypeSelect) qPhotoTypeSelect.addEventListener('change', runQPhotoPreview);
 }
 
 document.getElementById('addFlyer').onclick = async ()=>{
@@ -3045,12 +3138,14 @@ document.getElementById('qShoutoutAdd').onclick = async ()=>{
 };
 
 document.getElementById('qPhotoAdd').onclick = async ()=>{
-  const url = normalizeImageUrl(document.getElementById('qPhotoUrl').value.trim());
+  const type = document.getElementById('qPhotoType').value === 'video' ? 'video' : 'image';
+  const url = normalizeMediaUrl(document.getElementById('qPhotoUrl').value.trim(), type === 'video');
   if(!url) return;
   syncFormToConfig();
-  config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim()});
+  config.photos.push({url, caption: document.getElementById('qPhotoCaption').value.trim(), type});
   document.getElementById('qPhotoUrl').value = '';
   document.getElementById('qPhotoCaption').value = '';
+  document.getElementById('qPhotoType').value = 'image';
   qPhotoUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…');
 };
