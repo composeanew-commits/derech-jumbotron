@@ -285,11 +285,9 @@
   .field label{display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
   .field input, .field textarea, .field select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:10px 12px;font-family:'Rubik';font-size:15px;}
   /* Native date/time picker icons default to dark, which disappears against
-     this panel's dark background — invert them so they're visible. */
-  .field input[type="date"]::-webkit-calendar-picker-indicator,
-  .field input[type="time"]::-webkit-calendar-picker-indicator{
-    filter:invert(1) brightness(1.6);cursor:pointer;
-  }
+     this panel's dark background. color-scheme:dark alone gets the browser
+     to draw its built-in light-colored icon — no filter needed (stacking an
+     invert filter on top of that would just flip it dark again). */
   .field input[type="date"],
   .field input[type="time"]{color-scheme:dark;}
   .priorityPill{display:inline-block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:10px;margin-left:8px;vertical-align:middle;}
