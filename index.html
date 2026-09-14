@@ -378,8 +378,8 @@
       <button class="closeBtn" id="closeModal">✕</button>
     </div>
     <div class="tabs">
-      <div class="tab active" data-tab="quick">Quick Update</div>
-      <div class="tab" data-tab="flyers">Event Flyers</div>
+      <div class="tab" data-tab="quick">Quick Update</div>
+      <div class="tab active" data-tab="flyers">Event Flyers</div>
       <div class="tab" data-tab="league">League / Teams</div>
       <div class="tab" data-tab="countdown">Countdown</div>
       <div class="tab" data-tab="shoutouts">Shoutouts</div>
@@ -388,7 +388,7 @@
       <div class="tab" data-tab="banks">Content Banks</div>
     </div>
 
-    <div class="tabPanel active" data-panel="quick">
+    <div class="tabPanel" data-panel="quick">
       <div class="hint" style="margin-top:0;">The fastest way to do a full day's update in one place.</div>
       <div class="field"><label>Candle Lighting (leave blank to auto-fill for Jerusalem)</label><input id="qzCandle" type="time"></div>
       <div class="field"><label>Shabbos Ends (Havdalah) — leave blank to auto-fill for Jerusalem</label><input id="qzHavdalah" type="time"></div>
@@ -415,7 +415,7 @@
       <div class="saveStatus" id="quickStatus" style="margin-top:12px;"></div>
     </div>
 
-    <div class="tabPanel" data-panel="flyers">
+    <div class="tabPanel active" data-panel="flyers">
       <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen and shows up more and more often as the date gets closer, so nobody misses it.</div>
 
       <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Flyer Image</label>
@@ -439,10 +439,10 @@
       <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
       <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
       <div class="field">
-        <label>How much should it stand out?</label>
+        <label>Need to Know or Extra Info?</label>
         <select id="flyerPriority">
-          <option value="normal">Normal — shows up in the regular rotation</option>
-          <option value="high">High Priority — shows up a lot more, especially as it gets close</option>
+          <option value="normal">Extra Info — shows up in the regular rotation</option>
+          <option value="high">Need to Know — shows up a lot more, especially as it gets close</option>
         </select>
       </div>
       <button class="addBtn" id="addFlyer">+ Add Flyer</button>
@@ -2568,7 +2568,7 @@ function populateModal(){
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
-              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· High priority' : ''}
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}
             </div>
           </div>
           <div class="flyerSummaryChevron">▾</div>
@@ -2594,10 +2594,10 @@ function populateModal(){
           <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" data-field="flyerShowCountdownEdit" data-idx="${i}" id="flyerShowCountdownEdit${i}" ${f.showCountdown ? 'checked' : ''}><label for="flyerShowCountdownEdit${i}" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
           <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
           <div class="field">
-            <label>How much should it stand out?</label>
+            <label>Need to Know or Extra Info?</label>
             <select data-field="flyerPriorityEdit" data-idx="${i}">
-              <option value="normal" ${f.priority!=='high' ? 'selected':''}>Normal — shows up in the regular rotation</option>
-              <option value="high" ${f.priority==='high' ? 'selected':''}>High Priority — shows up a lot more, especially as it gets close</option>
+              <option value="normal" ${f.priority!=='high' ? 'selected':''}>Extra Info — shows up in the regular rotation</option>
+              <option value="high" ${f.priority==='high' ? 'selected':''}>Need to Know — shows up a lot more, especially as it gets close</option>
             </select>
           </div>
         </div>` : ''}`;
