@@ -94,6 +94,15 @@
   /* Flyers must always be shown in full — never cropped — no matter if the
      upload is portrait or landscape. */
   .flyerCell img{width:100%;height:100%;object-fit:contain;background:#0E0C1B;display:block;}
+  /* Multi-page PDF flyers render into this canvas instead of an <img> — same
+     fill/contain sizing so a PDF page looks identical to a normal flyer
+     image, just flipping between pages on its own timer (see
+     initFlyerPdfCell). */
+  .flyerCell canvas.flyerPdfCanvas{width:100%;height:100%;object-fit:contain;background:#0E0C1B;display:block;}
+  .flyerPdfPageIndicator{position:absolute;bottom:10px;right:10px;z-index:2;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.5px;
+    color:var(--ink);background:rgba(14,12,27,.72);padding:4px 11px;border-radius:12px;
+    border:1px solid var(--line);}
   .flyerCell .flyerEventName{font-size:20px;}
   .flyerCell .flyerWhen{font-size:14px;}
   .flyerCell .flyerCaptionBar{padding:34px 20px 14px 20px;}
@@ -484,7 +493,14 @@
         <span id="flyerFileLabel">📎 Tap to choose a photo from this device</span>
       </div>
       <div class="uploadDivider">or paste a link instead</div>
-      <div class="field"><input id="flyerUrl" placeholder="Image URL"></div>
+      <div class="field"><label>Flyer type</label>
+        <select id="flyerType">
+          <option value="image">Image — one picture</option>
+          <option value="pdf">PDF — multiple pages, flips through them on its own</option>
+        </select>
+      </div>
+      <div class="field"><input id="flyerUrl" placeholder="Image or PDF URL"></div>
+      <div id="flyerPdfHint" class="hint" style="display:none;margin-top:-6px;">A PDF can only be added by pasting a link (a Google Drive share link works) — the file picker above only takes photos. It'll flip through every page on its own while it's showing.</div>
       <div id="flyerUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
         <img id="flyerUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
         <div id="flyerUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
@@ -581,8 +597,13 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script type="module">
 import { HDate, HebrewCalendar, Location, Zmanim, flags } from 'https://esm.run/@hebcal/core';
+
+if(window.pdfjsLib){
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
 
 const TEAM_COLORS = ['#D6503F','#3E7CB1','#4E9B5C','#8B82C9','#F0B84D','#D673A8'];
 
@@ -1954,16 +1975,100 @@ function pickWeightedFlyer(flyers){
 
 function renderFlyerMarkup(item){
   if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
-  return `
-    <img src="${escapeAttr(item.url)}" alt="event flyer" onload="cacheFlyerImgOrientation(this); updateFlyerPanelLayout();" onerror="this.style.display='none'; updateFlyerPanelLayout();">
-    ${item.priority === 'high' ? `<div class="flyerNeedToKnowBadge"><span class="flyerNeedToKnowBadgeText">Need to Know</span></div>` : ''}
+  const badge = item.priority === 'high' ? `<div class="flyerNeedToKnowBadge"><span class="flyerNeedToKnowBadgeText">Need to Know</span></div>` : '';
+  const caption = `
     <div class="photoCaptionBar flyerCaptionBar">
       <div class="flyerEventName">${escapeHtml(item.eventName || 'Upcoming Event')}</div>
       ${item.target ? `<div class="flyerWhen urgency-${item.urgency}">${escapeHtml(formatRelativeTime(item.target))}</div>` : ''}
     </div>`;
+  if(item.type === 'pdf'){
+    // The canvas starts empty — initFlyerPdfCell (called right after this
+    // markup is inserted into the DOM) does the actual PDF.js load and
+    // draws into it, then keeps flipping pages on its own timer for as
+    // long as this cell is showing.
+    return `
+      <canvas class="flyerPdfCanvas"></canvas>
+      <div class="flyerPdfPageIndicator" style="display:none;"></div>
+      ${badge}${caption}`;
+  }
+  return `
+    <img src="${escapeAttr(item.url)}" alt="event flyer" onload="cacheFlyerImgOrientation(this); updateFlyerPanelLayout();" onerror="this.style.display='none'; updateFlyerPanelLayout();">
+    ${badge}${caption}`;
 }
 
-// Remembers each flyer image's real orientation once it's actually loaded,
+// Time each page of a multi-page PDF flyer stays up before flipping to the
+// next one. Deliberately shorter than FLYER_DURATION/NEED_TO_KNOW_FLYER_DURATION
+// above — those govern how long the whole flyer panel spends on this flyer
+// before rotating to a different one; this just governs the pace of flipping
+// through pages *within* that time (or indefinitely, if this is the only
+// active flyer and the panel never rotates away from it at all).
+const PDF_PAGE_DURATION = 6000;
+
+// Bumped every time the flyer panel re-renders (see renderFlyerPanel). Any
+// PDF page-flip loop from a previous render checks this before each async
+// step and quietly stops if it's gone stale — simpler and safer than trying
+// to track/cancel a bunch of individual setTimeout ids across cell swaps.
+let flyerPdfGeneration = 0;
+
+async function initFlyerPdfCell(cell, item, myGen){
+  const canvas = cell.querySelector('canvas.flyerPdfCanvas');
+  const indicator = cell.querySelector('.flyerPdfPageIndicator');
+  if(!canvas) return;
+  const stale = ()=> myGen !== flyerPdfGeneration;
+  if(!window.pdfjsLib){
+    // The CDN script didn't load (offline, blocked, etc.) — fail visibly
+    // rather than leaving a blank canvas with no explanation.
+    if(!stale()) cell.insertAdjacentHTML('afterbegin', `<div class="photoEmptyState">Couldn't load the PDF viewer</div>`);
+    return;
+  }
+  try{
+    const pdf = await window.pdfjsLib.getDocument(item.url).promise;
+    if(stale()) return;
+    const numPages = pdf.numPages;
+    const ctx = canvas.getContext('2d');
+
+    const renderPage = async (n)=>{
+      const page = await pdf.getPage(n);
+      if(stale()) return;
+      // Rendered at a fixed higher-resolution scale so the page stays crisp
+      // once CSS scales the canvas down to fit the cell (object-fit:
+      // contain) — otherwise a page rendered at exactly the cell's on-screen
+      // size looks soft, like a low-res screenshot, next to a real flyer image.
+      const viewport = page.getViewport({scale: 2});
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      await page.render({canvasContext: ctx, viewport}).promise;
+      if(stale()) return;
+      cacheFlyerOrientation(item.url, viewport.width >= viewport.height);
+      updateFlyerPanelLayout();
+      if(indicator){
+        indicator.style.display = numPages > 1 ? '' : 'none';
+        indicator.textContent = `Page ${n} / ${numPages}`;
+      }
+    };
+
+    await renderPage(1);
+    if(stale()) return;
+
+    // A single-page PDF just sits still, same as a normal flyer image —
+    // only bother with the flip loop when there's actually more than one
+    // page to cycle through.
+    if(numPages > 1){
+      let pageNum = 1;
+      const flip = async ()=>{
+        if(stale()) return;
+        pageNum = pageNum >= numPages ? 1 : pageNum + 1;
+        await renderPage(pageNum);
+        if(stale()) return;
+        setTimeout(flip, PDF_PAGE_DURATION);
+      };
+      setTimeout(flip, PDF_PAGE_DURATION);
+    }
+  }catch(e){
+    console.warn('PDF flyer failed to load', e);
+    if(!stale()) cell.insertAdjacentHTML('afterbegin', `<div class="photoEmptyState">Couldn't load this PDF flyer</div>`);
+  }
+}
 // keyed by its src URL — this is what lets the *next* rotation decide ahead
 // of time whether a flyer is portrait or landscape, instead of only finding
 // out after it's already on screen.
@@ -2008,9 +2113,14 @@ function updateFlyerPanelLayout(){
     panel.classList.remove('stacked');
     return;
   }
-  const img0 = cell0 && cell0.querySelector('img');
-  const img1 = cell1 && cell1.querySelector('img');
-  const isLoadedLandscape = (img)=> !!(img && img.style.display !== 'none' && img.naturalWidth > 0 && img.naturalHeight > 0 && img.naturalWidth >= img.naturalHeight);
+  const img0 = cell0 && cell0.querySelector('img, canvas.flyerPdfCanvas');
+  const img1 = cell1 && cell1.querySelector('img, canvas.flyerPdfCanvas');
+  const isLoadedLandscape = (el)=>{
+    if(!el || el.style.display === 'none') return false;
+    const w = el.tagName === 'CANVAS' ? el.width : el.naturalWidth;
+    const h = el.tagName === 'CANVAS' ? el.height : el.naturalHeight;
+    return w > 0 && h > 0 && w >= h;
+  };
   panel.classList.toggle('stacked', isLoadedLandscape(img0) && isLoadedLandscape(img1));
 }
 window.updateFlyerPanelLayout = updateFlyerPanelLayout;
@@ -2093,6 +2203,7 @@ function renderFlyerPanel(animate){
   const plan = planFlyerCells(activeFlyers, lastFlyerUrls);
 
   const doRender = ()=>{
+    flyerPdfGeneration++; // invalidate any still-looping PDF page flip from the previous render
     panel.classList.remove('stacked');
     panel.innerHTML = flyerCellsMarkup(plan.mode);
     plan.picks.forEach((item, i)=>{
@@ -2100,6 +2211,7 @@ function renderFlyerPanel(animate){
       if(cell){
         cell.innerHTML = renderFlyerMarkup(item);
         cell.classList.toggle('flyerCellNeedToKnow', !!(item && item.priority === 'high'));
+        if(item && item.type === 'pdf') initFlyerPdfCell(cell, item, flyerPdfGeneration);
       }
     });
     lastFlyerUrls = plan.picks.map(p=>p.url);
@@ -2279,7 +2391,7 @@ function buildExtraInfoFlyerPhotoItems(){
   const hasNeedToKnow = active.some(f => f.priority === 'high');
   if(!hasNeedToKnow) return [];
   return active
-    .filter(f => f.priority !== 'high')
+    .filter(f => f.priority !== 'high' && f.type !== 'pdf')
     .map(f => ({
       url: f.url,
       isCustom: true,
@@ -2563,23 +2675,23 @@ function normalizeImageUrl(url){
   return id ? `https://lh3.googleusercontent.com/d/${id}` : u;
 }
 
-// A Drive "share" link (file/d/ID/view) looks identical whether the file is
-// a photo or a video, so a pasted video link used to fall through to
-// normalizeImageUrl above and get rewritten into the lh3 *thumbnail* host —
-// which happily renders a still frame as an <img>, but can never actually
-// play. Videos need the lh3 rewrite skipped entirely in favor of a host
-// that streams the real file: the same uc?export=download host already
-// used elsewhere in this file as the Drive-folder video fallback, which
-// works without needing an API key.
-function normalizeVideoUrl(url){
+// A Drive "share" link (file/d/ID/view) looks identical no matter what kind
+// of file it points to, so a pasted video or PDF link used to fall through
+// to normalizeImageUrl above and get rewritten into the lh3 *thumbnail*
+// host — which happily renders a still frame as an <img>, but can never
+// actually play a video or open as a PDF. Both need the lh3 rewrite skipped
+// entirely in favor of a host that streams/downloads the real file: the
+// same uc?export=download host already used elsewhere in this file as the
+// Drive-folder video fallback, which works without needing an API key.
+function normalizeDownloadableUrl(url){
   if(!url) return url;
   const u = url.trim();
   const id = extractDriveFileId(u);
   return id ? `https://drive.google.com/uc?export=download&id=${id}` : u;
 }
 
-function normalizeMediaUrl(url, isVideo){
-  return isVideo ? normalizeVideoUrl(url) : normalizeImageUrl(url);
+function normalizeMediaUrl(url, needsRealFile){
+  return needsRealFile ? normalizeDownloadableUrl(url) : normalizeImageUrl(url);
 }
 
 function syncFormToConfig(){
@@ -2614,7 +2726,11 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="cdDate"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].date = el.value);
   document.querySelectorAll('[data-field="cdTime"]').forEach(el=> config.countdowns[Number(el.dataset.idx)].time = el.value);
   document.querySelectorAll('[data-field="flyerName"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventName = el.value);
-  document.querySelectorAll('[data-field="flyerUrlEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].url = normalizeImageUrl(el.value));
+  document.querySelectorAll('[data-field="flyerTypeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].type = el.value === 'pdf' ? 'pdf' : 'image');
+  document.querySelectorAll('[data-field="flyerUrlEdit"]').forEach(el=>{
+    const f = config.flyers[Number(el.dataset.idx)];
+    f.url = normalizeMediaUrl(el.value, f.type === 'pdf');
+  });
   document.querySelectorAll('[data-field="flyerDateEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventDate = el.value);
   document.querySelectorAll('[data-field="flyerTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventTime = el.value);
   document.querySelectorAll('[data-field="flyerShowCountdownEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showCountdown = el.checked);
@@ -2709,9 +2825,11 @@ function populateModal(){
       div.className = 'listItem flyerListItem' + (state.expanded ? ' expanded' : '');
       div.innerHTML = `
         <div class="flyerSummaryRow" data-flyer-toggle="${i}">
-          ${f.url
-            ? `<img class="flyerThumbSmall" data-thumb-idx="${i}" src="${escapeAttr(f.url)}">`
-            : `<div class="flyerThumbSmall empty">No image</div>`}
+          ${f.type === 'pdf'
+            ? `<div class="flyerThumbSmall empty">📄 PDF</div>`
+            : f.url
+              ? `<img class="flyerThumbSmall" data-thumb-idx="${i}" src="${escapeAttr(f.url)}">`
+              : `<div class="flyerThumbSmall empty">No image</div>`}
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
@@ -2730,7 +2848,13 @@ function populateModal(){
         ${state.expanded ? `
         <div class="flyerExpandBody">
           <div class="hint" data-thumb-status="${i}" style="margin-top:0;"></div>
-          <div class="field"><label>Flyer Image URL</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
+          <div class="field"><label>Flyer type</label>
+            <select data-field="flyerTypeEdit" data-idx="${i}">
+              <option value="image" ${f.type!=='pdf' ? 'selected':''}>Image — one picture</option>
+              <option value="pdf" ${f.type==='pdf' ? 'selected':''}>PDF — multiple pages, flips through them on its own</option>
+            </select>
+          </div>
+          <div class="field"><label>${f.type==='pdf' ? 'Flyer PDF URL' : 'Flyer Image URL'}</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
           <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
           <div class="row">
             <div class="field"><label>Date</label><input type="date" data-field="flyerDateEdit" data-idx="${i}" value="${escapeAttr(f.eventDate||'')}"></div>
@@ -2934,12 +3058,26 @@ document.getElementById('addCountdown').onclick = ()=>{
 const flyerFileInput = document.getElementById('flyerFile');
 const flyerFileDrop = document.getElementById('flyerFileDrop');
 const flyerFileLabel = document.getElementById('flyerFileLabel');
+const flyerTypeSelect = document.getElementById('flyerType');
+const flyerPdfHint = document.getElementById('flyerPdfHint');
 let flyerPickedFile = null;
 // Transient UI state for the settings-panel flyer list — which flyer cards
 // are expanded for editing, and which are mid delete-confirmation. Keyed by
 // array index; not part of saved config, so it resets when the modal
 // reopens (fine, since it's purely a "what's open right now" concern).
 let flyerUiState = {};
+// A PDF can only come in as a pasted link (imgbb, the direct-upload host,
+// only accepts images) — so switching to PDF hides the device file picker
+// entirely rather than leaving a control that can't actually be used for it.
+if(flyerTypeSelect){
+  flyerTypeSelect.addEventListener('change', ()=>{
+    const isPdf = flyerTypeSelect.value === 'pdf';
+    if(flyerFileDrop) flyerFileDrop.style.display = isPdf ? 'none' : '';
+    if(flyerPdfHint) flyerPdfHint.style.display = isPdf ? '' : 'none';
+    if(isPdf) resetFlyerFilePicker();
+    runFlyerUrlPreview();
+  });
+}
 if(flyerFileDrop){
   flyerFileDrop.onclick = ()=> flyerFileInput.click();
   flyerFileInput.onchange = ()=>{
@@ -2988,29 +3126,45 @@ const flyerUrlInput = document.getElementById('flyerUrl');
 const flyerUrlPreviewWrap = document.getElementById('flyerUrlPreviewWrap');
 const flyerUrlPreviewImg = document.getElementById('flyerUrlPreviewImg');
 const flyerUrlPreviewMsg = document.getElementById('flyerUrlPreviewMsg');
+function runFlyerUrlPreview(){
+  const val = flyerUrlInput.value.trim();
+  if(!val){ flyerUrlPreviewWrap.style.display = 'none'; return; }
+  const isPdf = flyerTypeSelect && flyerTypeSelect.value === 'pdf';
+  flyerUrlPreviewWrap.style.display = '';
+  // A PDF link can't be sanity-checked by loading it as an <img> — it'll
+  // just fail every time even for a perfectly good PDF. Just confirm it's
+  // recognizable as a Drive link (so it gets rewritten to a playable/
+  // fetchable form) and leave the real check for when it's actually on
+  // the board.
+  if(isPdf){
+    flyerUrlPreviewImg.style.display = 'none';
+    const isDriveLink = !!extractDriveFileId(val);
+    flyerUrlPreviewMsg.textContent = isDriveLink
+      ? '✓ Recognized as a Drive link — will be set up so the board can open it.'
+      : "This will be added as a PDF. Make sure it's a direct .pdf link (or a Google Drive share link).";
+    flyerUrlPreviewMsg.style.color = isDriveLink ? 'var(--green)' : 'var(--muted)';
+    return;
+  }
+  flyerUrlPreviewMsg.textContent = 'Checking link…';
+  flyerUrlPreviewMsg.style.color = 'var(--muted)';
+  flyerUrlPreviewImg.style.display = 'none';
+  flyerUrlPreviewImg.onload = ()=>{
+    flyerUrlPreviewImg.style.display = 'block';
+    flyerUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
+    flyerUrlPreviewMsg.style.color = 'var(--green)';
+  };
+  flyerUrlPreviewImg.onerror = ()=>{
+    flyerUrlPreviewImg.style.display = 'none';
+    flyerUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
+    flyerUrlPreviewMsg.style.color = 'var(--red)';
+  };
+  flyerUrlPreviewImg.src = normalizeImageUrl(val);
+}
 if(flyerUrlInput){
   let previewDebounce = null;
   flyerUrlInput.addEventListener('input', ()=>{
     clearTimeout(previewDebounce);
-    const val = flyerUrlInput.value.trim();
-    if(!val){ flyerUrlPreviewWrap.style.display = 'none'; return; }
-    previewDebounce = setTimeout(()=>{
-      flyerUrlPreviewWrap.style.display = '';
-      flyerUrlPreviewMsg.textContent = 'Checking link…';
-      flyerUrlPreviewMsg.style.color = 'var(--muted)';
-      flyerUrlPreviewImg.style.display = 'none';
-      flyerUrlPreviewImg.onload = ()=>{
-        flyerUrlPreviewImg.style.display = 'block';
-        flyerUrlPreviewMsg.textContent = '✓ This link loads as an image — good to go.';
-        flyerUrlPreviewMsg.style.color = 'var(--green)';
-      };
-      flyerUrlPreviewImg.onerror = ()=>{
-        flyerUrlPreviewImg.style.display = 'none';
-        flyerUrlPreviewMsg.textContent = "⚠ This link isn't loading as an image. If it's from postimages.org, make sure you copied the \"Direct link\" (ends in .jpg/.png), not the page link.";
-        flyerUrlPreviewMsg.style.color = 'var(--red)';
-      };
-      flyerUrlPreviewImg.src = normalizeImageUrl(val);
-    }, 500);
+    previewDebounce = setTimeout(runFlyerUrlPreview, 500);
   });
 }
 
@@ -3069,6 +3223,7 @@ if(qPhotoUrlInput){
 document.getElementById('addFlyer').onclick = async ()=>{
   const eventName = document.getElementById('flyerEventName').value.trim();
   let url = document.getElementById('flyerUrl').value.trim();
+  const type = flyerTypeSelect && flyerTypeSelect.value === 'pdf' ? 'pdf' : 'image';
   const eventDate = document.getElementById('flyerDate').value;
   const eventTime = document.getElementById('flyerTime').value;
   const priority = document.getElementById('flyerPriority').value;
@@ -3076,6 +3231,10 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const showOnBoard = document.getElementById('flyerShowOnBoard').checked;
   const status = document.getElementById('flyerStatus');
 
+  if(type === 'pdf' && !url){
+    status.textContent = 'Paste a PDF link \u2014 PDFs can\u2019t be uploaded from the file picker above';
+    return;
+  }
   if(!url && !flyerPickedFile){
     status.textContent = 'Choose a photo from this device, or paste an image link';
     return;
@@ -3091,10 +3250,10 @@ document.getElementById('addFlyer').onclick = async ()=>{
     }
   }
 
-  if(!flyerPickedFile) url = normalizeImageUrl(url);
+  if(!flyerPickedFile) url = normalizeMediaUrl(url, type === 'pdf');
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, eventDate, eventTime, priority, showCountdown, showOnBoard});
+  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard});
   document.getElementById('flyerEventName').value = '';
   document.getElementById('flyerUrl').value = '';
   document.getElementById('flyerDate').value = '';
@@ -3102,6 +3261,10 @@ document.getElementById('addFlyer').onclick = async ()=>{
   document.getElementById('flyerPriority').value = 'normal';
   document.getElementById('flyerShowCountdown').checked = false;
   document.getElementById('flyerShowOnBoard').checked = true;
+  if(flyerTypeSelect){
+    flyerTypeSelect.value = 'image';
+    flyerTypeSelect.dispatchEvent(new Event('change'));
+  }
   resetFlyerFilePicker();
   flyerUrlPreviewWrap.style.display = 'none';
   await quickSaveIndicator('Saving…', 'flyerStatus');
