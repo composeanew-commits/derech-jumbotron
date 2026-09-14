@@ -284,6 +284,14 @@
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
   .field input, .field textarea, .field select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:10px 12px;font-family:'Rubik';font-size:15px;}
+  /* Native date/time picker icons default to dark, which disappears against
+     this panel's dark background — invert them so they're visible. */
+  .field input[type="date"]::-webkit-calendar-picker-indicator,
+  .field input[type="time"]::-webkit-calendar-picker-indicator{
+    filter:invert(1) brightness(1.6);cursor:pointer;
+  }
+  .field input[type="date"],
+  .field input[type="time"]{color-scheme:dark;}
   .priorityPill{display:inline-block;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:10px;margin-left:8px;vertical-align:middle;}
   .priorityPill.high{background:var(--red);color:#fff;}
   .priorityPill.normal{background:var(--panel);color:var(--muted);border:1px solid var(--line);}
@@ -2769,9 +2777,27 @@ if(flyerFileDrop){
       flyerFileDrop.classList.add('hasFile');
       flyerFileLabel.textContent = `✓ ${flyerPickedFile.name}`;
       document.getElementById('flyerUrl').value = '';
+      // Show a local preview of the picked photo — same confirmation look as
+      // the paste-a-link flow below — so it's obvious the right file was
+      // chosen before it actually uploads.
+      const reader = new FileReader();
+      reader.onload = (e)=>{
+        const wrap = document.getElementById('flyerUrlPreviewWrap');
+        const img = document.getElementById('flyerUrlPreviewImg');
+        const msg = document.getElementById('flyerUrlPreviewMsg');
+        img.onload = null;
+        img.onerror = null;
+        wrap.style.display = '';
+        img.style.display = 'block';
+        img.src = e.target.result;
+        msg.textContent = '✓ Photo selected — ready to upload.';
+        msg.style.color = 'var(--green)';
+      };
+      reader.readAsDataURL(flyerPickedFile);
     } else {
       flyerFileDrop.classList.remove('hasFile');
       flyerFileLabel.textContent = '📎 Tap to choose a photo from this device';
+      document.getElementById('flyerUrlPreviewWrap').style.display = 'none';
     }
   };
 }
@@ -2780,6 +2806,8 @@ function resetFlyerFilePicker(){
   if(flyerFileInput) flyerFileInput.value = '';
   if(flyerFileDrop) flyerFileDrop.classList.remove('hasFile');
   if(flyerFileLabel) flyerFileLabel.textContent = '📎 Tap to choose a photo from this device';
+  const wrap = document.getElementById('flyerUrlPreviewWrap');
+  if(wrap) wrap.style.display = 'none';
 }
 
 // Live preview so a broken/wrong link (e.g. a postimages.org PAGE link
