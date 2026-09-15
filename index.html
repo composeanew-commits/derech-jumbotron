@@ -487,7 +487,7 @@
     <div class="tabPanel active" data-panel="flyers">
       <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen and shows up more and more often as the date gets closer, so nobody misses it.</div>
 
-      <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Flyer Image</label>
+      <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;" id="flyerFileLabelHeading">Flyer Image</label>
       <div class="fileDrop" id="flyerFileDrop">
         <input type="file" id="flyerFile" accept="image/*">
         <span id="flyerFileLabel">📎 Tap to choose a photo from this device</span>
@@ -500,7 +500,7 @@
         </select>
       </div>
       <div class="field"><input id="flyerUrl" placeholder="Image or PDF URL"></div>
-      <div id="flyerPdfHint" class="hint" style="display:none;margin-top:-6px;">A PDF can only be added by pasting a link (a Google Drive share link works) — the file picker above only takes photos. It'll flip through every page on its own while it's showing.</div>
+      <div id="flyerPdfHint" class="hint" style="display:none;margin-top:-6px;">Big PDF (lots of high-res pages)? Pasting a link instead keeps it off the shared board's data — a direct upload embeds the whole file, which is fine for a typical flyer but adds to what every screen has to sync.</div>
       <div id="flyerUrlPreviewWrap" style="display:none;margin:-4px 0 14px 0;">
         <img id="flyerUrlPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);display:block;">
         <div id="flyerUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
@@ -2058,6 +2058,20 @@ const PDF_PAGE_DURATION = 6000;
 // to track/cancel a bunch of individual setTimeout ids across cell swaps.
 let flyerPdfGeneration = 0;
 
+// Converts a base64 data URL (from a directly-uploaded PDF — see
+// fileToDataUrl) into the raw bytes pdf.js wants. Used instead of just
+// handing pdf.js the data: URL string directly — fetching a data: URL
+// works in most modern browsers but isn't guaranteed everywhere pdf.js
+// might run, so decoding it ourselves is the more reliable path for a
+// kiosk that needs to just work.
+function dataUrlToUint8Array(dataUrl){
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 async function initFlyerPdfCell(cell, item, myGen){
   const canvas = cell.querySelector('canvas.flyerPdfCanvas');
   const indicator = cell.querySelector('.flyerPdfPageIndicator');
@@ -2070,7 +2084,11 @@ async function initFlyerPdfCell(cell, item, myGen){
     return;
   }
   try{
-    const pdf = await window.pdfjsLib.getDocument(item.url).promise;
+    // A directly-uploaded PDF is stored as a data: URL (see fileToDataUrl);
+    // hand pdf.js the decoded bytes for that case instead of the string, and
+    // fall back to the normal url-fetch path for a pasted link, unchanged.
+    const source = item.url.startsWith('data:') ? {data: dataUrlToUint8Array(item.url)} : item.url;
+    const pdf = await window.pdfjsLib.getDocument(source).promise;
     if(stale()) return;
     const numPages = pdf.numPages;
     const ctx = canvas.getContext('2d');
@@ -3209,6 +3227,7 @@ document.getElementById('addCountdown').onclick = ()=>{
 const flyerFileInput = document.getElementById('flyerFile');
 const flyerFileDrop = document.getElementById('flyerFileDrop');
 const flyerFileLabel = document.getElementById('flyerFileLabel');
+const flyerFileLabelHeading = document.getElementById('flyerFileLabelHeading');
 const flyerTypeSelect = document.getElementById('flyerType');
 const flyerPdfHint = document.getElementById('flyerPdfHint');
 let flyerPickedFile = null;
@@ -3217,15 +3236,21 @@ let flyerPickedFile = null;
 // array index; not part of saved config, so it resets when the modal
 // reopens (fine, since it's purely a "what's open right now" concern).
 let flyerUiState = {};
-// A PDF can only come in as a pasted link (imgbb, the direct-upload host,
-// only accepts images) — so switching to PDF hides the device file picker
-// entirely rather than leaving a control that can't actually be used for it.
+// A PDF picked from this device can't go through imgbb (image-only host) —
+// but it doesn't need external hosting at all: it's read straight into the
+// page as bytes and handed to pdf.js directly (see initFlyerPdfCell), the
+// same as a pasted link, just without a round trip to a server. Switching
+// the type just needs to retarget the file picker (accept + label) rather
+// than hide it.
+const FLYER_PDF_SOFT_WARN_BYTES = 5 * 1024 * 1024;   // ~5MB: gently suggest a link instead
+const FLYER_PDF_HARD_LIMIT_BYTES = 20 * 1024 * 1024; // ~20MB: too big to embed in the shared board data
 if(flyerTypeSelect){
   flyerTypeSelect.addEventListener('change', ()=>{
     const isPdf = flyerTypeSelect.value === 'pdf';
-    if(flyerFileDrop) flyerFileDrop.style.display = isPdf ? 'none' : '';
+    if(flyerFileInput) flyerFileInput.accept = isPdf ? 'application/pdf' : 'image/*';
+    if(flyerFileLabelHeading) flyerFileLabelHeading.textContent = isPdf ? 'Flyer PDF' : 'Flyer Image';
     if(flyerPdfHint) flyerPdfHint.style.display = isPdf ? '' : 'none';
-    if(isPdf) resetFlyerFilePicker();
+    resetFlyerFilePicker();
     runFlyerUrlPreview();
   });
 }
@@ -3233,31 +3258,53 @@ if(flyerFileDrop){
   flyerFileDrop.onclick = ()=> flyerFileInput.click();
   flyerFileInput.onchange = ()=>{
     flyerPickedFile = flyerFileInput.files && flyerFileInput.files[0];
+    const isPdf = flyerTypeSelect && flyerTypeSelect.value === 'pdf';
+    const wrap = document.getElementById('flyerUrlPreviewWrap');
+    const img = document.getElementById('flyerUrlPreviewImg');
+    const msg = document.getElementById('flyerUrlPreviewMsg');
     if(flyerPickedFile){
+      if(flyerPickedFile.size > FLYER_PDF_HARD_LIMIT_BYTES){
+        msg.textContent = `⚠ That PDF is ${(flyerPickedFile.size/1024/1024).toFixed(1)}MB — too big to embed directly. Host it somewhere (Google Drive works) and paste the link instead.`;
+        msg.style.color = 'var(--red)';
+        wrap.style.display = '';
+        img.style.display = 'none';
+        flyerPickedFile = null;
+        flyerFileInput.value = '';
+        return;
+      }
       flyerFileDrop.classList.add('hasFile');
       flyerFileLabel.textContent = `✓ ${flyerPickedFile.name}`;
       document.getElementById('flyerUrl').value = '';
-      // Show a local preview of the picked photo — same confirmation look as
-      // the paste-a-link flow below — so it's obvious the right file was
-      // chosen before it actually uploads.
-      const reader = new FileReader();
-      reader.onload = (e)=>{
-        const wrap = document.getElementById('flyerUrlPreviewWrap');
-        const img = document.getElementById('flyerUrlPreviewImg');
-        const msg = document.getElementById('flyerUrlPreviewMsg');
-        img.onload = null;
-        img.onerror = null;
-        wrap.style.display = '';
-        img.style.display = 'block';
-        img.src = e.target.result;
-        msg.textContent = '✓ Photo selected — ready to upload.';
+      wrap.style.display = '';
+      if(isPdf){
+        // No quick client-side thumbnail for a PDF here — just confirm the
+        // pick (and flag it if it's large enough that a hosted link would
+        // sync across screens faster).
+        img.style.display = 'none';
+        const big = flyerPickedFile.size > FLYER_PDF_SOFT_WARN_BYTES;
+        msg.textContent = big
+          ? `✓ ${(flyerPickedFile.size/1024/1024).toFixed(1)}MB selected — ready to upload. That's sizable to embed directly; a pasted link syncs to every screen faster if you have one handy.`
+          : `✓ PDF selected (${(flyerPickedFile.size/1024/1024).toFixed(1)}MB) — ready to upload.`;
         msg.style.color = 'var(--green)';
-      };
-      reader.readAsDataURL(flyerPickedFile);
+      } else {
+        // Show a local preview of the picked photo — same confirmation look
+        // as the paste-a-link flow below — so it's obvious the right file
+        // was chosen before it actually uploads.
+        const reader = new FileReader();
+        reader.onload = (e)=>{
+          img.onload = null;
+          img.onerror = null;
+          img.style.display = 'block';
+          img.src = e.target.result;
+          msg.textContent = '✓ Photo selected — ready to upload.';
+          msg.style.color = 'var(--green)';
+        };
+        reader.readAsDataURL(flyerPickedFile);
+      }
     } else {
       flyerFileDrop.classList.remove('hasFile');
-      flyerFileLabel.textContent = '📎 Tap to choose a photo from this device';
-      document.getElementById('flyerUrlPreviewWrap').style.display = 'none';
+      flyerFileLabel.textContent = isPdf ? '📎 Tap to choose a PDF from this device' : '📎 Tap to choose a photo from this device';
+      wrap.style.display = 'none';
     }
   };
 }
@@ -3265,9 +3312,22 @@ function resetFlyerFilePicker(){
   flyerPickedFile = null;
   if(flyerFileInput) flyerFileInput.value = '';
   if(flyerFileDrop) flyerFileDrop.classList.remove('hasFile');
-  if(flyerFileLabel) flyerFileLabel.textContent = '📎 Tap to choose a photo from this device';
+  const isPdf = flyerTypeSelect && flyerTypeSelect.value === 'pdf';
+  if(flyerFileLabel) flyerFileLabel.textContent = isPdf ? '📎 Tap to choose a PDF from this device' : '📎 Tap to choose a photo from this device';
   const wrap = document.getElementById('flyerUrlPreviewWrap');
   if(wrap) wrap.style.display = 'none';
+}
+
+// Reads a File into a base64 data URL — used to embed an uploaded PDF
+// directly (no external host needed; pdf.js can read it straight back out,
+// see dataUrlToUint8Array + initFlyerPdfCell).
+function fileToDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = ()=> reject(new Error('Could not read that file'));
+    reader.readAsDataURL(file);
+  });
 }
 
 // Live preview so a broken/wrong link (e.g. a postimages.org PAGE link
@@ -3382,21 +3442,27 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const showOnBoard = document.getElementById('flyerShowOnBoard').checked;
   const status = document.getElementById('flyerStatus');
 
-  if(type === 'pdf' && !url){
-    status.textContent = 'Paste a PDF link \u2014 PDFs can\u2019t be uploaded from the file picker above';
-    return;
-  }
   if(!url && !flyerPickedFile){
-    status.textContent = 'Choose a photo from this device, or paste an image link';
+    status.textContent = type === 'pdf'
+      ? 'Choose a PDF from this device, or paste a link'
+      : 'Choose a photo from this device, or paste an image link';
     return;
   }
 
-  if(flyerPickedFile){
+  if(flyerPickedFile && type === 'image'){
     status.textContent = 'Uploading photo…';
     try{
       url = await uploadImageToImgbb(flyerPickedFile);
     }catch(e){
       status.textContent = e.message || 'Upload failed — try pasting a link instead';
+      return;
+    }
+  } else if(flyerPickedFile && type === 'pdf'){
+    status.textContent = 'Reading PDF…';
+    try{
+      url = await fileToDataUrl(flyerPickedFile);
+    }catch(e){
+      status.textContent = e.message || 'Could not read that PDF — try pasting a link instead';
       return;
     }
   }
