@@ -2533,7 +2533,14 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
       vid.muted = true;
       let started = false;
       let advanced = false;
-      let triedFallback = false;
+      let bytesSeenAt = 0; // buffered range end (seconds), used to detect real (not just clock) progress
+      // Cycle: primary source -> fallback -> primary again -> fallback again
+      // -> give up. A stall now only counts against a source if NO new data
+      // arrived during the whole grace window — a slow-but-steadily-loading
+      // stream keeps getting more time instead of being killed by the clock.
+      const STALL_GRACE_MS = 15000;
+      const MAX_SOURCE_ATTEMPTS = 4;
+      let attempt = 0;
       const goNext = ()=>{
         if(advanced) return;
         advanced = true;
@@ -2546,6 +2553,11 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
       const tryPlay = ()=>{
         const p = vid.play();
         if(p && p.catch) p.catch(()=>{ /* will retry below */ });
+      };
+      const bufferedEnd = ()=>{
+        try{
+          return vid.buffered.length ? vid.buffered.end(vid.buffered.length-1) : 0;
+        }catch(e){ return 0; }
       };
       tryPlay();
       vid.addEventListener('loadeddata', ()=>{ if(vid.paused) tryPlay(); });
@@ -2566,33 +2578,53 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
         photoCellTimers[cellIdx] = setTimeout(goNext, (vid.duration*1000) + 600);
       });
 
+      function swapSource(url){
+        vid.querySelectorAll('source').forEach(s=>s.remove());
+        const src = document.createElement('source');
+        src.src = url;
+        src.type = item.mimeType || 'video/mp4';
+        vid.appendChild(src);
+        vid.load();
+        tryPlay();
+      }
+
       // Some streams — the Google Drive alt=media endpoint especially —
       // can render a first frame and then silently stall with no `error`
       // event ever firing, which used to leave the cell stuck on that
-      // still frame for up to the full 90s cap below. Check twice instead:
-      // once to swap in the fallback source (item.fallbackUrl, already
-      // present as a second <source> but browsers only try it automatically
-      // on a hard load error, not a silent stall) if playback genuinely
-      // hasn't started yet, and again after giving that a fair shot before
-      // finally treating it like a normal error and moving on.
+      // still frame for up to the full 90s cap below. A fixed short clock
+      // (previously 7s) was too aggressive: a brief network hiccup on an
+      // otherwise-fine source got it abandoned, which is why the exact same
+      // video could play one rotation and get skipped the next. Now: only
+      // treat a source as genuinely stalled if it made NO buffering
+      // progress at all across the whole grace window, cycle between the
+      // primary and fallback URLs a couple of times (transient blips clear
+      // up on retry), and only give up for real after several honest
+      // attempts.
       const checkStalled = ()=>{
         if(advanced || started) return;
-        if(item.fallbackUrl && !triedFallback){
-          triedFallback = true;
-          vid.querySelectorAll('source').forEach(s=>s.remove());
-          const src = document.createElement('source');
-          src.src = item.fallbackUrl;
-          src.type = item.mimeType || 'video/mp4';
-          vid.appendChild(src);
-          vid.load();
-          tryPlay();
-          setTimeout(checkStalled, 7000);
-        } else {
+        const nowBuffered = bufferedEnd();
+        const madeProgress = nowBuffered > bytesSeenAt + 0.05; // seconds of media buffered
+        bytesSeenAt = nowBuffered;
+        if(madeProgress){
+          // Still loading, just slowly — give it another full window rather
+          // than switching sources or giving up.
+          setTimeout(checkStalled, STALL_GRACE_MS);
+          return;
+        }
+        attempt++;
+        if(attempt >= MAX_SOURCE_ATTEMPTS){
           handleVideoError(vid);
           goNext();
+          return;
         }
+        // Alternate between fallback and primary URL each time it truly
+        // stalls with zero progress.
+        const useFallback = item.fallbackUrl && (attempt % 2 === 1);
+        swapSource(useFallback ? item.fallbackUrl : item.url);
+        bytesSeenAt = 0;
+        setTimeout(checkStalled, STALL_GRACE_MS);
       };
-      setTimeout(checkStalled, 7000);
+      setTimeout(checkStalled, STALL_GRACE_MS);
 
       photoCellTimers[cellIdx] = setTimeout(goNext, VIDEO_FALLBACK_DURATION);
     } else {
