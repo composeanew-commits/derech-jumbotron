@@ -1423,7 +1423,22 @@ if(isFirebaseConfigured()){
         resolveFirstLoad();
       } else if(!document.getElementById('modalOverlay').classList.contains('open')){
         paintTicker();
-        startRotation();
+        // NOT a full startRotation() here on purpose. This fires on EVERY
+        // write to the board — including the echo of this very screen's own
+        // save — so calling the full startRotation() (which wipes and
+        // instantly repaints every photo cell with animate=false, i.e. no
+        // fade, and restarts the spotlight slots) on every single one of
+        // those was the cause of photos "randomly flashing" and cutting
+        // in early, unrelated to their own rotation timers, plus the
+        // spotlight/photo pools getting reshuffled/reset far more often
+        // than intended (which made the same few items come back around
+        // sooner than they should). Flyers and photos already read
+        // `config` live from their own already-running timers, so they
+        // pick up whatever changed on their own next scheduled turn with
+        // no forced repaint needed. Only the spotlight's category pool
+        // needs an explicit (non-disruptive) refresh, since it's cached in
+        // module-level vars rather than read fresh each tick.
+        refreshSpotlightPools();
       }
     }, (err)=>{
       fallbackToLocalConfig('Firebase read failed: ' + (err && err.message));
@@ -1666,6 +1681,44 @@ function reshuffleSpotlightQueue(){
   queuePos = 0;
 }
 
+// Re-derives pinnedItems/rotatingItems from the live config (so newly added
+// or removed content shows up) WITHOUT touching slotTimers, queuePos, or
+// whatever's currently painted on screen — used when the config changes out
+// from under us (a remote save) but nothing is actually due to advance yet.
+// Items still present keep their place in the shuffle order; items that
+// disappeared are dropped from the queue; brand-new items are appended to
+// the end so they'll get a turn without jumping the line or forcing an
+// immediate reshuffle.
+function refreshSpotlightPools(){
+  const built = buildSpotlightItems();
+  pinnedItems = built.pinned;
+  rotatingItems = built.rotating;
+
+  const byKey = {};
+  rotatingItems.forEach(it => { byKey[it.key] = it; });
+  const rotatingKeys = rotatingItems.map(it => it.key);
+
+  // Drop queue entries for keys that no longer exist, refreshing the rest
+  // in place so their content (e.g. an edited quote's text) stays current.
+  const kept = shuffledQueue
+    .map(it => byKey[it.key])
+    .filter(Boolean);
+  const keptKeys = new Set(kept.map(it => it.key));
+  const newOnes = rotatingKeys.filter(k => !keptKeys.has(k)).map(k => byKey[k]);
+  if(newOnes.length){
+    // Slot new items into random positions among what's left still ahead of
+    // queuePos, so they don't all wait until the very end of the cycle to
+    // debut, but also don't just get tacked on right after the current spot.
+    newOnes.forEach(item=>{
+      const insertAt = queuePos + 1 + Math.floor(Math.random() * Math.max(1, kept.length - queuePos));
+      kept.splice(Math.min(insertAt, kept.length), 0, item);
+    });
+  }
+  shuffledQueue = kept;
+  queuePos = Math.min(queuePos, shuffledQueue.length);
+  saveSpotlightState();
+}
+
 function nextSpotlightQueueItem(){
   if(!rotatingItems.length) return null;
   if(queuePos >= shuffledQueue.length) reshuffleSpotlightQueue();
@@ -1734,55 +1787,50 @@ function buildSpotlightItems(){
     rotating.push({key:'shoutouts', eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)', icon:'\u2726'});
   }
 
-  if(config.triviaBank && config.triviaBank.length){
-    const t = config.triviaBank[dayOfYear % config.triviaBank.length];
+  // Trivia, riddles, words, quotes, and "today's trait" each used to pick
+  // just ONE item from their bank per calendar day (by day-of-year), so no
+  // matter how many times that category came up in the rotation, it showed
+  // the same single trivia question / quote / etc. all day — which is what
+  // was showing up as "the same ones again and again." Now every item in
+  // each bank gets its own rotating card with a stable key (category + its
+  // index in the bank), so they all join the same shuffle queue as
+  // everything else: every quote, every riddle, every word gets a turn
+  // before any of them repeats, instead of being pinned to one a day.
+  (config.triviaBank || []).forEach((t, i)=>{
     const body = `${t.cat ? `<div class="catTag">${escapeHtml(t.cat)}</div>` : ''}
       <div class="qText">${escapeHtml(t.q)}</div>
       <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
-    rotating.push({key:'trivia', eyebrow:'Trivia of the Day', title:'Do You Know?', body, isReveal:true, accent:'var(--red)', icon:'?'});
-  }
+    rotating.push({key:'trivia:'+i, eyebrow:'Trivia', title:'Do You Know?', body, isReveal:true, accent:'var(--red)', icon:'?'});
+  });
 
-  if(config.riddleBank && config.riddleBank.length){
-    const bank = config.riddleBank;
-    const idxToday = dayOfYear % bank.length;
-    const idxYesterday = ((dayOfYear - 1) % bank.length + bank.length) % bank.length;
-    const rToday = bank[idxToday];
-    const rYesterday = bank[idxYesterday];
-    const body = `<div class="qText">${escapeHtml(rToday.r)}</div>
-      ${bank.length > 1 ? `
-      <div class="prevRiddleWrap">
-        <div class="prevRiddleLabel">Yesterday's Riddle</div>
-        <div class="prevRiddleText">${escapeHtml(rYesterday.r)}</div>
-        <div class="prevRiddleAnswer">${escapeHtml(rYesterday.a)}</div>
-      </div>` : ''}`;
-    rotating.push({key:'riddle', eyebrow:'Riddle of the Day', title:'Figure It Out', body, accent:'var(--purple-light)', icon:'\u25C6'});
-  }
+  (config.riddleBank || []).forEach((r, i)=>{
+    const body = `<div class="qText">${escapeHtml(r.r)}</div>
+      <div class="aReveal" data-reveal>${escapeHtml(r.a)}</div>`;
+    rotating.push({key:'riddle:'+i, eyebrow:'Riddle', title:'Figure It Out', body, isReveal:true, accent:'var(--purple-light)', icon:'\u25C6'});
+  });
 
-  if(config.wordBank && config.wordBank.length){
-    const w = config.wordBank[dayOfYear % config.wordBank.length];
+  (config.wordBank || []).forEach((w, i)=>{
     const body = `<div class="wordBox">
       ${w.cat ? `<div class="catTag">${escapeHtml(w.cat === 'Modern' ? 'Modern Hebrew' : 'Yeshivish')}</div>` : ''}
       <div class="hebrewWord">${escapeHtml(w.hebrew)}</div>
       <div class="translit">${escapeHtml(w.translit)}</div>
       <div class="meaning">${escapeHtml(w.meaning)}</div>
     </div>`;
-    rotating.push({key:'word', eyebrow:'Word of the Day', title:'Milah HaYom', body, accent:'var(--blue)', icon:'\u05D0'});
-  }
+    rotating.push({key:'word:'+i, eyebrow:'Word', title:'Milah HaYom', body, accent:'var(--blue)', icon:'\u05D0'});
+  });
 
-  if(config.quoteBank && config.quoteBank.length){
-    const q = config.quoteBank[dayOfYear % config.quoteBank.length];
+  (config.quoteBank || []).forEach((q, i)=>{
     const parts = q.split(/\s*\((.*?)\)\s*$/);
     const body = `<div class="thoughtBox">
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
       ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
-    rotating.push({key:'quote', eyebrow:'Thought of the Day', title:'Quotes', body, accent:'var(--green)', icon:'\u201C'});
-  }
+    rotating.push({key:'quote:'+i, eyebrow:'Thought', title:'Quotes', body, accent:'var(--green)', icon:'\u201C'});
+  });
 
-  if(config.waysBank && config.waysBank.length){
-    const w = config.waysBank[dayOfYear % config.waysBank.length];
-    rotating.push({key:'ways', eyebrow:'Today\u2019s Trait', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)', icon:'\u25B3'});
-  }
+  (config.waysBank || []).forEach((w, i)=>{
+    rotating.push({key:'ways:'+i, eyebrow:'A Trait to Work On', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)', icon:'\u25B3'});
+  });
 
   {
     const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
@@ -2400,9 +2448,11 @@ function buildExtraInfoFlyerPhotoItems(){
     }));
 }
 
-// Weighted-random pick, trying to avoid whatever's already showing in other
-// cells right now (currentlyShownUrls) so the same photo never appears twice
-// on screen at once. Falls back to allowing a repeat only if there's truly
+// Weighted-random pick — used only for the small, transient Extra Info
+// flyer pool (see pickNextForCell), which doesn't belong in the persistent
+// shuffle bags below since its membership changes with whatever flyers
+// happen to be active right now. Tries to avoid whatever's already showing
+// in other cells right now; falls back to a repeat only if there's truly
 // nothing else to show.
 function pickWeightedPhoto(items, avoidUrls){
   if(!items.length) return null;
@@ -2419,16 +2469,71 @@ function pickWeightedPhoto(items, avoidUrls){
 
 // cellIdx -> url currently shown in that cell, so other cells avoid repeating it.
 let currentlyShownPhotoUrls = {};
-// Short history of recently shown urls (across all cells), so a photo that
-// just rotated out of a cell doesn't immediately reappear a moment later in
-// another cell — makes the shuffle feel like it's working through the whole
-// set rather than re-picking the same handful at random.
-let recentPhotoUrls = [];
-const RECENT_PHOTO_HISTORY = 6;
-function rememberShownPhoto(url){
-  if(!url) return;
-  recentPhotoUrls.push(url);
-  if(recentPhotoUrls.length > RECENT_PHOTO_HISTORY) recentPhotoUrls.shift();
+
+// Persistent shuffle bags (one per pool: 'old' and 'new') so every photo and
+// video in a pool gets a turn before anything repeats — a plain weighted
+// Math.random() pick each time (the old approach, only guarded by a 6-item
+// recent-history list) let the same handful of higher-weighted items come
+// up again and again well before the rest of the set ever got a turn, which
+// is what was showing up as "many photos on repeat."
+let photoBags = { old: [], new: [] };
+let photoBagPos = { old: 0, new: 0 };
+
+function reshufflePhotoBag(poolKey, pool){
+  const bag = [...pool];
+  for(let i = bag.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+  photoBags[poolKey] = bag;
+  photoBagPos[poolKey] = 0;
+}
+
+// Reconciles the bag with whatever's actually in the pool right now (a photo
+// could've been added or removed since the bag was built) without losing
+// the current position or reshuffling unnecessarily: items still present
+// keep their spot in line, removed ones drop out, brand-new ones get
+// slotted in ahead at a random point rather than waiting for the bag to run
+// out and reshuffle before they ever get a turn.
+function reconcilePhotoBag(poolKey, freshPool){
+  const byUrl = {};
+  freshPool.forEach(it => { byUrl[it.url] = it; });
+  const bag = photoBags[poolKey];
+  const pos = photoBagPos[poolKey];
+  const kept = bag.map(it => byUrl[it.url]).filter(Boolean);
+  const keptUrls = new Set(kept.map(it => it.url));
+  const newOnes = freshPool.filter(it => !keptUrls.has(it.url));
+  newOnes.forEach(item=>{
+    const insertAt = pos + 1 + Math.floor(Math.random() * Math.max(1, kept.length - pos));
+    kept.splice(Math.min(insertAt, kept.length), 0, item);
+  });
+  photoBags[poolKey] = kept;
+  photoBagPos[poolKey] = Math.min(pos, kept.length);
+}
+
+// Draws the next item from a pool's shuffle bag, skipping anything already
+// showing in another cell right now (avoidUrls) by looking ahead in the
+// bag — reshuffling and wrapping around if it runs out mid-search — rather
+// than falling all the way back to random weighted selection.
+function nextFromPhotoBag(poolKey, pool, avoidUrls){
+  if(!pool.length) return null;
+  reconcilePhotoBag(poolKey, pool);
+  if(!photoBags[poolKey].length) reshufflePhotoBag(poolKey, pool);
+  let bag = photoBags[poolKey];
+  let attempts = 0;
+  while(attempts <= bag.length){
+    let pos = photoBagPos[poolKey];
+    if(pos >= bag.length){
+      reshufflePhotoBag(poolKey, pool);
+      bag = photoBags[poolKey];
+      pos = 0;
+    }
+    const candidate = bag[pos];
+    photoBagPos[poolKey] = pos + 1;
+    if(!avoidUrls.includes(candidate.url) || bag.length === 1) return candidate;
+    attempts++;
+  }
+  return bag[0];
 }
 
 function renderPhotoCellMarkup(item){
@@ -2471,21 +2576,35 @@ const EXTRA_INFO_FLYER_CELL_INDEX = PHOTO_CELL_COUNT - 1;
 
 function pickNextForCell(cellIdx){
   const isOldCell = cellIdx === OLD_PHOTOS_CELL_INDEX;
-  let pool = isOldCell ? buildOlderPhotoItems() : buildNewerPhotoItems(cellIdx === EXTRA_INFO_FLYER_CELL_INDEX);
+  const isExtraInfoCell = cellIdx === EXTRA_INFO_FLYER_CELL_INDEX;
+  let poolKey = isOldCell ? 'old' : 'new';
+  let pool = isOldCell ? buildOlderPhotoItems() : buildNewerPhotoItems(false);
   // If the intended pool for this cell is empty (e.g. no custom photos have
   // been added yet, or the built-in gallery was cleared), fall back to the
   // other pool rather than leaving the cell permanently blank.
-  if(!pool.length) pool = isOldCell ? buildNewerPhotoItems(false) : buildOlderPhotoItems();
+  if(!pool.length){
+    poolKey = isOldCell ? 'new' : 'old';
+    pool = isOldCell ? buildNewerPhotoItems(false) : buildOlderPhotoItems();
+  }
   const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
     .map(k => currentlyShownPhotoUrls[k]);
-  // Prefer avoiding both what's on screen right now AND what's shown up
-  // recently; fall back to just on-screen avoidance if that empties the pool.
-  const avoidBoth = [...new Set([...onScreen, ...recentPhotoUrls])];
-  const wide = pool.filter(it => !avoidBoth.includes(it.url));
-  const item = pickWeightedPhoto(wide.length ? wide : pool, onScreen);
-  rememberShownPhoto(item ? item.url : null);
-  return item;
+
+  // The bottom photo square also occasionally surfaces an Extra Info flyer
+  // while a Need to Know flyer has taken over the main panel. That pool is
+  // transient (tied to whichever flyers happen to be active right now), so
+  // it stays a simple weighted pick on the side rather than living in the
+  // persistent shuffle bag — but it now only wins some of the time instead
+  // of crowding out regular photos in that square entirely.
+  if(isExtraInfoCell){
+    const extras = buildExtraInfoFlyerPhotoItems();
+    if(extras.length && Math.random() < 0.3){
+      const item = pickWeightedPhoto(extras, onScreen);
+      if(item) return item;
+    }
+  }
+
+  return nextFromPhotoBag(poolKey, pool, onScreen);
 }
 
 // A video that's stuck (autoplay silently blocked, still buffering, or a
