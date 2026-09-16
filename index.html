@@ -625,14 +625,29 @@
       </div>
 
       <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
-        <label style="display:block;margin-bottom:8px;">Daily Halacha — seasonal override</label>
-        <div class="hint" style="margin-top:0;">While today's date falls inside this range, ONLY these halachos show (the year-round pool above pauses, doesn't blend in) — e.g. Sukkos-specific halachos for the weeks around Sukkos. Leave either date blank to turn the override off. This range doesn't repeat automatically next year — update it each season.</div>
+        <label style="display:block;margin-bottom:8px;">Daily Halacha — by Yom Tov / occasion</label>
+        <div class="hint" style="margin-top:0;">Pick an occasion below and add halachos for it. Whenever that occasion is actually happening on the Jewish calendar, ONLY that set shows (the year-round pool above pauses, doesn't blend in) — then it automatically switches back once the occasion ends. Dates are recalculated from the Hebrew calendar every year, so nothing here needs updating season to season.</div>
+        <div class="field">
+          <label>Occasion</label>
+          <select id="qHalachaOccasion"></select>
+        </div>
+        <div class="field">
+          <label>Add Halachos for this occasion (one per line, same format)</label>
+          <textarea id="addHalachaOccasionBulk" rows="3"></textarea>
+        </div>
+        <div class="bankCount" id="halachaOccasionCount"></div>
+        <div class="bankCount" id="halachaOccasionAllCounts" style="margin-top:6px;"></div>
+      </div>
+
+      <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
+        <label style="display:block;margin-bottom:8px;">Daily Halacha — one-off manual override</label>
+        <div class="hint" style="margin-top:0;">For anything NOT on the occasion list above. While today's date falls inside this range, ONLY these halachos show. Leave either date blank to turn the override off. This range doesn't repeat automatically next year — update it each time.</div>
         <div class="row">
           <div class="field"><label>Season Start Date</label><input id="qHalachaSeasonStart" type="date"></div>
           <div class="field"><label>Season End Date</label><input id="qHalachaSeasonEnd" type="date"></div>
         </div>
         <div class="field">
-          <label>Add Seasonal Halachos (one per line, same format)</label>
+          <label>Add Manual-Override Halachos (one per line, same format)</label>
           <textarea id="addHalachaSeasonalBulk" rows="3"></textarea>
         </div>
         <div class="bankCount" id="halachaSeasonalCount"></div>
@@ -1182,6 +1197,97 @@ const DEFAULT_HALACHOS = [
 "Kibud Shabbos includes wearing nicer clothing and setting a more beautiful table in Shabbos's honor. (Kitzur Shulchan Aruch, Hilchos Shabbos)"
 ];
 
+// ---- Calendar-tied halacha sets ----
+// These are the same "Halacha of the Day" cards as DEFAULT_HALACHOS above,
+// except each set only belongs in the rotation while its Jewish-calendar
+// occasion is actually happening (e.g. the Aseret Yemei Teshuva set below
+// only shows up between Rosh Hashana and Yom Kippur). HALACHA_OCCASIONS
+// defines, for any given Hebrew year, the Gregorian window each occasion
+// falls in (via @hebcal/core), so this recalculates correctly every year
+// without anyone having to update dates by hand. Content sourced from
+// "Aseres Yimei Teshuva" by Rabbi Tzvi Yaakov Stein (Machon Aleh Zayis);
+// as with the year-round pool, sources are paraphrased for clarity, so
+// have a Rav look them over before relying on them.
+const DEFAULT_HALACHA_SEASONS = {
+  aseret_yemei_teshuva: [
+    "If Hamelech Hakadosh was forgotten in Shemoneh Esrei during the Aseret Yemei Teshuva, Shemoneh Esrei is repeated. (Shulchan Aruch, Orach Chaim 582:1)",
+    "If Zachreinu, Mi Chamocha, and the other additions to Shemoneh Esrei during these days are forgotten, Shemoneh Esrei is not repeated. (Shulchan Aruch, Orach Chaim 582:5)",
+    "If Hamelech Hamishpat was forgotten, Shemoneh Esrei is not repeated. (Rema, Orach Chaim 118:1)",
+    "Since there's a machlokes over whether forgetting Hamelech Hamishpat requires repeating Shemoneh Esrei, be especially careful not to forget it.",
+    "Avinu Malkeinu may be said even when davening alone, without a minyan. (Matteh Efraim 584:14)",
+    "Those who are normally lenient about eating bread baked by a non-Jew (Pas Palter) during the year should be strict during the Aseret Yemei Teshuva and eat only bread baked by a Jew. (Shulchan Aruch, Orach Chaim 603:1)",
+    "If it would take more than eighteen minutes to reach bread baked by a Jew, bread baked by a non-Jew is permitted instead. (Mishna Berura 603:1)",
+    "Cakes, cookies, pretzels, and similar baked goods carry the same status as bread for this stringency. (Rema, Yoreh Deah 112:6)",
+    "Pasta does not need to be Pas Yisroel. (Masores Moshe, vol. 2, Yoreh Deah 44)",
+    "Cereals are not considered bread and may be eaten as usual. (Kovetz Halachos, ch. 22:2)",
+    "Someone who normally drinks Chalav Stam has no special reason to switch to Chalav Yisroel during these days.",
+    "It's proper to try to improve one's ways more than usual during the Aseret Yemei Teshuva \u2014 doing so isn't considered insincere.",
+    "Many add 'HaRachaman Hu Yechadesh Aleinu Es HaShana HaZos' in Birchas Hamazon, from Rosh Hashanah until Yom Kippur. (Matteh Efraim 602:1)",
+    "Be extra careful about the halachos of Shabbos this week, especially not to discuss topics that shouldn't be spoken about on Shabbos.",
+    "If you don't normally eat Melave Malka, try to eat it this Motzai Shabbos.",
+    "For kaparos, if necessary, two or more males may share one male chicken, and likewise for females with a female chicken. (Mishna Berura 605:3)",
+    "A pregnant woman should use two chickens for kaparos, one male and one female. (Rema, Orach Chaim 605:1)",
+    "It's best not to use maaser money to pay for kaparos chickens. (Kovetz Halachos, ch. 23:9)",
+    "If paying extra for the kaparos chickens because that extra is going to tzedaka, it may be taken from maaser. (Kovetz Halachos, ch. 23, note 15)",
+    "Kaparos may be done using fish instead of a chicken. (Mishna Berura 605:4)",
+    "Many have the minhag to do kaparos with money instead of a chicken. (Mishna Berura 605:2)",
+    "The amount of money used for kaparos should equal what would have been spent on chickens. (Eil HaMagen 605:11)"
+  ],
+  sukkos: [],
+  chanukah: [],
+  purim: [],
+  pesach: [],
+  shavuos: [],
+  three_weeks: []
+};
+
+// Each occasion's range() computes that occasion's Gregorian start/end for
+// a GIVEN Hebrew year (the year that most recently began at Rosh Hashana),
+// using @hebcal/core so it's automatically correct every year — Chanukah
+// and Purim especially drift around the Gregorian calendar, and Purim
+// falls in Adar II during a leap year, which the plain month name 'Adar'
+// already resolves to correctly on its own.
+const HALACHA_OCCASIONS = [
+  {id:'aseret_yemei_teshuva', label:'Aseret Yemei Teshuva', range:(hy)=>({start:new HDate(1,'Tishrei',hy), end:new HDate(10,'Tishrei',hy)})},
+  {id:'sukkos', label:'Sukkos', range:(hy)=>({start:new HDate(15,'Tishrei',hy), end:new HDate(22,'Tishrei',hy)})},
+  {id:'chanukah', label:'Chanukah', range:(hy)=>{const start=new HDate(25,'Kislev',hy); return {start, end:start.add(7,'day')};}},
+  {id:'purim', label:'Purim', range:(hy)=>({start:new HDate(13,'Adar',hy), end:new HDate(15,'Adar',hy)})},
+  {id:'pesach', label:'Pesach', range:(hy)=>({start:new HDate(15,'Nisan',hy), end:new HDate(22,'Nisan',hy)})},
+  {id:'shavuos', label:'Shavuos', range:(hy)=>({start:new HDate(6,'Sivan',hy), end:new HDate(7,'Sivan',hy)})},
+  {id:'three_weeks', label:'The Three Weeks', range:(hy)=>({start:new HDate(17,'Tammuz',hy), end:new HDate(9,'Av',hy)})}
+];
+
+// Converts an HDate to a plain local-midnight JS Date for that calendar
+// day, reading the Gregorian date via the UTC getters — HDate.greg()
+// returns a UTC-midnight instant, and reading it back with the local
+// getters could land on the wrong day for anyone west of UTC.
+function hdateToLocalDate(hd){
+  const g = hd.greg();
+  return new Date(g.getUTCFullYear(), g.getUTCMonth(), g.getUTCDate());
+}
+
+// Returns {id, label, items} for whichever calendar occasion is active
+// right now (and has at least one halacha saved to it), or null if none
+// is active. Checked fresh each time — cheap enough to not bother caching.
+function computeActiveHalachaSeason(){
+  try{
+    const hy = new HDate(new Date()).getFullYear();
+    const now = new Date();
+    for(const occ of HALACHA_OCCASIONS){
+      const items = (config.halachaSeasons && config.halachaSeasons[occ.id]) || [];
+      if(!items.length) continue;
+      const {start, end} = occ.range(hy);
+      const startDate = hdateToLocalDate(start);
+      const endDate = hdateToLocalDate(end);
+      endDate.setHours(23,59,59,999);
+      if(now >= startDate && now <= endDate) return {id:occ.id, label:occ.label, items};
+    }
+  }catch(e){
+    console.error('halacha season calc failed', e);
+  }
+  return null;
+}
+
 const DEFAULT_GALLERY_PHOTOS = [
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Derech-Old-City-Shabbaton-5786-1-300x200.webp","Old City Shabbaton"],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-9264-300x200.webp",""],
@@ -1273,6 +1379,33 @@ const DEFAULT_SCHEDULE = `7:00 AM - Wake Up
 10:30 PM - Lights Out`;
 // ^ Placeholder daily schedule shown until you enter the real one in Quick Update — edit
 // freely, it'll then be used as the standing default every day until changed again.
+
+// Which occasion is currently picked in the "Daily Halacha — by Yom Tov"
+// dropdown in the gear-icon modal. Lives outside populateModal so it
+// survives repeated populateModal() calls (e.g. after a quick save)
+// instead of resetting back to the first option every time.
+let selectedHalachaOccasion = 'aseret_yemei_teshuva';
+
+// Fills in the small counts under the occasion dropdown: how many
+// halachos are saved to the currently-selected occasion, plus a compact
+// one-line summary across every occasion so it's obvious at a glance
+// which ones still need content.
+function renderHalachaOccasionCounts(){
+  const countEl = document.getElementById('halachaOccasionCount');
+  const allEl = document.getElementById('halachaOccasionAllCounts');
+  if(!countEl || !config) return;
+  const seasons = config.halachaSeasons || {};
+  const activeId = (computeActiveHalachaSeason() || {}).id;
+  const cur = seasons[selectedHalachaOccasion] || [];
+  const curLabel = (HALACHA_OCCASIONS.find(o=>o.id===selectedHalachaOccasion) || {}).label || selectedHalachaOccasion;
+  countEl.textContent = `${cur.length} halacha(s) saved for ${curLabel}` + (activeId === selectedHalachaOccasion ? ' — showing on the board right now' : '');
+  if(allEl){
+    allEl.textContent = HALACHA_OCCASIONS.map(o=>{
+      const n = (seasons[o.id] || []).length;
+      return `${o.label}: ${n}${o.id === activeId ? ' (live)' : ''}`;
+    }).join('  ·  ');
+  }
+}
 
 let autoZmanim = {candleLighting:'', havdalah:'', parsha:'', sunrise:'', sofZmanShma:'', sofZmanTfilla:'', chatzot:'', shkiah:'', tzeit:''};
 let autoHistory = '';
@@ -1410,11 +1543,16 @@ const DEFAULT_CONFIG = {
   quoteBank: DEFAULT_QUOTES.slice(),
   waysBank: DEFAULT_FORTYEIGHT.map(([trait,challenge])=>({trait,challenge})),
   // Year-round halacha pool (falls back to this whenever no seasonal set is
-  // active) plus one optional seasonal set that, when its date range is
-  // live, fully replaces the year-round pool in the rotation \u2014 e.g. a
-  // batch of Sukkos-specific halachos for the weeks around Sukkos, then
-  // back to the general pool once the range passes.
+  // active) plus named sets tied to the Jewish calendar (halachaSeasons,
+  // keyed by HALACHA_OCCASIONS id \u2014 e.g. Aseret Yemei Teshuva, Sukkos,
+  // Chanukah) that automatically take over from the year-round pool while
+  // that occasion is actually happening, recomputed from the Hebrew
+  // calendar every year. halachaSeasonal is a separate, optional manual
+  // override for anything NOT on that built-in calendar list \u2014 a one-off
+  // date range you set by hand \u2014 and takes priority over the calendar
+  // sets whenever its own range is live.
   halachaBank: DEFAULT_HALACHOS.slice(),
+  halachaSeasons: structuredClone(DEFAULT_HALACHA_SEASONS),
   halachaSeasonal: {startDate:'', endDate:'', items:[]}
 };
 
@@ -1486,6 +1624,13 @@ function mergeStoredConfig(stored){
   if(!merged.halachaBank || !merged.halachaBank.length) merged.halachaBank = structuredClone(DEFAULT_CONFIG.halachaBank);
   if(!merged.halachaSeasonal) merged.halachaSeasonal = structuredClone(DEFAULT_CONFIG.halachaSeasonal);
   if(!merged.halachaSeasonal.items) merged.halachaSeasonal.items = [];
+  // Fill in any occasion keys a previously-saved board doesn't have yet
+  // (either because it predates this feature, or a new occasion got added
+  // to HALACHA_OCCASIONS later) without clobbering ones it already saved,
+  // and normalize each list in case Firebase handed one back as an
+  // object-with-numeric-keys instead of a real array.
+  merged.halachaSeasons = Object.assign({}, structuredClone(DEFAULT_CONFIG.halachaSeasons), merged.halachaSeasons || {});
+  HALACHA_OCCASIONS.forEach(occ => { merged.halachaSeasons[occ.id] = normalizeStoredList(merged.halachaSeasons[occ.id] || []); });
   if(!merged.countdowns) merged.countdowns = [];
   if(!merged.flyers) merged.flyers = [];
   // Firebase doesn't really store arrays — it stores objects with numeric
@@ -2011,30 +2156,37 @@ function buildSpotlightItems(){
     rotating.push({key:'ways:'+i, eyebrow:'A Trait to Work On', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)', icon:'\u25B3'});
   });
 
-  // Halacha: a seasonal set (e.g. the weeks around Sukkos), when its date
-  // range is currently active, fully takes over from the year-round pool
-  // \u2014 not blended with it \u2014 so the board isn't mixing "how to build a
-  // sukkah" halachos in with generic daily ones during the one stretch of
-  // the year they're actually relevant. Once the range passes, it falls
-  // straight back to the year-round pool with no manual step needed.
+  // Halacha: three tiers, checked in priority order. A manual date-range
+  // override (halachaSeasonal \u2014 for a one-off occasion not on the
+  // built-in calendar list) wins if it's currently live. Otherwise, if a
+  // built-in Jewish-calendar occasion is currently happening AND has
+  // halachos saved to it (e.g. Aseret Yemei Teshuva, Sukkos, Chanukah),
+  // that takes over. Either way, whichever set is active fully replaces
+  // the year-round pool in the rotation rather than blending with it, so
+  // the board isn't mixing Sukkah-building halachos in with generic daily
+  // ones outside the one stretch of the year they're actually relevant.
+  // Once the window passes, it falls straight back to the year-round pool
+  // with no manual step needed.
   {
-    const seasonal = config.halachaSeasonal;
-    let seasonActive = false;
-    if(seasonal && seasonal.startDate && seasonal.endDate && seasonal.items && seasonal.items.length){
-      const start = parseDateTime(seasonal.startDate, null, '00:00');
-      const end = parseDateTime(seasonal.endDate, null, '23:59');
+    const manualSeasonal = config.halachaSeasonal;
+    let manualActive = false;
+    if(manualSeasonal && manualSeasonal.startDate && manualSeasonal.endDate && manualSeasonal.items && manualSeasonal.items.length){
+      const start = parseDateTime(manualSeasonal.startDate, null, '00:00');
+      const end = parseDateTime(manualSeasonal.endDate, null, '23:59');
       const now = new Date();
-      seasonActive = !!(start && end && now >= start && now <= end);
+      manualActive = !!(start && end && now >= start && now <= end);
     }
-    const activeHalachos = seasonActive ? seasonal.items : (config.halachaBank || []);
-    const keyPrefix = seasonActive ? 'halachaSeasonal:' : 'halacha:';
+    const calendarSeason = manualActive ? null : computeActiveHalachaSeason();
+    const activeHalachos = manualActive ? manualSeasonal.items : (calendarSeason ? calendarSeason.items : (config.halachaBank || []));
+    const keyPrefix = manualActive ? 'halachaSeasonal:' : (calendarSeason ? 'halachaSeason:'+calendarSeason.id+':' : 'halacha:');
+    const eyebrow = manualActive ? 'Seasonal Halacha' : (calendarSeason ? calendarSeason.label : 'Halacha');
     activeHalachos.forEach((h, i)=>{
       const parts = h.split(/\s*\((.*?)\)\s*$/);
       const body = `<div class="thoughtBox">
         <div class="thoughtText">${escapeHtml(parts[0])}</div>
         ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
       </div>`;
-      rotating.push({key:keyPrefix+i, eyebrow: seasonActive ? 'Seasonal Halacha' : 'Halacha', title:'Halacha of the Day', body, accent:'var(--gold)', icon:'\u2736'});
+      rotating.push({key:keyPrefix+i, eyebrow, title:'Halacha of the Day', body, accent:'var(--gold)', icon:'\u2736'});
     });
   }
 
@@ -3243,6 +3395,22 @@ function populateModal(){
   document.getElementById('qHalachaSeasonStart').value = (config.halachaSeasonal && config.halachaSeasonal.startDate) || '';
   document.getElementById('qHalachaSeasonEnd').value = (config.halachaSeasonal && config.halachaSeasonal.endDate) || '';
 
+  const halachaOccSelect = document.getElementById('qHalachaOccasion');
+  if(halachaOccSelect){
+    const prevVal = halachaOccSelect.value || selectedHalachaOccasion;
+    halachaOccSelect.innerHTML = HALACHA_OCCASIONS.map(o=>`<option value="${o.id}">${escapeHtml(o.label)}</option>`).join('');
+    halachaOccSelect.value = HALACHA_OCCASIONS.some(o=>o.id === prevVal) ? prevVal : HALACHA_OCCASIONS[0].id;
+    selectedHalachaOccasion = halachaOccSelect.value;
+    if(!halachaOccSelect._boundChange){
+      halachaOccSelect._boundChange = true;
+      halachaOccSelect.addEventListener('change', ()=>{
+        selectedHalachaOccasion = halachaOccSelect.value;
+        renderHalachaOccasionCounts();
+      });
+    }
+    renderHalachaOccasionCounts();
+  }
+
   document.getElementById('leagueActive').checked = !!config.leagueActive;
   document.getElementById('leagueName').value = config.leagueName || '';
 
@@ -3889,6 +4057,16 @@ function persistModalChanges(){
       if(line.trim()) config.halachaBank.push(line.trim());
     });
     document.getElementById('addHalachaBulk').value = '';
+  }
+  const halachaOccasionBulk = document.getElementById('addHalachaOccasionBulk').value.trim();
+  if(halachaOccasionBulk){
+    const occId = document.getElementById('qHalachaOccasion').value || selectedHalachaOccasion;
+    config.halachaSeasons = config.halachaSeasons || {};
+    if(!config.halachaSeasons[occId]) config.halachaSeasons[occId] = [];
+    halachaOccasionBulk.split('\n').forEach(line=>{
+      if(line.trim()) config.halachaSeasons[occId].push(line.trim());
+    });
+    document.getElementById('addHalachaOccasionBulk').value = '';
   }
   const halachaSeasonalBulk = document.getElementById('addHalachaSeasonalBulk').value.trim();
   if(halachaSeasonalBulk){
