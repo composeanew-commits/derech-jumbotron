@@ -1460,17 +1460,51 @@ function mergeStoredConfig(stored){
   if(!merged.halachaSeasonal.items) merged.halachaSeasonal.items = [];
   if(!merged.countdowns) merged.countdowns = [];
   if(!merged.flyers) merged.flyers = [];
+  // Firebase doesn't really store arrays — it stores objects with numeric
+  // keys, and only hands them back as a true array when the keys happen to
+  // be 0..n with no gaps. Delete a flyer from the middle on one device and
+  // the next screen can receive `flyers` as a plain object (or an array
+  // with null holes) instead. `.map`/`.filter` then blow up inside
+  // getActiveFlyers, the flyer panel render aborts, and the board falls
+  // back to looking like there are no flyers at all — one of the ways the
+  // "Add an event flyer from the gear icon" placeholder used to appear on
+  // a board that clearly had flyers. Normalize the shape here, once, so
+  // everything downstream can count on a clean array.
+  merged.flyers = normalizeStoredList(merged.flyers).filter(f => f && f.url);
+  merged.photos = normalizeStoredList(merged.photos);
+  merged.countdowns = normalizeStoredList(merged.countdowns);
+  merged.shoutouts = normalizeStoredList(merged.shoutouts);
   return merged;
+}
+
+// Turns whatever Firebase handed back (array, array-with-holes, or an
+// object keyed "0","1","2"…) into a plain dense array.
+function normalizeStoredList(v){
+  if(Array.isArray(v)) return v.filter(x => x !== null && x !== undefined);
+  if(v && typeof v === 'object') return Object.keys(v)
+    .sort((a,b)=> Number(a) - Number(b))
+    .map(k => v[k])
+    .filter(x => x !== null && x !== undefined);
+  return [];
 }
 
 let hasLoadedOnce = false;
 let resolveFirstLoad;
 const firstLoadPromise = new Promise(res => { resolveFirstLoad = res; });
 
+// True while the board is running on bare local defaults because Firebase
+// hadn't answered yet. This is PROVISIONAL, not final — the real data very
+// often lands a second or two later, and when it does the board has to
+// fully take it on board (see the listener below). Treating the fallback
+// as permanent is what left a freshly-reloaded kiosk stuck showing "Add an
+// event flyer from the gear icon" forever.
+let usingLocalFallback = false;
+
 function fallbackToLocalConfig(reason){
   if(hasLoadedOnce) return;
   if(reason) console.warn('Falling back to local-only mode:', reason);
   config = structuredClone(DEFAULT_CONFIG);
+  usingLocalFallback = true;
   hasLoadedOnce = true;
   resolveFirstLoad();
 }
@@ -1492,11 +1526,42 @@ if(isFirebaseConfigured()){
     // We skip the auto-refresh while the edit modal is open so it doesn't
     // yank the form out from under whoever's currently editing.
     BOARD_REF.on('value', (snap)=>{
+      // A snapshot that says "this board doesn't exist" AFTER we've already
+      // loaded real data is essentially never a genuine wipe — it's a
+      // reconnect blip, a permission hiccup, or a momentary state during
+      // someone else's write. Taking it at face value replaced the live
+      // config with bare defaults (no flyers, no photos) for a moment,
+      // which is exactly what made the board flash "Add an event flyer
+      // from the gear icon". Ignore it and keep what we have; the next
+      // real snapshot will arrive on its own.
+      if(hasLoadedOnce && !snap.exists()){
+        console.warn('Ignoring an empty board snapshot — keeping the config already on screen');
+        return;
+      }
       config = mergeStoredConfig(snap.exists() ? snap.val() : null);
       if(!hasLoadedOnce){
         hasLoadedOnce = true;
         firebaseReady = true;
         resolveFirstLoad();
+      } else if(usingLocalFallback){
+        // THE RELOAD CASE. On a kiosk laptop that just rebooted or
+        // refreshed, Firebase regularly takes longer than the 6-second
+        // safety timeout to answer — wifi is still coming up. The board
+        // would start on empty defaults, paint "Add an event flyer from
+        // the gear icon", and then, when the real data finally arrived a
+        // moment later, do nothing with it: the flyer panel only
+        // schedules its next turn when it has something to rotate
+        // between, so an empty panel had no timer left to wake it up and
+        // just sat there until someone reloaded the page again. Now the
+        // first real snapshot after a fallback is treated as the actual
+        // first load — full repaint, and saving starts working again
+        // too (firebaseReady was previously left false forever here, so
+        // the gear icon couldn't save either).
+        usingLocalFallback = false;
+        firebaseReady = true;
+        console.info('Firebase data arrived after the local fallback — repainting the board with the real data');
+        paintTicker();
+        if(!document.getElementById('modalOverlay').classList.contains('open')) startRotation();
       } else if(!document.getElementById('modalOverlay').classList.contains('open')){
         paintTicker();
         // NOT a full startRotation() here on purpose. This fires on EVERY
@@ -1515,6 +1580,11 @@ if(isFirebaseConfigured()){
         // needs an explicit (non-disruptive) refresh, since it's cached in
         // module-level vars rather than read fresh each tick.
         refreshSpotlightPools();
+        // One exception to the no-forced-repaint rule above: if the flyer
+        // panel is currently showing nothing, it has no rotation timer
+        // running (there was nothing to rotate to), so it can't pick up
+        // newly-added flyers on its own. Wake it up.
+        if(!flyerPanelHasContent) renderFlyerPanel(false);
       }
     }, (err)=>{
       fallbackToLocalConfig('Firebase read failed: ' + (err && err.message));
@@ -1529,8 +1599,12 @@ if(isFirebaseConfigured()){
 // Safety net: whatever else goes wrong above (a hung request, a
 // permission-denied response with no error callback, a CDN script that
 // half-loads, etc.) — never let the page wait forever. Force the local
-// fallback after 6 seconds if nothing has resolved by then.
-setTimeout(()=> fallbackToLocalConfig('timed out waiting for Firebase'), 6000);
+// fallback if nothing has resolved by then. This was 6 seconds, which a
+// kiosk laptop coming back from a reboot or reload regularly overran while
+// its wifi was still connecting — so it would fall back to empty defaults
+// almost every time. 12 gives the real data a fair chance to win the race,
+// and the fallback is recoverable now anyway (see usingLocalFallback).
+setTimeout(()=> fallbackToLocalConfig('timed out waiting for Firebase'), 12000);
 
 async function loadConfig(){
   await firstLoadPromise;
@@ -2078,7 +2152,12 @@ let flyerTimer = null;
 // gets closer and again if the rabbi marked it High Priority.
 function getActiveFlyers(){
   const now = new Date();
-  return (config.flyers||[])
+  // config can be null for a beat on a cold start, and flyers can come back
+  // from Firebase in a non-array shape (see normalizeStoredList) — neither
+  // should be allowed to read as "this board has no flyers".
+  const raw = config ? normalizeStoredList(config.flyers) : [];
+  return raw
+    .filter(f => f && f.url)
     .map((f,i)=>({...f, idx:i, target: flyerTarget(f)}))
     // Flyers explicitly turned off ("Show this flyer on the board" unchecked)
     // never appear, regardless of date — lets a flyer be saved/prepped
@@ -2125,7 +2204,10 @@ function pickWeightedFlyer(flyers){
 }
 
 function renderFlyerMarkup(item){
-  if(!item) return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+  // An individual cell coming up empty is a glitch in the plan, not a
+  // statement about the board — leave the cell blank rather than telling
+  // the room to go add a flyer while other flyers are on screen next to it.
+  if(!item) return '';
   const badge = item.priority === 'high' ? `<div class="flyerNeedToKnowBadge"><span class="flyerNeedToKnowBadgeText">Need to Know</span></div>` : '';
   const caption = `
     <div class="photoCaptionBar flyerCaptionBar">
@@ -2377,12 +2459,62 @@ let lastFlyerUrls = [];
 // pattern as flyerPdfGeneration below, just at the panel level.
 let flyerPanelGeneration = 0;
 
+// The placeholder is a last-resort state, never a transient one. Any render
+// that comes back empty has to still be empty this many ms later before the
+// panel is allowed to blank out — long enough to ride out a Firebase
+// reconnect, a save echo, or a cold start, short enough that genuinely
+// deleting the last flyer doesn't leave a stale one sitting up there.
+const FLYER_EMPTY_CONFIRM_DELAY = 2500;
+// How often an empty flyer panel quietly looks again for something to show.
+const FLYER_EMPTY_RECHECK_INTERVAL = 8000;
+let flyerEmptyConfirmTimer = null;
+// Whether real flyer cells are currently on screen. While this is true we
+// refuse to believe a sudden "no flyers" verdict on the first ask.
+let flyerPanelHasContent = false;
+
 function renderFlyerPanel(animate){
   const panel = document.getElementById('flyerPanel');
   if(!panel) return;
   const myGen = ++flyerPanelGeneration;
-  const activeFlyers = getActiveFlyers();
-  const plan = planFlyerCells(activeFlyers, lastFlyerUrls);
+
+  let plan;
+  try{
+    plan = planFlyerCells(getActiveFlyers(), lastFlyerUrls);
+  }catch(err){
+    // Something in the flyer data was malformed enough to throw. Leave
+    // whatever's already up there alone — an unexpected shape in one
+    // record is no reason to wipe the screen — and try again next cycle.
+    console.warn('Flyer panel render failed; keeping the current panel', err);
+    clearTimeout(flyerRotationTimer);
+    flyerRotationTimer = setTimeout(()=>renderFlyerPanel(false), FLYER_DURATION);
+    return;
+  }
+
+  if(plan.mode === 'empty'){
+    clearTimeout(flyerRotationTimer);
+    // Two things have to be true before the placeholder goes up: the board
+    // data has actually finished loading at least once, and we weren't
+    // showing flyers a moment ago. If either fails, this "empty" is
+    // suspect — hold the panel exactly as it is and ask again shortly.
+    // Ninety-nine times out of a hundred the re-check finds the flyers
+    // right where they were and nothing ever blinks.
+    if(!hasLoadedOnce || flyerPanelHasContent){
+      if(!flyerEmptyConfirmTimer){
+        flyerEmptyConfirmTimer = setTimeout(()=>{
+          flyerEmptyConfirmTimer = null;
+          // Second opinion time — stop shielding, so if it's still empty
+          // on this pass the placeholder is allowed through.
+          flyerPanelHasContent = false;
+          renderFlyerPanel(false);
+        }, FLYER_EMPTY_CONFIRM_DELAY);
+      }
+      return;
+    }
+  } else if(flyerEmptyConfirmTimer){
+    // Flyers are back (or never really left) — cancel the pending blank-out.
+    clearTimeout(flyerEmptyConfirmTimer);
+    flyerEmptyConfirmTimer = null;
+  }
 
   const doRender = ()=>{
     if(myGen !== flyerPanelGeneration) return; // superseded by a newer render — don't clobber it
@@ -2398,6 +2530,7 @@ function renderFlyerPanel(animate){
       }
     });
     lastFlyerUrls = plan.picks.map(p=>p.url);
+    flyerPanelHasContent = plan.picks.length > 0;
     updateFlyerPanelLayout();
   };
 
@@ -2414,11 +2547,20 @@ function renderFlyerPanel(animate){
   if(plan.rotates){
     const isNeedToKnow = plan.picks[0] && plan.picks[0].priority === 'high';
     flyerRotationTimer = setTimeout(()=>renderFlyerPanel(true), isNeedToKnow ? NEED_TO_KNOW_FLYER_DURATION : FLYER_DURATION);
+  } else if(plan.mode === 'empty'){
+    // An empty panel used to be a dead end: no timer scheduled, so nothing
+    // ever looked again. If the board's data showed up late (slow wifi
+    // after a reload) or a flyer was added from another device, the
+    // placeholder just stayed up until someone refreshed the page by hand.
+    // Keep a slow heartbeat going so it always heals itself.
+    flyerRotationTimer = setTimeout(()=>renderFlyerPanel(false), FLYER_EMPTY_RECHECK_INTERVAL);
   }
 }
 
 function startFlyerRotation(){
   lastFlyerUrls = [];
+  clearTimeout(flyerEmptyConfirmTimer);
+  flyerEmptyConfirmTimer = null;
   renderFlyerPanel(false);
 }
 
