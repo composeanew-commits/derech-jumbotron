@@ -164,24 +164,30 @@
   .flyerWhen.urgency-later{color:var(--purple-light);}
 
   /* Compact, energizing countdown strip — every active countdown gets a
-     chip; wraps onto extra rows instead of squeezing chips unreadably
-     small, so nothing upcoming ever gets hidden. */
+     chip; chips widen to fit their own text (short name = narrow chip,
+     long name = wider chip) instead of wrapping the text onto extra
+     lines, so the strip only ever grows sideways/into new rows, never
+     taller per chip. flex:0 0 auto pins each chip to that natural width —
+     no shrinking, which is what used to let a chip get squeezed narrower
+     than its text and force a wrap. */
   .countdownStrip{flex:1;min-width:0;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:0 24px;}
   .countdownStrip.active{display:flex;}
-  .countdownChip{flex:0 1 auto;min-width:170px;max-width:380px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 16px;display:flex;flex-direction:row;align-items:center;justify-content:center;text-align:left;gap:12px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
+  .countdownChip{flex:0 0 auto;min-width:130px;max-width:520px;background:linear-gradient(135deg, rgba(240,184,77,.16), rgba(139,130,201,.12));border:1px solid var(--gold-dim);border-radius:12px;padding:10px 16px;display:flex;flex-direction:row;align-items:center;justify-content:center;text-align:left;gap:12px;position:relative;overflow:hidden;animation:heroGlow 3.5s ease-in-out infinite;transition:border-color .5s ease, background .5s ease;}
   /* When several countdowns are active at once, trim padding/type size a
      touch so more chips fit per row without the strip taking over the
      whole sidebar. Two tiers: "compact" once there are more than a
      handful, and a tighter "dense" tier once there are enough that even
      compact chips would stack into many rows — each step trims size
      further, but never below what's still comfortably readable on a
-     kiosk screen. */
-  .countdownStrip.compact .countdownChip{padding:8px 12px;flex-basis:150px;}
+     kiosk screen. Shrinking the font here also naturally narrows each
+     chip (since width now tracks the text), so there's no separate width
+     rule needed for these tiers.  */
+  .countdownStrip.compact .countdownChip{padding:8px 12px;}
   .countdownStrip.compact .countdownChipName{font-size:11px;line-height:1.15;}
   .countdownStrip.compact .countdownChipFlips .flipUnit{padding:4px 6px;min-width:30px;}
   .countdownStrip.compact .countdownChipFlips .flipNum{font-size:15px;}
   .countdownStrip.dense{gap:6px;}
-  .countdownStrip.dense .countdownChip{padding:6px 10px;flex-basis:132px;min-width:132px;gap:8px;}
+  .countdownStrip.dense .countdownChip{padding:6px 10px;min-width:110px;gap:8px;}
   .countdownStrip.dense .countdownChipName{font-size:10px;line-height:1.1;}
   .countdownStrip.dense .countdownChipFlips{gap:4px;}
   .countdownStrip.dense .countdownChipFlips .flipUnit{padding:3px 5px;min-width:24px;}
@@ -199,7 +205,7 @@
   @keyframes heroGlowHot{0%,100%{box-shadow:0 0 18px rgba(214,80,63,.25);}50%{box-shadow:0 0 36px rgba(214,80,63,.55);}}
   .countdownChip.urgency-later{border-color:var(--purple);background:linear-gradient(135deg, rgba(139,130,201,.16), rgba(76,68,126,.12));animation:heroGlow 5.5s ease-in-out infinite;}
   .todayTag{display:inline-block;background:var(--red);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:8px;margin-right:6px;vertical-align:middle;}
-  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:13px;color:var(--ink);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow-wrap:break-word;max-width:100%;line-height:1.2;text-align:center;}
+  .countdownChipName{position:relative;z-index:1;font-family:'Poppins',sans-serif;font-weight:800;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;text-align:center;}
   .countdownChipFlips{position:relative;z-index:1;display:flex;gap:6px;flex-shrink:0;justify-content:center;}
   .countdownChipFlips .flipUnit{padding:6px 8px;min-width:36px;background:rgba(14,12,27,.55);border-radius:8px;border:1px solid var(--line);text-align:center;}
   .countdownChipFlips .flipNum{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--gold);line-height:1;}
