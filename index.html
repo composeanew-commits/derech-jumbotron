@@ -2441,8 +2441,25 @@ function planFlyerCells(activeFlyers, avoidUrls){
   // so they're still visible, just not competing for the spotlight.
   const needToKnow = activeFlyers.filter(f => f.priority === 'high');
   if(needToKnow.length > 0){
-    const main = needToKnow.length === 1 ? needToKnow[0] : pickDistinctFlyers(needToKnow, 1, avoidUrls)[0];
-    return {mode:'single', picks:[main], rotates: needToKnow.length > 1};
+    // Show as many Need to Know flyers at once as will fit, the same way
+    // regular flyers double/triple up below — just restricted to the Need
+    // to Know pool, so a second (or third) urgent flyer never has to wait
+    // its turn behind another one. Regular flyers still never mix into this
+    // panel while any Need to Know flyer is active (see
+    // buildExtraInfoFlyerPhotoItems).
+    if(needToKnow.length === 1) return {mode:'single', picks: needToKnow.slice(0,1), rotates:false};
+    if(needToKnow.length === 2) return {mode:'double', picks: needToKnow.slice(0,2), rotates:false};
+
+    const main = pickDistinctFlyers(needToKnow, 1, avoidUrls)[0];
+    const others = needToKnow.filter(f => f.url !== main.url);
+    if(getFlyerOrientation(main.url) === 'portrait' && others.length >= 2){
+      const landscapeOthers = others.filter(f => getFlyerOrientation(f.url) === 'landscape');
+      const pool = landscapeOthers.length >= 2 ? landscapeOthers : others;
+      const side = pickDistinctFlyers(pool, 2, avoidUrls);
+      if(side.length === 2) return {mode:'triple', picks:[main, side[0], side[1]], rotates:true};
+    }
+    const second = pickDistinctFlyers(others, 1, avoidUrls)[0];
+    return {mode: second ? 'double' : 'single', picks: second ? [main, second] : [main], rotates:true};
   }
 
   if(activeFlyers.length === 1) return {mode:'single', picks: activeFlyers.slice(0,1), rotates:false};
