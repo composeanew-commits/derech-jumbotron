@@ -586,6 +586,29 @@
         <textarea id="addQuoteBulk" rows="3"></textarea>
       </div>
       <div class="bankCount" id="quoteCount"></div>
+
+      <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
+        <label style="display:block;margin-bottom:8px;">Daily Halacha — year-round pool</label>
+        <div class="hint" style="margin-top:0;">One shows up per rotation, same as trivia/riddle/word/quote above. Format: Halacha text (Source) — the part in parentheses shows as a small source line underneath.</div>
+        <div class="field">
+          <textarea id="addHalachaBulk" rows="3" placeholder="Wash your hands before bread and say Al Netilas Yadayim. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim)"></textarea>
+        </div>
+        <div class="bankCount" id="halachaCount"></div>
+      </div>
+
+      <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
+        <label style="display:block;margin-bottom:8px;">Daily Halacha — seasonal override</label>
+        <div class="hint" style="margin-top:0;">While today's date falls inside this range, ONLY these halachos show (the year-round pool above pauses, doesn't blend in) — e.g. Sukkos-specific halachos for the weeks around Sukkos. Leave either date blank to turn the override off. This range doesn't repeat automatically next year — update it each season.</div>
+        <div class="row">
+          <div class="field"><label>Season Start Date</label><input id="qHalachaSeasonStart" type="date"></div>
+          <div class="field"><label>Season End Date</label><input id="qHalachaSeasonEnd" type="date"></div>
+        </div>
+        <div class="field">
+          <label>Add Seasonal Halachos (one per line, same format)</label>
+          <textarea id="addHalachaSeasonalBulk" rows="3"></textarea>
+        </div>
+        <div class="bankCount" id="halachaSeasonalCount"></div>
+      </div>
     </div>
 
     <div class="saveRow">
@@ -1088,6 +1111,49 @@ const DEFAULT_QUOTES = [
 "The struggle you're in today is developing the strength you need for tomorrow."
 ];
 
+// Year-round starter set of bite-sized, practical halachos for daily life,
+// paraphrased in plain English (not quoted from any specific printed
+// translation) from classic, widely-used halachic digests. Cited by topic
+// rather than exact siman/seif so nothing here claims a precision it
+// doesn't have \u2014 worth a once-over from your Rav before publishing, the
+// same as anything else going up on a public board. Same "text (Source)"
+// format as DEFAULT_QUOTES above, so it reuses the identical parsing/render
+// path (see buildSpotlightItems).
+const DEFAULT_HALACHOS = [
+"Upon waking, wash your hands (netilas yadayim) by pouring water three times, alternating hands, before touching food or saying Hashem's name. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim Shacharis)",
+"Say Modeh Ani immediately upon waking, thanking Hashem for returning your soul \u2014 even before washing your hands. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim Shacharis)",
+"Tzitzis are worn all day; it's proper to check the strings occasionally to make sure none are torn past what's kosher. (Kitzur Shulchan Aruch, Hilchos Tzitzis)",
+"Before eating bread, wash your hands and say the bracha of Al Netilas Yadayim before drying them. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim Seudah)",
+"Try not to talk between washing your hands for bread and making the bracha of Hamotzi. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim Seudah)",
+"Tefillin are worn every weekday, but not on Shabbos or Yom Tov. (Kitzur Shulchan Aruch, Hilchos Tefillin)",
+"Tefillin go on in order \u2014 Shel Yad (arm) first, then Shel Rosh (head) \u2014 and come off in reverse, Shel Rosh first. (Kitzur Shulchan Aruch, Hilchos Tefillin)",
+"After using the bathroom, the bracha of Asher Yatzar is said, thanking Hashem for the body working properly. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim Shacharis)",
+"Answering Amen to a bracha you hear is considered a great mitzvah in its own right. (Kitzur Shulchan Aruch, Hilchos Brachos)",
+"Before eating any food, say its proper bracha first \u2014 Hamotzi on bread, Borei Pri Ha'eitz on fruit that grows on a tree, and so on. (Kitzur Shulchan Aruch, Hilchos Brachos)",
+"Speak to your parents respectfully, and avoid contradicting or correcting them sharply, even when you disagree. (Kitzur Shulchan Aruch, Hilchos Kibud Av Va'eim)",
+"Guarding your speech from lashon hara \u2014 negative talk about other people \u2014 is one of the most emphasized halachos of daily life. (Chofetz Chaim; cf. Kitzur Shulchan Aruch, Hilchos Lashon Hara)",
+"It's a beautiful, meritorious custom to give a little tzedaka before davening each morning. (Kitzur Shulchan Aruch, Hilchos Tzedaka)",
+"Davening with a minyan, rather than alone, is the ideal whenever it's possible. (Kitzur Shulchan Aruch, Hilchos Tefillah)",
+"Before Shemoneh Esrei, take three steps back and then three forward, as though approaching royalty. (Kitzur Shulchan Aruch, Hilchos Tefillah)",
+"Shabbos candles are lit before sunset on Friday, never after. (Kitzur Shulchan Aruch, Hilchos Shabbos)",
+"It's a mitzvah to eat three meals over Shabbos \u2014 Friday night, Shabbos day, and Shalosh Seudos \u2014 each starting with bread. (Kitzur Shulchan Aruch, Hilchos Shabbos)",
+"Kiddush is said over a cup of wine or grape juice at the start of the Friday night and Shabbos day meals. (Kitzur Shulchan Aruch, Hilchos Shabbos)",
+"Havdalah, marking Shabbos's end, is said over a cup of wine, a flame, and sweet-smelling spices. (Kitzur Shulchan Aruch, Hilchos Motzei Shabbos)",
+"On Shabbos, even moving muktzeh items \u2014 like money or a pen \u2014 isn't allowed, even without any actual 'work' involved. (Kitzur Shulchan Aruch, Hilchos Shabbos)",
+"A kosher home has a mezuzah on the doorposts of its rooms, affixed on the upper third of the doorpost. (Kitzur Shulchan Aruch, Hilchos Mezuzah)",
+"Meat and milk aren't cooked, eaten, or benefited from together, and are kept on separate dishes. (Kitzur Shulchan Aruch, Hilchos Basar B'chalav)",
+"Only food that's properly kosher-supervised, from an animal shechted correctly, may be eaten. (Kitzur Shulchan Aruch, Hilchos Shechitah)",
+"Bentching (Birkas Hamazon) is said after any meal that included bread, ideally at the same table where you ate. (Kitzur Shulchan Aruch, Hilchos Birkas Hamazon)",
+"Upon hearing thunder, the bracha of Shekocho Ugvuraso Malei Olam is said, acknowledging Hashem's power. (Kitzur Shulchan Aruch, Hilchos Brachos)",
+"Kriyas Shema Al Hamita \u2014 Shema before sleep \u2014 is said each night before going to bed. (Kitzur Shulchan Aruch, Hilchos Kriyas Shema Al Hamita)",
+"Returning a lost item to its owner, when the owner can be identified, is a Torah obligation (hashavas aveidah). (Kitzur Shulchan Aruch, Hilchos Aveidah U'metziah)",
+"Greeting every person with a cheerful expression is a value the Sages praised highly as part of proper conduct between people. (Pirkei Avos 1:15; cf. Kitzur Shulchan Aruch, Hilchos Derech Eretz)",
+"Embarrassing someone in public is treated with extreme seriousness \u2014 the Gemara compares it to bloodshed. (Kitzur Shulchan Aruch, Hilchos Ona'as Devarim; Bava Metzia 58b)",
+"A bracha is said before performing a mitzvah wherever one applies \u2014 for example before lighting Chanukah candles or taking the Lulav. (Kitzur Shulchan Aruch, Hilchos Brachos)",
+"The ideal time to finish the morning Shema and its brachos is within the first three halachic hours of the day. (Kitzur Shulchan Aruch, Hilchos Kriyas Shema)",
+"Kibud Shabbos includes wearing nicer clothing and setting a more beautiful table in Shabbos's honor. (Kitzur Shulchan Aruch, Hilchos Shabbos)"
+];
+
 const DEFAULT_GALLERY_PHOTOS = [
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Derech-Old-City-Shabbaton-5786-1-300x200.webp","Old City Shabbaton"],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-9264-300x200.webp",""],
@@ -1314,7 +1380,14 @@ const DEFAULT_CONFIG = {
   riddleBank: DEFAULT_RIDDLES.map(([r,a])=>({r,a})),
   wordBank: DEFAULT_WORDS.map(([hebrew,translit,meaning,cat])=>({hebrew,translit,meaning,cat})),
   quoteBank: DEFAULT_QUOTES.slice(),
-  waysBank: DEFAULT_FORTYEIGHT.map(([trait,challenge])=>({trait,challenge}))
+  waysBank: DEFAULT_FORTYEIGHT.map(([trait,challenge])=>({trait,challenge})),
+  // Year-round halacha pool (falls back to this whenever no seasonal set is
+  // active) plus one optional seasonal set that, when its date range is
+  // live, fully replaces the year-round pool in the rotation \u2014 e.g. a
+  // batch of Sukkos-specific halachos for the weeks around Sukkos, then
+  // back to the general pool once the range passes.
+  halachaBank: DEFAULT_HALACHOS.slice(),
+  halachaSeasonal: {startDate:'', endDate:'', items:[]}
 };
 
 let config = null;
@@ -1382,6 +1455,9 @@ function mergeStoredConfig(stored){
   merged.wordBank = merged.wordBank.filter(w => (w.translit || '').trim().toLowerCase() !== 'yalla');
   if(!merged.quoteBank || !merged.quoteBank.length) merged.quoteBank = structuredClone(DEFAULT_CONFIG.quoteBank);
   if(!merged.waysBank || !merged.waysBank.length) merged.waysBank = structuredClone(DEFAULT_CONFIG.waysBank);
+  if(!merged.halachaBank || !merged.halachaBank.length) merged.halachaBank = structuredClone(DEFAULT_CONFIG.halachaBank);
+  if(!merged.halachaSeasonal) merged.halachaSeasonal = structuredClone(DEFAULT_CONFIG.halachaSeasonal);
+  if(!merged.halachaSeasonal.items) merged.halachaSeasonal.items = [];
   if(!merged.countdowns) merged.countdowns = [];
   if(!merged.flyers) merged.flyers = [];
   return merged;
@@ -1832,6 +1908,33 @@ function buildSpotlightItems(){
     rotating.push({key:'ways:'+i, eyebrow:'A Trait to Work On', title: w.trait, body: `<div class="qText">${escapeHtml(w.challenge)}</div>`, accent:'var(--pink)', icon:'\u25B3'});
   });
 
+  // Halacha: a seasonal set (e.g. the weeks around Sukkos), when its date
+  // range is currently active, fully takes over from the year-round pool
+  // \u2014 not blended with it \u2014 so the board isn't mixing "how to build a
+  // sukkah" halachos in with generic daily ones during the one stretch of
+  // the year they're actually relevant. Once the range passes, it falls
+  // straight back to the year-round pool with no manual step needed.
+  {
+    const seasonal = config.halachaSeasonal;
+    let seasonActive = false;
+    if(seasonal && seasonal.startDate && seasonal.endDate && seasonal.items && seasonal.items.length){
+      const start = parseDateTime(seasonal.startDate, null, '00:00');
+      const end = parseDateTime(seasonal.endDate, null, '23:59');
+      const now = new Date();
+      seasonActive = !!(start && end && now >= start && now <= end);
+    }
+    const activeHalachos = seasonActive ? seasonal.items : (config.halachaBank || []);
+    const keyPrefix = seasonActive ? 'halachaSeasonal:' : 'halacha:';
+    activeHalachos.forEach((h, i)=>{
+      const parts = h.split(/\s*\((.*?)\)\s*$/);
+      const body = `<div class="thoughtBox">
+        <div class="thoughtText">${escapeHtml(parts[0])}</div>
+        ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
+      </div>`;
+      rotating.push({key:keyPrefix+i, eyebrow: seasonActive ? 'Seasonal Halacha' : 'Halacha', title:'Halacha of the Day', body, accent:'var(--gold)', icon:'\u2736'});
+    });
+  }
+
   {
     const text = (config.dailyHistory && config.dailyHistory.trim()) || autoHistory;
     if(text) rotating.push({key:'history', eyebrow:'Today in Jewish History', title:'On This Day', body: `<div class="qText">${escapeHtml(text)}</div>`, accent:'var(--purple-light)', icon:'\u2609'});
@@ -2261,14 +2364,28 @@ function flyerCellsMarkup(mode){
 
 let flyerRotationTimer = null;
 let lastFlyerUrls = [];
+// Bumped on every renderFlyerPanel call. The animate path below fades out
+// the current cells, then waits 380ms before actually swapping in the new
+// ones via a bare setTimeout — and if a second renderFlyerPanel call comes
+// in during that window (e.g. someone hits Save on another device right as
+// a scheduled rotation starts fading), that first call's delayed render
+// used to fire anyway once its timer elapsed, clobbering whatever the
+// newer call had already put on screen with its own (by then stale) plan —
+// occasionally a stale "no active flyers" snapshot, which is what caused
+// the flyer panel to randomly flash the "Add an event flyer from the gear
+// icon" placeholder even with flyers configured and active. Same fix
+// pattern as flyerPdfGeneration below, just at the panel level.
+let flyerPanelGeneration = 0;
 
 function renderFlyerPanel(animate){
   const panel = document.getElementById('flyerPanel');
   if(!panel) return;
+  const myGen = ++flyerPanelGeneration;
   const activeFlyers = getActiveFlyers();
   const plan = planFlyerCells(activeFlyers, lastFlyerUrls);
 
   const doRender = ()=>{
+    if(myGen !== flyerPanelGeneration) return; // superseded by a newer render — don't clobber it
     flyerPdfGeneration++; // invalidate any still-looping PDF page flip from the previous render
     panel.classList.remove('stacked');
     panel.innerHTML = flyerCellsMarkup(plan.mode);
@@ -2882,6 +2999,11 @@ function syncFormToConfig(){
       blurb: document.getElementById('qYahrzeitBlurb').value
     };
   }
+  if(document.getElementById('qHalachaSeasonStart')){
+    config.halachaSeasonal = config.halachaSeasonal || {items:[]};
+    config.halachaSeasonal.startDate = document.getElementById('qHalachaSeasonStart').value;
+    config.halachaSeasonal.endDate = document.getElementById('qHalachaSeasonEnd').value;
+  }
   document.querySelectorAll('[data-field="teamName"]').forEach(el=> config.teams[Number(el.dataset.idx)].name = el.value);
   document.querySelectorAll('[data-field="teamPoints"]').forEach(el=> config.teams[Number(el.dataset.idx)].points = Number(el.value)||0);
   document.querySelectorAll('[data-field="shoutout"]').forEach(el=> config.shoutouts[Number(el.dataset.idx)] = el.value);
@@ -2930,6 +3052,8 @@ function populateModal(){
   document.getElementById('qHistory').value = config.dailyHistory || '';
   document.getElementById('qYahrzeitName').value = (config.yahrzeit && config.yahrzeit.name) || '';
   document.getElementById('qYahrzeitBlurb').value = (config.yahrzeit && config.yahrzeit.blurb) || '';
+  document.getElementById('qHalachaSeasonStart').value = (config.halachaSeasonal && config.halachaSeasonal.startDate) || '';
+  document.getElementById('qHalachaSeasonEnd').value = (config.halachaSeasonal && config.halachaSeasonal.endDate) || '';
 
   document.getElementById('leagueActive').checked = !!config.leagueActive;
   document.getElementById('leagueName').value = config.leagueName || '';
@@ -3135,6 +3259,12 @@ function populateModal(){
   document.getElementById('riddleCount').textContent = `${config.riddleBank.length} riddles in the pool`;
   document.getElementById('wordCount').textContent = `${config.wordBank.length} Hebrew words in the pool`;
   document.getElementById('quoteCount').textContent = `${config.quoteBank.length} quotes in the pool`;
+  document.getElementById('halachaCount').textContent = `${config.halachaBank.length} halachos in the year-round pool`;
+  const seasonalCount = (config.halachaSeasonal && config.halachaSeasonal.items) ? config.halachaSeasonal.items.length : 0;
+  const seasonalHasRange = config.halachaSeasonal && config.halachaSeasonal.startDate && config.halachaSeasonal.endDate;
+  document.getElementById('halachaSeasonalCount').textContent = seasonalHasRange
+    ? `${seasonalCount} seasonal halacha(s), active ${config.halachaSeasonal.startDate} through ${config.halachaSeasonal.endDate}`
+    : `${seasonalCount} seasonal halacha(s) saved \u2014 add a start/end date above to turn the override on`;
 
   bindDynamicHandlers();
 }
@@ -3564,6 +3694,22 @@ function persistModalChanges(){
       if(line.trim()) config.quoteBank.push(line.trim());
     });
     document.getElementById('addQuoteBulk').value = '';
+  }
+  const halachaBulk = document.getElementById('addHalachaBulk').value.trim();
+  if(halachaBulk){
+    halachaBulk.split('\n').forEach(line=>{
+      if(line.trim()) config.halachaBank.push(line.trim());
+    });
+    document.getElementById('addHalachaBulk').value = '';
+  }
+  const halachaSeasonalBulk = document.getElementById('addHalachaSeasonalBulk').value.trim();
+  if(halachaSeasonalBulk){
+    config.halachaSeasonal = config.halachaSeasonal || {startDate:'', endDate:'', items:[]};
+    if(!config.halachaSeasonal.items) config.halachaSeasonal.items = [];
+    halachaSeasonalBulk.split('\n').forEach(line=>{
+      if(line.trim()) config.halachaSeasonal.items.push(line.trim());
+    });
+    document.getElementById('addHalachaSeasonalBulk').value = '';
   }
 
   // Reflect it on this screen immediately, from local config — don't wait
