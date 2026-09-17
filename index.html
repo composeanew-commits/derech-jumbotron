@@ -77,7 +77,7 @@
   .brandText .sub::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(78,155,92,.6);animation:pulseDot 2s infinite;}
   .headerRight{display:flex;gap:24px;align-items:center;font-family:'JetBrains Mono',monospace;}
   .dayBadge{background:var(--panel2);border:1px solid var(--line);padding:8px 16px;border-radius:6px;font-size:13px;color:var(--gold);letter-spacing:1px;}
-  .clock{font-size:22px;color:var(--ink);letter-spacing:1px;}
+  .clock{font-family:'Rubik',sans-serif;font-weight:700;font-size:22px;color:var(--ink);letter-spacing:.5px;}
 
   main{flex:1;display:flex;align-items:stretch;justify-content:center;gap:24px;padding:18px 36px;position:relative;min-height:0;}
   /* Narrow sidebar: countdown strip (compact, top) + one rotating spotlight
@@ -357,7 +357,7 @@
   .tickerLabel{flex-shrink:0;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg, rgba(214,80,63,.16), rgba(240,184,77,.12));border:1px solid var(--gold-dim);border-radius:20px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
   .tickerLabel .liveDot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulseDot 1.7s infinite;}
   .tickerTrack{flex:1;min-width:0;overflow:hidden;white-space:nowrap;position:relative;}
-  .tickerInner{display:inline-block;padding-left:100%;animation:scroll 30s linear infinite;font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--gold);letter-spacing:1px;}
+  .tickerInner{display:inline-block;padding-left:100%;animation:scroll 30s linear infinite;font-family:'Rubik',sans-serif;font-weight:500;font-size:16px;color:var(--gold);letter-spacing:.3px;}
   @keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
 
   .editBtn{position:fixed;bottom:22px;right:22px;width:52px;height:52px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .2s;}
