@@ -2945,6 +2945,13 @@ function pickWeightedPhoto(items, avoidUrls){
 // cellIdx -> url currently shown in that cell, so other cells avoid repeating it.
 let currentlyShownPhotoUrls = {};
 
+// Photo/thumbnail URLs that have proven unloadable this session (both the
+// full-res URL and its thumbnail fallback failed). Once a URL lands here the
+// rotation stops offering it at all, so a dead link only ever costs one
+// skipped turn instead of coming back around to sit as a blank box again a
+// few minutes later.
+let brokenPhotoUrls = new Set();
+
 // Persistent shuffle bags (one per pool: 'old' and 'new') so every photo and
 // video in a pool gets a turn before anything repeats — a plain weighted
 // Math.random() pick each time (the old approach, only guarded by a 6-item
@@ -3011,7 +3018,7 @@ function nextFromPhotoBag(poolKey, pool, avoidUrls){
   return bag[0];
 }
 
-function renderPhotoCellMarkup(item){
+function renderPhotoCellMarkup(item, cellIdx){
   if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
   if(item.type === 'video'){
     // autoplay requires muted in every modern browser. No `loop` here —
@@ -3033,8 +3040,25 @@ function renderPhotoCellMarkup(item){
   const src = item.isCustom ? item.url : fullResUrl(item.url);
   const kb = 'kb' + (1 + Math.floor(Math.random()*4));
   return `
-    <img class="${kb}" src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="if(this.dataset.fallback && this.src!==this.dataset.fallback){this.src=this.dataset.fallback;} else {this.style.display='none';}">
+    <img class="${kb}" src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="handlePhotoImgError(this, ${cellIdx})">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
+}
+
+// Fires when a photo <img> fails to load. First retries once with the
+// original (pre-full-res-rewrite) URL, since that's usually still a good
+// thumbnail even when the derived full-res URL 404s. If that ALSO fails,
+// the photo is genuinely dead: mark it broken (so the rotation stops
+// offering it — see brokenPhotoUrls) and immediately skip this cell to the
+// next photo, rather than leaving a hidden/blank image sitting on screen
+// until its normal timer runs out.
+function handlePhotoImgError(img, cellIdx){
+  const fallback = img.dataset.fallback;
+  if(fallback && img.src !== fallback){
+    img.src = fallback;
+    return;
+  }
+  brokenPhotoUrls.add(fallback || img.src);
+  advancePhotoCell(cellIdx);
 }
 
 // Cell 0 (the first of the three photo squares) only ever shows the older,
@@ -3054,12 +3078,18 @@ function pickNextForCell(cellIdx){
   const isExtraInfoCell = cellIdx === EXTRA_INFO_FLYER_CELL_INDEX;
   let poolKey = isOldCell ? 'old' : 'new';
   let pool = isOldCell ? buildOlderPhotoItems() : buildNewerPhotoItems(false);
+  // Drop anything already proven broken this session (see brokenPhotoUrls)
+  // so a dead link never gets picked again and doesn't quietly shrink the
+  // pool down toward "nothing left" without the rest of this function
+  // noticing — the empty-pool fallback right below still applies on top.
+  pool = pool.filter(p => !brokenPhotoUrls.has(p.url));
   // If the intended pool for this cell is empty (e.g. no custom photos have
   // been added yet, or the built-in gallery was cleared), fall back to the
   // other pool rather than leaving the cell permanently blank.
   if(!pool.length){
     poolKey = isOldCell ? 'new' : 'old';
     pool = isOldCell ? buildNewerPhotoItems(false) : buildOlderPhotoItems();
+    pool = pool.filter(p => !brokenPhotoUrls.has(p.url));
   }
   const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
@@ -3105,7 +3135,7 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
   const render = ()=>{
     const item = pickNextForCell(cellIdx);
     currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
-    cell.innerHTML = renderPhotoCellMarkup(item);
+    cell.innerHTML = renderPhotoCellMarkup(item, cellIdx);
     cell.classList.remove('fadeOut');
     clearTimeout(photoCellTimers[cellIdx]);
     // The declarative `autoplay` attribute is enough in most browsers, but
