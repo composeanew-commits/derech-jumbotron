@@ -446,6 +446,7 @@
     <div id="stage" class="mainPanel">
       <div id="spotlightGrid" class="spotlightGrid">
         <div id="spotlightCard0" class="bigCard spotlightCard"></div>
+        <div id="spotlightCard3" class="bigCard spotlightCard"></div>
         <div id="spotlightCard1" class="bigCard spotlightCard"></div>
         <div id="spotlightCard2" class="bigCard spotlightCard"></div>
       </div>
@@ -1978,13 +1979,23 @@ function buildScheduleSpotlightItem(){
 // carousel used to.
 let pinnedItems = [];
 let rotatingItems = [];
+// Halacha gets its own dedicated square (slot 3) rather than sharing the
+// general rotating pool with trivia/riddles/quotes/etc. — it advances on
+// its own timer through its own shuffled queue of whatever halacha content
+// is currently active (year-round pool, or a calendar/manual seasonal set),
+// exactly parallel to rotatingItems/shuffledQueue below, just kept separate
+// so it's always findable in the same spot instead of taking its turn
+// mixed in with everything else.
+let halachaItems = [];
 const SPOTLIGHT_DURATION = 10000;
 const ROTATING_SLOTS = [1, 2];
 let shuffledQueue = [];
 let queuePos = 0;
 let pinnedQueuePos = 0;
-let slotTimers = [null, null, null];
-let slotRevealTimers = [null, null, null];
+let halachaQueue = [];
+let halachaQueuePos = 0;
+let slotTimers = [null, null, null, null];
+let slotRevealTimers = [null, null, null, null];
 
 // Persist the rotation's position across page refreshes/kiosk reloads, so a
 // reload picks up right where the carousel left off instead of restarting
@@ -2003,7 +2014,9 @@ function saveSpotlightState(){
     localStorage.setItem(SPOTLIGHT_STATE_KEY, JSON.stringify({
       order: shuffledQueue.map(it => it.key),
       pos: queuePos,
-      pinnedPos: pinnedQueuePos
+      pinnedPos: pinnedQueuePos,
+      halachaOrder: halachaQueue.map(it => it.key),
+      halachaPos: halachaQueuePos
     }));
   }catch(e){ /* storage unavailable (private browsing, etc.) — just skip persisting */ }
 }
@@ -2020,6 +2033,25 @@ function reshuffleSpotlightQueue(){
   queuePos = 0;
 }
 
+// Same shuffle-bag approach as reshuffleSpotlightQueue above, just for the
+// halacha square's own independent queue.
+function reshuffleHalachaQueue(){
+  halachaQueue = [...halachaItems];
+  for(let i = halachaQueue.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [halachaQueue[i], halachaQueue[j]] = [halachaQueue[j], halachaQueue[i]];
+  }
+  halachaQueuePos = 0;
+}
+
+function nextHalachaQueueItem(){
+  if(!halachaItems.length) return null;
+  if(halachaQueuePos >= halachaQueue.length) reshuffleHalachaQueue();
+  const item = halachaQueue[halachaQueuePos++];
+  saveSpotlightState();
+  return item;
+}
+
 // Re-derives pinnedItems/rotatingItems from the live config (so newly added
 // or removed content shows up) WITHOUT touching slotTimers, queuePos, or
 // whatever's currently painted on screen — used when the config changes out
@@ -2032,6 +2064,7 @@ function refreshSpotlightPools(){
   const built = buildSpotlightItems();
   pinnedItems = built.pinned;
   rotatingItems = built.rotating;
+  halachaItems = built.halacha;
 
   const byKey = {};
   rotatingItems.forEach(it => { byKey[it.key] = it; });
@@ -2055,7 +2088,43 @@ function refreshSpotlightPools(){
   }
   shuffledQueue = kept;
   queuePos = Math.min(queuePos, shuffledQueue.length);
+
+  // Same reconciliation, in parallel, for the halacha square's own queue.
+  const byKeyH = {};
+  halachaItems.forEach(it => { byKeyH[it.key] = it; });
+  const halachaKeys = halachaItems.map(it => it.key);
+  const keptH = halachaQueue.map(it => byKeyH[it.key]).filter(Boolean);
+  const keptKeysH = new Set(keptH.map(it => it.key));
+  const newOnesH = halachaKeys.filter(k => !keptKeysH.has(k)).map(k => byKeyH[k]);
+  if(newOnesH.length){
+    newOnesH.forEach(item=>{
+      const insertAt = halachaQueuePos + 1 + Math.floor(Math.random() * Math.max(1, keptH.length - halachaQueuePos));
+      keptH.splice(Math.min(insertAt, keptH.length), 0, item);
+    });
+  }
+  halachaQueue = keptH;
+  halachaQueuePos = Math.min(halachaQueuePos, halachaQueue.length);
   saveSpotlightState();
+
+  // The halacha card has no rotation timer running while it's empty (there
+  // was nothing to show), so — same fix as the flyer panel — wake it up
+  // itself if content just appeared, and tear its timer down if it just
+  // emptied out (e.g. a seasonal set ended and the year-round pool is
+  // also empty).
+  const card3 = document.getElementById('spotlightCard3');
+  if(card3){
+    if(halachaItems.length && card3.style.display === 'none'){
+      card3.style.display = '';
+      paintSpotlightSlot(3, nextHalachaQueueItem());
+      if(halachaItems.length > 1 && !slotTimers[3]){
+        slotTimers[3] = setTimeout(advanceHalachaSlot, SPOTLIGHT_DURATION);
+      }
+    } else if(!halachaItems.length && card3.style.display !== 'none'){
+      card3.style.display = 'none';
+      clearTimeout(slotTimers[3]);
+      slotTimers[3] = null;
+    }
+  }
 }
 
 function nextSpotlightQueueItem(){
@@ -2079,6 +2148,7 @@ function nextPinnedItem(){
 function buildSpotlightItems(){
   const pinned = [];
   const rotating = [];
+  const halacha = [];
 
   {
     const z = config.zmanim || {};
@@ -2201,7 +2271,7 @@ function buildSpotlightItems(){
         <div class="thoughtText">${escapeHtml(parts[0])}</div>
         ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
       </div>`;
-      rotating.push({key:keyPrefix+i, eyebrow, title:'Halacha of the Day', body, accent:'var(--gold)', icon:'\u2736'});
+      halacha.push({key:keyPrefix+i, eyebrow, title:'Halacha of the Day', body, accent:'var(--gold)', icon:'\u2736'});
     });
   }
 
@@ -2216,7 +2286,7 @@ function buildSpotlightItems(){
     if(y) rotating.push({key:'yahrzeit', eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)', icon:'\u2727'});
   }
 
-  return {pinned, rotating};
+  return {pinned, rotating, halacha};
 }
 
 function paintSpotlightSlot(slotIdx, item){
@@ -2258,6 +2328,12 @@ function advanceSpotlightSlot(slotIdx){
   slotTimers[slotIdx] = setTimeout(()=>advanceSpotlightSlot(slotIdx), SPOTLIGHT_DURATION);
 }
 
+function advanceHalachaSlot(){
+  paintSpotlightSlot(3, nextHalachaQueueItem());
+  clearTimeout(slotTimers[3]);
+  slotTimers[3] = setTimeout(advanceHalachaSlot, SPOTLIGHT_DURATION);
+}
+
 // Slot 0 gets Zmanim/Schedule only; slots 1-2 split the rest of the pool
 // between them so several different pieces of content are visible at once.
 // Each slot then keeps advancing independently, staggered so they don't all
@@ -2266,6 +2342,7 @@ function startSpotlightRotation(){
   const built = buildSpotlightItems();
   pinnedItems = built.pinned;
   rotatingItems = built.rotating;
+  halachaItems = built.halacha;
 
   // Resume from wherever the rotation left off (previous page load, or a
   // config save that re-triggered this) as long as the same set of content
@@ -2286,8 +2363,21 @@ function startSpotlightRotation(){
   }
   pinnedQueuePos = (saved && Number.isFinite(saved.pinnedPos)) ? saved.pinnedPos : 0;
 
+  const halachaKeys = halachaItems.map(it => it.key);
+  const savedHalachaOrder = saved && Array.isArray(saved.halachaOrder) ? saved.halachaOrder : null;
+  const sameHalachaSet = !!savedHalachaOrder && savedHalachaOrder.length === halachaKeys.length &&
+    halachaKeys.every(k => savedHalachaOrder.includes(k));
+  if(sameHalachaSet){
+    const byKeyH = {};
+    halachaItems.forEach(it => { byKeyH[it.key] = it; });
+    halachaQueue = savedHalachaOrder.map(k => byKeyH[k]);
+    halachaQueuePos = Math.min(Math.max(saved.halachaPos || 0, 0), halachaQueue.length);
+  } else {
+    reshuffleHalachaQueue();
+  }
+
   slotTimers.forEach(t => clearTimeout(t));
-  slotTimers = [null, null, null];
+  slotTimers = [null, null, null, null];
 
   const card0 = document.getElementById('spotlightCard0');
   if(card0){
@@ -2303,6 +2393,23 @@ function startSpotlightRotation(){
       paintSpotlightSlot(0, null);
     } else {
       card0.style.display = 'none';
+    }
+  }
+
+  // Slot 3: Halacha's own dedicated square. Simply hidden (no placeholder)
+  // when there's genuinely no halacha content configured anywhere, so an
+  // empty board doesn't show a permanent "add halacha" card taking up a
+  // quarter of the sidebar.
+  const card3 = document.getElementById('spotlightCard3');
+  if(card3){
+    if(halachaItems.length){
+      card3.style.display = '';
+      paintSpotlightSlot(3, nextHalachaQueueItem());
+      if(halachaItems.length > 1){
+        slotTimers[3] = setTimeout(advanceHalachaSlot, SPOTLIGHT_DURATION);
+      }
+    } else {
+      card3.style.display = 'none';
     }
   }
 
