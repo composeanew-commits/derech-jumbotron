@@ -625,14 +625,14 @@
 
       <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
         <label style="display:block;margin-bottom:8px;">Daily Halacha — year-round pool</label>
-        <div class="hint" style="margin-top:0;">One shows up per rotation, same as trivia/riddle/word/quote above. Format: Halacha text (Source) — the part in parentheses shows as a small source line underneath.</div>
+        <div class="hint" style="margin-top:0;">One shows up per rotation, same as trivia/riddle/word/quote above. Format: Halacha text (Source) — the part in parentheses shows as a small source line underneath. This box always shows everything currently saved — edit or delete any line, add new ones, then Save & Publish.</div>
         <div class="fileDrop" id="halachaPdfDrop">
           <input type="file" id="halachaPdfFile" accept="application/pdf">
           <span id="halachaPdfLabel">📎 Or upload a PDF — splits it into halachos below automatically</span>
         </div>
         <div class="hint" id="halachaPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
-          <textarea id="addHalachaBulk" rows="3" placeholder="Wash your hands before bread and say Al Netilas Yadayim. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim)"></textarea>
+          <textarea id="addHalachaBulk" rows="6" placeholder="Wash your hands before bread and say Al Netilas Yadayim. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim)"></textarea>
         </div>
         <div class="bankCount" id="halachaCount"></div>
       </div>
@@ -650,8 +650,9 @@
         </div>
         <div class="hint" id="halachaOccasionPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
-          <label>Add Halachos for this occasion (one per line, same format)</label>
-          <textarea id="addHalachaOccasionBulk" rows="3"></textarea>
+          <label>Halachos for this occasion (one per line, same format)</label>
+          <textarea id="addHalachaOccasionBulk" rows="6"></textarea>
+          <div class="hint" style="margin-top:4px;">Switches to show that occasion's own saved list when you change the dropdown above — edit or delete a line, add new ones, then Save & Publish.</div>
         </div>
         <div class="bankCount" id="halachaOccasionCount"></div>
         <div class="bankCount" id="halachaOccasionAllCounts" style="margin-top:6px;"></div>
@@ -670,8 +671,9 @@
         </div>
         <div class="hint" id="halachaSeasonalPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
-          <label>Add Manual-Override Halachos (one per line, same format)</label>
-          <textarea id="addHalachaSeasonalBulk" rows="3"></textarea>
+          <label>Manual-Override Halachos (one per line, same format)</label>
+          <textarea id="addHalachaSeasonalBulk" rows="6"></textarea>
+          <div class="hint" style="margin-top:4px;">This box always shows everything currently saved — edit or delete any line, add new ones, then Save & Publish.</div>
         </div>
         <div class="bankCount" id="halachaSeasonalCount"></div>
       </div>
@@ -1261,7 +1263,10 @@ const DEFAULT_HALACHA_SEASONS = {
   purim: [],
   pesach: [],
   shavuos: [],
-  three_weeks: []
+  three_weeks: [],
+  tu_bishvat: [],
+  chol_hamoed: [],
+  shemini_atzeres_simchas_torah: []
 };
 
 // Each occasion's range() computes that occasion's Gregorian start/end for
@@ -1277,7 +1282,24 @@ const HALACHA_OCCASIONS = [
   {id:'purim', label:'Purim', range:(hy)=>({start:new HDate(13,'Adar',hy), end:new HDate(15,'Adar',hy)})},
   {id:'pesach', label:'Pesach', range:(hy)=>({start:new HDate(15,'Nisan',hy), end:new HDate(22,'Nisan',hy)})},
   {id:'shavuos', label:'Shavuos', range:(hy)=>({start:new HDate(6,'Sivan',hy), end:new HDate(7,'Sivan',hy)})},
-  {id:'three_weeks', label:'The Three Weeks', range:(hy)=>({start:new HDate(17,'Tammuz',hy), end:new HDate(9,'Av',hy)})}
+  {id:'three_weeks', label:'The Three Weeks', range:(hy)=>({start:new HDate(17,'Tammuz',hy), end:new HDate(9,'Av',hy)})},
+  {id:'tu_bishvat', label:'Tu BiShvat', range:(hy)=>({start:new HDate(15,'Shevat',hy), end:new HDate(15,'Shevat',hy)})},
+  // Chol HaMoed covers the intermediate days of BOTH Sukkos and Pesach
+  // under one set of halachos, so it needs two separate windows in the
+  // same Hebrew year rather than a single start/end range — hence
+  // `ranges` (plural, returns an array) instead of `range`. Dates assume
+  // Eretz Yisrael timing (2nd day of Sukkos/Pesach is already Chol
+  // HaMoed there); this overlaps with the existing full-holiday "Sukkos"
+  // and "Pesach" blocks above on purpose — since those are checked first
+  // in this list, they win if they also have halachos saved, and Chol
+  // HaMoed only kicks in on those days when Sukkos/Pesach itself is empty.
+  {id:'chol_hamoed', label:'Chol HaMoed', ranges:(hy)=>[
+    {start:new HDate(16,'Tishrei',hy), end:new HDate(21,'Tishrei',hy)},
+    {start:new HDate(16,'Nisan',hy), end:new HDate(20,'Nisan',hy)}
+  ]},
+  // One day, per Eretz Yisrael timing (Shemini Atzeres and Simchas Torah
+  // fall on the same day there, unlike chutz la'aretz's two days).
+  {id:'shemini_atzeres_simchas_torah', label:'Shemini Atzeres / Simchas Torah', range:(hy)=>({start:new HDate(22,'Tishrei',hy), end:new HDate(22,'Tishrei',hy)})}
 ];
 
 // Converts an HDate to a plain local-midnight JS Date for that calendar
@@ -1299,11 +1321,17 @@ function computeActiveHalachaSeason(){
     for(const occ of HALACHA_OCCASIONS){
       const items = (config.halachaSeasons && config.halachaSeasons[occ.id]) || [];
       if(!items.length) continue;
-      const {start, end} = occ.range(hy);
-      const startDate = hdateToLocalDate(start);
-      const endDate = hdateToLocalDate(end);
-      endDate.setHours(23,59,59,999);
-      if(now >= startDate && now <= endDate) return {id:occ.id, label:occ.label, items};
+      // Most occasions have one range(hy)->{start,end}; some (Chol HaMoed)
+      // have multiple via ranges(hy)->[{start,end},...]. Normalize to a
+      // list of windows either way.
+      const windows = occ.ranges ? occ.ranges(hy) : [occ.range(hy)];
+      const isActive = windows.some(({start, end})=>{
+        const startDate = hdateToLocalDate(start);
+        const endDate = hdateToLocalDate(end);
+        endDate.setHours(23,59,59,999);
+        return now >= startDate && now <= endDate;
+      });
+      if(isActive) return {id:occ.id, label:occ.label, items};
     }
   }catch(e){
     console.error('halacha season calc failed', e);
@@ -1413,6 +1441,17 @@ let selectedHalachaOccasion = 'aseret_yemei_teshuva';
 // halachos are saved to the currently-selected occasion, plus a compact
 // one-line summary across every occasion so it's obvious at a glance
 // which ones still need content.
+// Shows the currently-saved halachos for whichever occasion is picked in
+// the dropdown, so the box is editable rather than append-only. Skips the
+// refresh if the person is actively typing in it, since populateModal()
+// (which calls this) re-runs for unrelated reasons while the modal is open.
+function refillHalachaOccasionBulk(){
+  const el = document.getElementById('addHalachaOccasionBulk');
+  if(!el || document.activeElement === el || !config) return;
+  const seasons = config.halachaSeasons || {};
+  el.value = (seasons[selectedHalachaOccasion] || []).join('\n');
+}
+
 function renderHalachaOccasionCounts(){
   const countEl = document.getElementById('halachaOccasionCount');
   const allEl = document.getElementById('halachaOccasionAllCounts');
@@ -3611,10 +3650,25 @@ function populateModal(){
       halachaOccSelect._boundChange = true;
       halachaOccSelect.addEventListener('change', ()=>{
         selectedHalachaOccasion = halachaOccSelect.value;
+        refillHalachaOccasionBulk();
         renderHalachaOccasionCounts();
       });
     }
+    refillHalachaOccasionBulk();
     renderHalachaOccasionCounts();
+  }
+  // Keep the year-round pool and manual-override boxes showing everything
+  // currently saved (so they're editable, not just append-only) — but
+  // never stomp on a box the person is actively typing in, since
+  // populateModal() re-runs for unrelated reasons (adding a team, etc.)
+  // while the modal is open.
+  const halachaBulkEl = document.getElementById('addHalachaBulk');
+  if(halachaBulkEl && document.activeElement !== halachaBulkEl){
+    halachaBulkEl.value = (config.halachaBank || []).join('\n');
+  }
+  const halachaSeasonalBulkEl = document.getElementById('addHalachaSeasonalBulk');
+  if(halachaSeasonalBulkEl && document.activeElement !== halachaSeasonalBulkEl){
+    halachaSeasonalBulkEl.value = ((config.halachaSeasonal && config.halachaSeasonal.items) || []).join('\n');
   }
 
   document.getElementById('leagueActive').checked = !!config.leagueActive;
@@ -4401,32 +4455,21 @@ function persistModalChanges(){
     });
     document.getElementById('addQuoteBulk').value = '';
   }
-  const halachaBulk = document.getElementById('addHalachaBulk').value.trim();
-  if(halachaBulk){
-    halachaBulk.split('\n').forEach(line=>{
-      if(line.trim()) config.halachaBank.push(line.trim());
-    });
-    document.getElementById('addHalachaBulk').value = '';
-  }
-  const halachaOccasionBulk = document.getElementById('addHalachaOccasionBulk').value.trim();
-  if(halachaOccasionBulk){
-    const occId = document.getElementById('qHalachaOccasion').value || selectedHalachaOccasion;
-    config.halachaSeasons = config.halachaSeasons || {};
-    if(!config.halachaSeasons[occId]) config.halachaSeasons[occId] = [];
-    halachaOccasionBulk.split('\n').forEach(line=>{
-      if(line.trim()) config.halachaSeasons[occId].push(line.trim());
-    });
-    document.getElementById('addHalachaOccasionBulk').value = '';
-  }
-  const halachaSeasonalBulk = document.getElementById('addHalachaSeasonalBulk').value.trim();
-  if(halachaSeasonalBulk){
-    config.halachaSeasonal = config.halachaSeasonal || {startDate:'', endDate:'', items:[]};
-    if(!config.halachaSeasonal.items) config.halachaSeasonal.items = [];
-    halachaSeasonalBulk.split('\n').forEach(line=>{
-      if(line.trim()) config.halachaSeasonal.items.push(line.trim());
-    });
-    document.getElementById('addHalachaSeasonalBulk').value = '';
-  }
+  // These three boxes now show (and are edited in place as) the full
+  // current list rather than an append-only staging area, so Save
+  // replaces the stored list with whatever's in the box instead of
+  // pushing new lines onto the old one.
+  config.halachaBank = document.getElementById('addHalachaBulk').value
+    .split('\n').map(l=>l.trim()).filter(Boolean);
+
+  const occId = document.getElementById('qHalachaOccasion').value || selectedHalachaOccasion;
+  config.halachaSeasons = config.halachaSeasons || {};
+  config.halachaSeasons[occId] = document.getElementById('addHalachaOccasionBulk').value
+    .split('\n').map(l=>l.trim()).filter(Boolean);
+
+  config.halachaSeasonal = config.halachaSeasonal || {startDate:'', endDate:'', items:[]};
+  config.halachaSeasonal.items = document.getElementById('addHalachaSeasonalBulk').value
+    .split('\n').map(l=>l.trim()).filter(Boolean);
 
   // Reflect it on this screen immediately, from local config — don't wait
   // on the network save for that part.
