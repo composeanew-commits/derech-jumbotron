@@ -2585,21 +2585,36 @@ function pickDistinctFlyers(pool, count, avoidUrls){
 function planFlyerCells(activeFlyers, avoidUrls){
   if(activeFlyers.length === 0) return {mode:'empty', picks:[], rotates:false};
 
-  // A Need to Know flyer commands the whole panel by itself — never
-  // sharing the screen or getting squeezed into a smaller cell next to
-  // other things, so it can't get lost in the shuffle. Any Extra Info
-  // flyers that would otherwise have shared this panel are diverted into
-  // the photo squares instead (see buildExtraInfoFlyerPhotoItems below),
-  // so they're still visible, just not competing for the spotlight.
+  // A Need to Know flyer takes the lead in the panel and is never squeezed
+  // out of the spotlight by rotation — but as of the fix below, a single
+  // active one shares its panel with a regular flyer rather than blocking
+  // it out entirely. Only once 2+ Need to Know flyers are active at the
+  // same time does the panel go fully dedicated to them (there's simply no
+  // room left). Regular flyers not currently sharing the panel can still
+  // pop up in the photo squares too (see buildExtraInfoFlyerPhotoItems).
   const needToKnow = activeFlyers.filter(f => f.priority === 'high');
   if(needToKnow.length > 0){
+    // A *single* active Need to Know flyer still leaves room in a
+    // double-up layout, so a regular flyer gets to share the panel with it
+    // instead of vanishing off-screen entirely (it used to only get a
+    // random, unlabeled chance of showing up in a small photo square while
+    // any Need to Know flyer was live — see buildExtraInfoFlyerPhotoItems).
+    // Two or more Need to Know flyers at once already fill the panel on
+    // their own, so that case is left as-is below.
+    if(needToKnow.length === 1){
+      const regulars = activeFlyers.filter(f => f.priority !== 'high');
+      if(regulars.length){
+        const companion = pickDistinctFlyers(regulars, 1, avoidUrls)[0];
+        if(companion) return {mode:'double', picks:[needToKnow[0], companion], rotates:true};
+      }
+      return {mode:'single', picks: needToKnow, rotates:false};
+    }
     // Show as many Need to Know flyers at once as will fit, the same way
     // regular flyers double/triple up below — just restricted to the Need
     // to Know pool, so a second (or third) urgent flyer never has to wait
     // its turn behind another one. Regular flyers still never mix into this
-    // panel while any Need to Know flyer is active (see
+    // panel while 2+ Need to Know flyers are active (see
     // buildExtraInfoFlyerPhotoItems).
-    if(needToKnow.length === 1) return {mode:'single', picks: needToKnow.slice(0,1), rotates:false};
     if(needToKnow.length === 2) return {mode:'double', picks: needToKnow.slice(0,2), rotates:false};
 
     const main = pickDistinctFlyers(needToKnow, 1, avoidUrls)[0];
@@ -2930,21 +2945,23 @@ function buildNewerPhotoItems(includeExtraInfoFlyers){
   return items;
 }
 
-// When a Need to Know flyer is claiming the whole flyer panel for itself
-// (see planFlyerCells), any Extra Info flyers that would otherwise have
-// shared that panel don't just disappear — they get mixed into the bottom
-// photo square's rotation instead (see EXTRA_INFO_FLYER_CELL_INDEX below),
-// so they still surface, just in a smaller spot rather than competing for
-// the spotlight. Shown plain, with no caption — they read as just another
-// photo in the mix rather than a second announcement competing for
-// attention. Only kicks in while a Need to Know flyer is actually active;
-// the rest of the time Extra Info flyers show in the flyer panel as normal.
+// When 2+ Need to Know flyers are claiming the whole flyer panel for
+// themselves (see planFlyerCells), any Extra Info flyers that would
+// otherwise have shared that panel don't just disappear — they get mixed
+// into the bottom photo square's rotation instead (see
+// EXTRA_INFO_FLYER_CELL_INDEX below), so they still surface, just in a
+// smaller spot rather than competing for the spotlight. Shown plain, with
+// no caption — they read as just another photo in the mix rather than a
+// second announcement competing for attention. Only kicks in while 2+ Need
+// to Know flyers are active; a single one already shares its panel slot
+// with a regular flyer directly (see planFlyerCells), so this skips
+// whichever flyer is already up there to avoid showing the same one twice.
 function buildExtraInfoFlyerPhotoItems(){
   const active = getActiveFlyers();
-  const hasNeedToKnow = active.some(f => f.priority === 'high');
-  if(!hasNeedToKnow) return [];
+  const needToKnowCount = active.filter(f => f.priority === 'high').length;
+  if(!needToKnowCount) return [];
   return active
-    .filter(f => f.priority !== 'high' && f.type !== 'pdf')
+    .filter(f => f.priority !== 'high' && f.type !== 'pdf' && !lastFlyerUrls.includes(f.url))
     .map(f => ({
       url: f.url,
       isCustom: true,
