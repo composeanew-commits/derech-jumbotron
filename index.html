@@ -1391,6 +1391,12 @@ const DEFAULT_GALLERY_PHOTOS = [
 // during a non-leap year, and are shown on Adar II in leap years (standard practice).
 // This list is intentionally SMALL and limited to well-documented dates. It is not
 // comprehensive — please have your Rabbeim review/expand it over time.
+// Entries below marked with a comment were verified against outside sources when added;
+// for anyone who died in Adar I of a leap year (Sarah Schenirer, Rav Shlomo Zalman
+// Auerbach, Rav Yaakov Kamenetsky) the common Ashkenazi practice is to mark the
+// yahrzeit in the (only) Adar every year — which is always month 12 in this numbering,
+// leap year or not — so no special "adar" flag is needed for those three; they're
+// plain {month:12, day:X} entries just like everything else.
 const YAHRZEIT_DB = [
   {month:10, day:20, name:'The Rambam (Maimonides)', blurb:'Rabbi Moshe ben Maimon, author of the Mishneh Torah and Moreh Nevuchim, passed away in Egypt on 20 Teves, 4965 (1204).'},
   {month:4, day:29, name:'Rashi', blurb:'Rabbi Shlomo Yitzchaki, whose commentary on Chumash and Shas is the foundation of nearly all Torah study, passed away on 29 Tammuz, 4865 (1105).'},
@@ -1401,7 +1407,77 @@ const YAHRZEIT_DB = [
   {adar:true, day:13, name:'Rav Moshe Feinstein', blurb:'The leading posek (halachic authority) for American Jewry for decades, author of Igros Moshe, passed away on 13 Adar, 5746 (1986).'},
   {month:8, day:15, name:'The Chazon Ish', blurb:'Rabbi Avraham Yeshaya Karelitz, a founding force of Torah life in Eretz Yisrael, passed away on 15 Cheshvan, 5714 (1953).'},
   {month:9, day:2, name:'Rav Aharon Kotler', blurb:'Rosh Yeshiva of Kletzk and Lakewood, who rebuilt Torah in America after the Holocaust, passed away on 2 Kislev, 5723 (1962).'},
-  {month:2, day:18, name:'Rabbi Shimon Bar Yochai', blurb:'Author of the Zohar, whose yahrzeit is marked on Lag BaOmer, 18 Iyar, and is traditionally celebrated with joy rather than mourning.'}
+  {month:2, day:18, name:'Rabbi Shimon Bar Yochai', blurb:'Author of the Zohar, whose yahrzeit is marked on Lag BaOmer, 18 Iyar, and is traditionally celebrated with joy rather than mourning.'},
+  {month:1, day:11, name:'The Ramban (Nachmanides)', blurb:'Rabbi Moshe ben Nachman, Torah and Talmud commentator, Kabbalist, and rebuilder of the Jewish community of Jerusalem, passed away in Acre on 11 Nissan, 5030 (1270).'},
+  {month:7, day:25, name:'The Chasam Sofer', blurb:'Rabbi Moshe Sofer of Pressburg, a defining halachic authority who led the fight to preserve traditional Judaism against the early Reform movement, passed away on 25 Tishrei, 5600 (1839).'},
+  {month:8, day:3, name:'Rav Ovadia Yosef', blurb:'Sephardic Chief Rabbi of Israel and a leading posek of his generation, author of the Yabia Omer responsa, passed away on 3 Cheshvan, 5774 (2013).'},
+  {month:8, day:16, name:'Rav Elazar Menachem Man Shach', blurb:'Rosh Yeshiva of Ponevezh and a leading voice of the Litvishe Torah world for decades, passed away on 16 Cheshvan, 5762 (2001).'},
+  {month:9, day:24, name:'Rav Aharon Leib Shteinman', blurb:'Rosh Yeshiva of Ponevezh L\u2019Tzeirim and widely regarded as the Gadol HaDor in his later years, passed away on 24 Kislev, 5778 (2017).'},
+  {month:4, day:28, name:'Rav Yosef Shalom Elyashiv', blurb:'A leading posek for the Litvishe Torah world in Jerusalem, known for his halachic rulings across nearly every area of Torah, passed away on 28 Tammuz, 5772 (2012).'},
+  {month:12, day:20, name:'Rav Shlomo Zalman Auerbach', blurb:'Rosh Yeshiva of Kol Torah in Jerusalem and one of the leading poskim of his generation, passed away on 20 Adar I, 5755 (1995).'},
+  {month:10, day:24, name:'The Baal HaTanya (Alter Rebbe)', blurb:'Rabbi Schneur Zalman of Liadi, founder of Chabad Chassidus and author of the Tanya and Shulchan Aruch HaRav, passed away on 24 Teves, 5573 (1812).'},
+  {month:12, day:29, name:'Rav Yaakov Kamenetsky', blurb:'Rosh Yeshiva of Torah Vodaas and one of the leading Torah authorities of American Jewry, passed away on 29 Adar I, 5746 (1986).'},
+  {month:12, day:26, name:'Sarah Schenirer', blurb:'Founder of the Bais Yaakov movement, pioneering formal Torah education for Jewish girls and women, passed away in Krak\u00f3w on 26 Adar I, 5695 (1935).'},
+
+  // ---- Tishrei, day-by-day (chunk 1 of an ongoing expansion) ----
+  // Sourced from hyomi.org.il's day-by-day Sephardic sages database (Kislev/Cheshvan/
+  // Tishrei etc. lists), cross-checked where possible. Days 19 and 25 already have a
+  // verified entry above (Vilna Gaon, Chasam Sofer) so those two are skipped here rather
+  // than added as dead entries that could never surface. For names with a well-documented
+  // life beyond "name + date" the blurb says more; for the rest, per instructions, a short
+  // generic line is used rather than inventing biographical detail that can't be verified.
+  {month:7, day:1, name:'Hacham Yehuda Aiash', blurb:'Sephardic Torah scholar, passed away on 1 Tishrei, 5521 (1761).'},
+  {month:7, day:2, name:'Hacham David Kadosch', blurb:'Sephardic Torah scholar, passed away on 2 Tishrei, 5750 (1989).'},
+  {month:7, day:3, name:'Hacham Abraham Chen', blurb:'Sephardic Torah scholar, passed away on 3 Tishrei, 5765 (2005).'},
+  {month:7, day:4, name:'Hacham Yehuda Alkalai', blurb:'Sephardic rabbi from Sarajevo and Semlin whose writings calling for a return to Eretz Yisrael made him one of the earliest precursors of religious Zionism, passed away on 4 Tishrei, 5639 (1878).'},
+  {month:7, day:5, name:'Hacham Haim Maimaran', blurb:'Sephardic Torah scholar, passed away on 5 Tishrei, 5546 (1785).'},
+  {month:7, day:6, name:'Hacham Tzedakah Hotzin', blurb:'Sephardic Torah scholar, passed away on 6 Tishrei, 5533 (1772).'},
+  {month:7, day:7, name:'Hacham Yosef Berrebi', blurb:'Sephardic Torah scholar, passed away on 7 Tishrei, 5680 (1919).'},
+  {month:7, day:8, name:'Hacham Shlomo Bechor Hotzin', blurb:'Sephardic Torah scholar, passed away on 8 Tishrei, 5653 (1892).'},
+  {month:7, day:9, name:'Hacham Samuel David Luzzatto (Shadal)', blurb:'Italian-Jewish scholar and professor at the rabbinical college of Padua, a prolific Bible commentator, poet, and philologist, passed away on 9 Tishrei, 5626 (1865).'},
+  {month:7, day:10, name:'Hacham David Sabbah', blurb:'Sephardic Torah scholar, passed away on 10 Tishrei, 5618 (1858).'},
+  {month:7, day:11, name:'Hacham Mekiketz Israel Haddad', blurb:'Sephardic Torah scholar, passed away on 11 Tishrei, 5740 (1980).'},
+  {month:7, day:12, name:'Hacham Peretz Maimon', blurb:'Sephardic Torah scholar, passed away on 12 Tishrei, 5763 (2002).'},
+  {month:7, day:13, name:'Hacham Moshe Hai Cohen-Yazdi Aharoni', blurb:'Sephardic Torah scholar, passed away on 13 Tishrei, 5718 (1957).'},
+  {month:7, day:14, name:'Hacham Amram Korach', blurb:'Chief Rabbi of Yemenite Jewry in Sana\u2019a and author of a history of Yemenite Jewish customs and community life, passed away on 14 Tishrei, 5713 (1953).'},
+  {month:7, day:15, name:'Hacham Yitzhak Shreim', blurb:'Sephardic Torah scholar, passed away on 15 Tishrei, 5633 (1873).'},
+  {month:7, day:16, name:'Hacham Yihya Badikhi', blurb:'Sephardic Torah scholar, passed away on 16 Tishrei, 5648 (1887).'},
+  {month:7, day:17, name:'Hacham Faraj Haim Yehuda', blurb:'Sephardic Torah scholar, passed away on 17 Tishrei, 5656 (1893).'},
+  {month:7, day:18, name:'Hacham Shalom Daniel Yehuda Cohen', blurb:'Sephardic Torah scholar, passed away on 18 Tishrei, 5686 (1925).'},
+  {month:7, day:20, name:'Hacham Eliezer Papo', blurb:'Author of Pele Yoetz, a widely-studied alphabetical guide to Jewish ethics, and rabbi of Silistra, passed away on 20 Tishrei, 5588 (1828).'},
+  {month:7, day:21, name:'Hacham Raphael Berdugo', blurb:'A leading posek and rabbinic authority of Meknes, Morocco, and one of the foremost Sephardic halachic decisors of his era, passed away on 21 Tishrei, 5582 (1821).'},
+  {month:7, day:22, name:'Hacham Shalom Amar', blurb:'Sephardic Torah scholar, passed away on 22 Tishrei, 5659 (1897).'},
+  {month:7, day:23, name:'Hacham Reuven Timtsitiat', blurb:'Sephardic Torah scholar, passed away on 23 Tishrei, 5709 (1949).'},
+  {month:7, day:24, name:'Hacham Yaakov Moshe Toledano', blurb:'Historian of Sephardic and Moroccan Jewry, rabbi, and Israel\u2019s Minister of Religious Affairs, passed away on 24 Tishrei, 5721 (1960).'},
+  {month:7, day:26, name:'Hacham Boaz Haddad', blurb:'Sephardic Torah scholar, passed away on 26 Tishrei, 5759 (1998).'},
+  {month:7, day:27, name:'Hacham Yoram Michael Abergil', blurb:'Sephardic Torah scholar, passed away on 27 Tishrei, 5776 (2015).'},
+  {month:7, day:28, name:'Hacham Mehallel Ha\u2019adani', blurb:'Sephardic Torah scholar, passed away on 28 Tishrei, 5711 (1950).'},
+  {month:7, day:29, name:'Hacham Abraham Pontremoli', blurb:'Sephardic Torah scholar, passed away on 29 Tishrei, 5651 (1891).'},
+  {month:7, day:30, name:'Hacham Kalfa Guedj', blurb:'Sephardic Torah scholar, passed away on 30 Tishrei, 5676 (1916).'},
+
+  // ---- Cheshvan, day-by-day (chunk 2) ----
+  // Days 3 and 16 already have a verified entry above (Rav Ovadia Yosef, Rav Shach), so
+  // those are skipped here. Day 15 (Chazon Ish) had no competing entry in this source.
+  {month:8, day:1, name:'Hacham Bechor Yaakov Yavetz', blurb:'Sephardic Torah scholar, passed away on 1 Cheshvan, 5635 (1875).'},
+  {month:8, day:2, name:'Hacham Samuel de Medina (Maharashdam)', blurb:'A leading 16th-century halachic authority in Salonika whose responsa, Shu\u2019t Maharashdam, are widely cited in later halachic literature, passed away on 2 Cheshvan, 5350 (1589).'},
+  {month:8, day:4, name:'Hacham Yosef Tzarfati', blurb:'Sephardic Torah scholar, passed away on 4 Cheshvan, 5400 (1640).'},
+  {month:8, day:5, name:'Hacham Avraham Dahan', blurb:'Sephardic Torah scholar, passed away on 5 Cheshvan, 5769 (2009).'},
+  {month:8, day:6, name:'Hacham Shlomo Katzin', blurb:'Sephardic Torah scholar, passed away on 6 Cheshvan, 5743 (1982).'},
+  {month:8, day:7, name:'Hacham Hizkiya David Aboulafia', blurb:'Sephardic Torah scholar, passed away on 7 Cheshvan, 5533 (1772).'},
+  {month:8, day:8, name:'Hacham Yochanan HaCohen', blurb:'Sephardic Torah scholar, passed away on 8 Cheshvan, 5763 (2002).'},
+  {month:8, day:9, name:'Hacham Yehuda Leon Ashkenazi (Manitou)', blurb:'French-Israeli rabbi and philosopher who shaped a generation of French Jewish thought, blending Kabbalah with modern ideas, passed away on 9 Cheshvan, 5757 (1996).'},
+  {month:8, day:10, name:'Hacham Raphael Aaron Ben Shimon', blurb:'Chief Rabbi of Cairo, Egypt, and a prolific posek whose responsa (Nehar Mitzrayim) served Egyptian Jewry, passed away on 10 Cheshvan, 5689 (1928).'},
+  {month:8, day:11, name:'Hacham Abraham Coriat', blurb:'Sephardic Torah scholar, passed away on 11 Cheshvan, 5566 (1806).'},
+  {month:8, day:12, name:'Hacham Yehuda Tzedaka', blurb:'Rosh Yeshiva of Porat Yosef in Jerusalem and a central pillar of Sephardic Torah scholarship in the 20th century, passed away on 12 Cheshvan, 5752 (1991).'},
+  {month:8, day:13, name:'Hacham Samuel Isaac Modigliano', blurb:'Sephardic Torah scholar, passed away on 13 Cheshvan, 5464 (1703).'},
+  {month:8, day:17, name:'Hacham Abraham Dayan', blurb:'Sephardic Torah scholar, passed away on 17 Cheshvan, 5637 (1876).'},
+  {month:8, day:18, name:'Hacham Raphael Baruch Toledano', blurb:'Chief Rabbi of Meknes, Morocco, and a prolific author on halacha, Kabbalah, and Jewish poetry, passed away on 18 Cheshvan, 5731 (1971).'},
+  {month:8, day:19, name:'Hacham Yeshua Attiah', blurb:'Rosh Yeshiva of Porat Yosef in Jerusalem and one of the teachers of Rav Ovadia Yosef, passed away on 19 Cheshvan, 5748 (1987).'},
+  {month:8, day:21, name:'Hacham David Ben Zimra (The Radbaz)', blurb:'Chief Rabbi of Egypt for decades and one of the most prolific and influential poskim in Jewish history, later head of the Tzfat beis din, passed away on 21 Cheshvan, 5334 (1573).'},
+  {month:8, day:24, name:'Hacham Avraham Azulai', blurb:'Kabbalist in Morocco and Hebron, author of Chesed L\u2019Avraham, and ancestor of the Chida, passed away on 24 Cheshvan, 5404 (1643).'},
+  {month:8, day:25, name:'Hacham Abraham Bittan', blurb:'Sephardic Torah scholar, passed away on 25 Cheshvan, 5761 (2001).'},
+  {month:8, day:26, name:'Hacham Shalom Aaron Lopes', blurb:'Sephardic Torah scholar, passed away on 26 Cheshvan, 5755 (1994).'},
+  {month:8, day:28, name:'Hacham David Eben Khalifa', blurb:'Sephardic Torah scholar, passed away on 28 Cheshvan, 5751 (1991).'}
 ];
 
 const HISTORY_DB = [
