@@ -3503,6 +3503,11 @@ function populateModal(){
               <option value="pdf" ${f.type==='pdf' ? 'selected':''}>PDF — multiple pages, flips through them on its own</option>
             </select>
           </div>
+          <div class="fileDrop" data-flyer-file-drop="${i}">
+            <input type="file" accept="${f.type==='pdf' ? 'application/pdf' : 'image/*'}" data-flyer-file-input="${i}">
+            <span data-flyer-file-label="${i}">📎 Tap to replace with a ${f.type==='pdf' ? 'PDF' : 'photo'} from this device</span>
+          </div>
+          <div class="uploadDivider">or edit the link</div>
           <div class="field"><label>${f.type==='pdf' ? 'Flyer PDF URL' : 'Flyer Image URL'}</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
           <button class="addBtn" data-clear-flyer-image="${i}" style="margin-bottom:14px;">✕ Clear Image</button>
           <div class="row">
@@ -3522,6 +3527,40 @@ function populateModal(){
           </div>
         </div>` : ''}`;
       flyersList.appendChild(div);
+      // Direct "replace this flyer's image" upload — reuses the same imgbb
+      // (or, for a PDF, straight-to-data-URL) pipeline as the "Add Flyer"
+      // picker above, just scoped to this one existing flyer's URL field
+      // instead of the new-flyer form. Only rendered while this item is
+      // expanded, so it's safe to look these up unconditionally.
+      const editFileDrop = div.querySelector(`[data-flyer-file-drop="${i}"]`);
+      const editFileInput = div.querySelector(`[data-flyer-file-input="${i}"]`);
+      const editFileLabel = div.querySelector(`[data-flyer-file-label="${i}"]`);
+      if(editFileDrop && editFileInput){
+        editFileDrop.onclick = ()=> editFileInput.click();
+        editFileInput.onchange = async ()=>{
+          const file = editFileInput.files && editFileInput.files[0];
+          if(!file) return;
+          const urlInput = div.querySelector(`[data-field="flyerUrlEdit"][data-idx="${i}"]`);
+          const isPdf = f.type === 'pdf';
+          editFileDrop.classList.add('hasFile');
+          if(isPdf && file.size > FLYER_PDF_HARD_LIMIT_BYTES){
+            editFileLabel.textContent = `⚠ That PDF is ${(file.size/1024/1024).toFixed(1)}MB — too big to embed directly. Host it somewhere (Google Drive works) and paste the link instead.`;
+            editFileInput.value = '';
+            return;
+          }
+          editFileLabel.textContent = `Uploading ${file.name}…`;
+          try{
+            const newUrl = isPdf ? await fileToDataUrl(file) : await uploadImageToImgbb(file);
+            if(urlInput) urlInput.value = newUrl;
+            syncFormToConfig();
+            const thumb = div.querySelector(`[data-thumb-idx="${i}"]`);
+            if(thumb) thumb.src = newUrl;
+            editFileLabel.textContent = '✓ Replaced — tap Save & Publish below to send it to the board.';
+          }catch(e){
+            editFileLabel.textContent = e.message || 'Upload failed — try pasting a link instead';
+          }
+        };
+      }
       const thumbImg = div.querySelector(`[data-thumb-idx="${i}"]`);
       const thumbStatus = div.querySelector(`[data-thumb-status="${i}"]`);
       if(thumbImg){
