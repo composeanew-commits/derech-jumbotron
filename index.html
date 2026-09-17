@@ -227,6 +227,13 @@
      but enough that trivia (red), a word (blue), a thought (green) etc.
      each feel like a distinct little moment rather than identical boxes. */
   .bigCard{--accent:var(--gold);flex:1;min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:14px 16px 12px 14px;display:flex;flex-direction:column;transition:border-color .4s ease, box-shadow .4s ease;box-shadow:0 6px 22px rgba(0,0,0,.18);}
+  /* The Zmanim/Schedule card (slot 0) keeps its original larger share of the
+     sidebar — it was sized for a 3-card grid, and adding the dedicated
+     Halacha card as a 4th would otherwise have shrunk it along with
+     everything else. The three cards below it (Halacha, and the two
+     general-rotation slots) split the remaining space evenly among
+     themselves, each smaller than before. */
+  #spotlightCard0{flex:2.2;}
   .bigCard::before{content:'';position:absolute;top:0;right:0;width:130px;height:130px;background:radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);pointer-events:none;transition:background .4s ease;}
   .bigCard .widgetTitle{flex-shrink:0;}
   .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
