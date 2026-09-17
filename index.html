@@ -2788,24 +2788,54 @@ function extractDriveFolderId(url){
   return /^[a-zA-Z0-9_-]{10,}$/.test(u) ? u : null;
 }
 
+// Drive normally tags a file's mimeType correctly, but media saved from
+// WhatsApp via Android's share sheet ("Save to Drive") sometimes uploads
+// with a generic type (e.g. application/octet-stream) instead of a real
+// image/... or video/... one — WhatsApp's share intent doesn't always pass
+// real type info along. That made those files invisible to a mimeType-only
+// filter even though they were sitting right there in the folder. Falling
+// back to the file extension when the mimeType itself isn't recognizable
+// catches those too.
+function classifyDriveFile(mimeType, name){
+  const mt = (mimeType || '').toLowerCase();
+  if(mt.startsWith('image/')) return 'image';
+  if(mt.startsWith('video/')) return 'video';
+  const n = (name || '').toLowerCase();
+  if(/\.(jpe?g|png|gif|webp|heic|heif|bmp)$/.test(n)) return 'image';
+  if(/\.(mp4|mov|m4v|avi|mkv|webm|3gp)$/.test(n)) return 'video';
+  return null;
+}
+
 async function fetchDriveFolderPhotos(){
   const folder = config.driveFolder;
   if(!folder || !folder.folderId || !folder.apiKey){ driveFolderPhotos = []; return; }
-  // Pull both images and videos out of the folder. Images are shown via
-  // Drive's lh3 thumbnail host (fast, no API key needed at render time);
-  // videos have no equivalent direct-play host, so they're streamed straight
-  // from the Drive API's alt=media endpoint (supports Range requests, so
-  // <video> can play/seek it like any normal video file).
-  const q = encodeURIComponent(`'${folder.folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed = false`);
-  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&key=${folder.apiKey}&fields=files(id,name,mimeType)&pageSize=200`;
-  const res = await fetch(url);
-  if(!res.ok){
-    const body = await res.json().catch(()=>({}));
-    throw new Error((body.error && body.error.message) || `Drive API error (${res.status})`);
+  // Ask Drive for every non-folder, non-trashed file rather than filtering
+  // by mimeType server-side — classifyDriveFile above does the image/video
+  // sorting client-side instead, since some real photos/videos (see comment
+  // there) don't carry a mimeType the server-side filter would ever match.
+  const q = encodeURIComponent(`'${folder.folderId}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false`);
+  const baseUrl = `https://www.googleapis.com/drive/v3/files?q=${q}&key=${folder.apiKey}&fields=files(id,name,mimeType),nextPageToken&pageSize=200`;
+  // A folder with more than 200 files used to just lose everything past the
+  // first page silently. Page through the whole folder instead, capped at a
+  // generous 10 pages (2000 files) so a runaway folder can't loop forever.
+  let files = [];
+  let pageToken = '';
+  for(let page = 0; page < 10; page++){
+    const url = baseUrl + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+    const res = await fetch(url);
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      throw new Error((body.error && body.error.message) || `Drive API error (${res.status})`);
+    }
+    const data = await res.json();
+    files = files.concat(data.files || []);
+    if(!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
   }
-  const data = await res.json();
-  driveFolderPhotos = (data.files || []).map(f => {
-    const isVideo = (f.mimeType || '').startsWith('video/');
+  driveFolderPhotos = files.map(f => {
+    const kind = classifyDriveFile(f.mimeType, f.name);
+    if(!kind) return null; // not a photo or video Drive (or its extension) can tell us about — skip it
+    const isVideo = kind === 'video';
     return {
       url: isVideo
         ? `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${folder.apiKey}`
@@ -2815,11 +2845,11 @@ async function fetchDriveFolderPhotos(){
         // file with different headers and often succeeds where the other fails.
         : `https://lh3.googleusercontent.com/d/${f.id}`,
       fallbackUrl: isVideo ? `https://drive.google.com/uc?export=download&id=${f.id}` : null,
-      mimeType: f.mimeType || '',
+      mimeType: f.mimeType || (isVideo ? 'video/mp4' : 'image/jpeg'),
       caption: '',
-      type: isVideo ? 'video' : 'image'
+      type: kind
     };
-  });
+  }).filter(Boolean);
 }
 
 // Refresh periodically so new photos dropped into the folder show up
