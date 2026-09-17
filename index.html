@@ -618,6 +618,11 @@
       <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
         <label style="display:block;margin-bottom:8px;">Daily Halacha — year-round pool</label>
         <div class="hint" style="margin-top:0;">One shows up per rotation, same as trivia/riddle/word/quote above. Format: Halacha text (Source) — the part in parentheses shows as a small source line underneath.</div>
+        <div class="fileDrop" id="halachaPdfDrop">
+          <input type="file" id="halachaPdfFile" accept="application/pdf">
+          <span id="halachaPdfLabel">📎 Or upload a PDF — splits it into halachos below automatically</span>
+        </div>
+        <div class="hint" id="halachaPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
           <textarea id="addHalachaBulk" rows="3" placeholder="Wash your hands before bread and say Al Netilas Yadayim. (Kitzur Shulchan Aruch, Hilchos Netilas Yadayim)"></textarea>
         </div>
@@ -631,6 +636,11 @@
           <label>Occasion</label>
           <select id="qHalachaOccasion"></select>
         </div>
+        <div class="fileDrop" id="halachaOccasionPdfDrop">
+          <input type="file" id="halachaOccasionPdfFile" accept="application/pdf">
+          <span id="halachaOccasionPdfLabel">📎 Or upload a PDF — splits it into halachos below automatically</span>
+        </div>
+        <div class="hint" id="halachaOccasionPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
           <label>Add Halachos for this occasion (one per line, same format)</label>
           <textarea id="addHalachaOccasionBulk" rows="3"></textarea>
@@ -646,6 +656,11 @@
           <div class="field"><label>Season Start Date</label><input id="qHalachaSeasonStart" type="date"></div>
           <div class="field"><label>Season End Date</label><input id="qHalachaSeasonEnd" type="date"></div>
         </div>
+        <div class="fileDrop" id="halachaSeasonalPdfDrop">
+          <input type="file" id="halachaSeasonalPdfFile" accept="application/pdf">
+          <span id="halachaSeasonalPdfLabel">📎 Or upload a PDF — splits it into halachos below automatically</span>
+        </div>
+        <div class="hint" id="halachaSeasonalPdfStatus" style="margin-top:-6px;"></div>
         <div class="field">
           <label>Add Manual-Override Halachos (one per line, same format)</label>
           <textarea id="addHalachaSeasonalBulk" rows="3"></textarea>
@@ -3931,6 +3946,111 @@ function fileToDataUrl(file){
     reader.readAsDataURL(file);
   });
 }
+
+// ---- Halacha PDF upload: pull the text out and split it into entries ----
+// Reuses the same pdf.js library already loaded for flyer PDFs, just asking
+// it for each page's text layer instead of rendering pixels.
+async function extractTextFromPdfFile(file){
+  if(!window.pdfjsLib) throw new Error("Couldn't load the PDF reader — try pasting the text instead.");
+  const buffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: new Uint8Array(buffer)}).promise;
+  let fullText = '';
+  for(let n = 1; n <= pdf.numPages; n++){
+    const page = await pdf.getPage(n);
+    const content = await page.getTextContent();
+    // pdf.js hands back individual text fragments with no line breaks of
+    // their own — start a new line whenever a fragment's vertical position
+    // jumps from the previous one (a real line change on the page),
+    // otherwise just join fragments on the same line with a space.
+    let lastY = null;
+    let pageText = '';
+    content.items.forEach(item=>{
+      const y = item.transform[5];
+      if(lastY !== null && Math.abs(y - lastY) > 2) pageText += '\n';
+      else if(pageText && !pageText.endsWith('\n')) pageText += ' ';
+      pageText += item.str;
+      lastY = y;
+    });
+    fullText += pageText + '\n\n';
+  }
+  return fullText;
+}
+
+// Turns raw PDF text into a list of individual halacha entries. This is a
+// simple, rule-based split (not AI) so it works for free with no API key,
+// but it can only go on structural clues in the text — it won't always
+// guess right, especially on a PDF with no clear separators. Review what
+// comes out before saving, and fix up or re-split anything it got wrong.
+//  - If the text has a numbered list ("1.", "2)", etc.) — the most common
+//    way a halacha PDF is laid out — each number starts a new entry, and
+//    any wrapped lines in between fold into that same entry.
+//  - Otherwise, falls back to splitting on blank lines between paragraphs.
+function splitHalachaText(text){
+  const cleaned = (text || '').replace(/\r/g, '').trim();
+  if(!cleaned) return [];
+  const numberedRe = /^\s*(\d{1,3})[.)]\s+/;
+  const lines = cleaned.split('\n');
+  const numberedLineCount = lines.filter(l=>numberedRe.test(l)).length;
+  let chunks;
+  if(numberedLineCount >= 2){
+    chunks = [];
+    let current = '';
+    lines.forEach(line=>{
+      if(numberedRe.test(line)){
+        if(current.trim()) chunks.push(current.trim());
+        current = line.replace(numberedRe, '');
+      } else {
+        current += ' ' + line;
+      }
+    });
+    if(current.trim()) chunks.push(current.trim());
+  } else {
+    chunks = cleaned.split(/\n\s*\n+/);
+  }
+  return chunks.map(c => c.replace(/\s+/g, ' ').trim()).filter(Boolean);
+}
+
+// Wires one "upload a PDF" control to one bulk-add textarea. Extracted
+// entries are appended after whatever's already typed in the textarea
+// (rather than overwriting it) so re-uploading, or uploading a second PDF
+// into the same section, doesn't lose anything already there.
+function wireHalachaPdfUpload(dropId, fileId, labelId, statusId, textareaId){
+  const drop = document.getElementById(dropId);
+  const input = document.getElementById(fileId);
+  const label = document.getElementById(labelId);
+  const status = document.getElementById(statusId);
+  if(!drop || !input) return;
+  drop.onclick = ()=> input.click();
+  input.onchange = async ()=>{
+    const file = input.files && input.files[0];
+    if(!file) return;
+    drop.classList.add('hasFile');
+    label.textContent = `Reading ${file.name}…`;
+    status.textContent = '';
+    try{
+      const text = await extractTextFromPdfFile(file);
+      const entries = splitHalachaText(text);
+      if(!entries.length){
+        status.textContent = "⚠ Couldn't find any readable text in that PDF — it may be a scanned image rather than real text. Try pasting the halachos in by hand instead.";
+        status.style.color = 'var(--red)';
+      } else {
+        const textarea = document.getElementById(textareaId);
+        const existing = textarea.value.trim();
+        textarea.value = (existing ? existing + '\n' : '') + entries.join('\n');
+        status.textContent = `✓ Found ${entries.length} halacha${entries.length===1?'':'s'} and added them below — review each one (the split is just a best guess), fix up any that got cut wrong, then Save & Publish.`;
+        status.style.color = 'var(--green)';
+      }
+    }catch(e){
+      status.textContent = `⚠ ${e.message || "Couldn't read that PDF — try pasting the text instead."}`;
+      status.style.color = 'var(--red)';
+    }
+    label.textContent = '📎 Or upload a PDF — splits it into halachos below automatically';
+    input.value = '';
+  };
+}
+wireHalachaPdfUpload('halachaPdfDrop', 'halachaPdfFile', 'halachaPdfLabel', 'halachaPdfStatus', 'addHalachaBulk');
+wireHalachaPdfUpload('halachaOccasionPdfDrop', 'halachaOccasionPdfFile', 'halachaOccasionPdfLabel', 'halachaOccasionPdfStatus', 'addHalachaOccasionBulk');
+wireHalachaPdfUpload('halachaSeasonalPdfDrop', 'halachaSeasonalPdfFile', 'halachaSeasonalPdfLabel', 'halachaSeasonalPdfStatus', 'addHalachaSeasonalBulk');
 
 // Live preview so a broken/wrong link (e.g. a postimages.org PAGE link
 // instead of its "Direct link") is obvious immediately, instead of only
