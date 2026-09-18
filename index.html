@@ -236,7 +236,7 @@
      cue that already existed \u2014 subtle enough not to fight the content,
      but enough that trivia (red), a word (blue), a thought (green) etc.
      each feel like a distinct little moment rather than identical boxes. */
-  .bigCard{--accent:var(--gold);flex:1;min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:14px 16px 12px 14px;display:flex;flex-direction:column;transition:border-color .4s ease, box-shadow .4s ease;box-shadow:0 6px 22px rgba(0,0,0,.18);}
+  .bigCard{--accent:var(--gold);flex:1;min-height:0;overflow:hidden;position:relative;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:0;display:block;transition:border-color .4s ease, box-shadow .4s ease;box-shadow:0 6px 22px rgba(0,0,0,.18);}
   /* The Zmanim/Schedule card (slot 0) keeps its original larger share of the
      sidebar — it was sized for a 3-card grid, and adding the dedicated
      Halacha card as a 4th would otherwise have shrunk it along with
@@ -248,13 +248,14 @@
   .bigCard .widgetTitle{flex-shrink:0;}
   .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
   .bigCard .cardScroll::after{content:'';position:absolute;left:0;right:0;bottom:0;height:20px;background:linear-gradient(transparent, var(--panel2));pointer-events:none;}
-  .spotlightCard{transition:opacity .42s ease, transform .42s cubic-bezier(.22,.61,.36,1);}
-  /* Applied just before content is swapped, and removed right after — the
-     card fades/slides to this hidden state, the new content goes in while
-     it's invisible, then the class comes off and the same transition eases
-     it back to visible. One continuous motion instead of a hard content-cut
-     flash. */
-  .spotlightCard.spotlightSwapping{opacity:0;transform:translateY(10px);}
+  /* Each card holds two stacked full-size layers so swapping content is a
+     true crossfade: the incoming layer fades in WHILE the outgoing one
+     fades out, at the same time, so there's always real content on screen.
+     The old sequential fade-out-then-fade-in approach passed through a
+     moment of bare background between them, which read as a flash/flicker
+     rather than a smooth transition — this removes that gap entirely. */
+  .spotlightLayer{position:absolute;inset:0;padding:14px 16px 12px 14px;display:flex;flex-direction:column;opacity:0;transition:opacity .6s ease;pointer-events:none;}
+  .spotlightLayer.active{opacity:1;pointer-events:auto;z-index:1;}
 
   /* Thin progress bar fills over the exact dwell time of that slot's current
      slide \u2014 a small constant reminder that the board is always mid-motion. */
@@ -414,6 +415,14 @@
   .dayChipLabel input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;}
   .dayChipLabel span{display:inline-block;min-width:38px;text-align:center;padding:8px 6px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s ease;user-select:none;}
   .dayChipLabel input:checked + span{background:var(--purple);border-color:var(--purple-light);color:var(--ink);}
+  /* Collapsed by default — flyers show all the time out of the box, this is
+     only for the "beyond default" cases (custom duration, specific days,
+     specific hours). Native <details> so no JS is needed to expand it. */
+  .advancedSchedule{margin:4px 0 16px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .advancedSchedule summary{cursor:pointer;padding:12px 14px;font-family:'Rubik',sans-serif;font-weight:700;font-size:13px;color:var(--muted);user-select:none;}
+  .advancedSchedule summary::marker{color:var(--muted);}
+  .advancedSchedule .advancedScheduleBody{padding:2px 14px 14px 14px;}
+  .advancedSchedule .advancedScheduleBody .field:first-child{margin-top:10px;}
   .listItem{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;position:relative;}
   .flyerSummaryRow{display:flex;align-items:center;gap:12px;cursor:pointer;padding-right:26px;}
   .flyerThumbSmall{width:52px;height:52px;flex-shrink:0;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--panel);display:block;}
@@ -476,10 +485,10 @@
   <main>
     <div id="stage" class="mainPanel">
       <div id="spotlightGrid" class="spotlightGrid">
-        <div id="spotlightCard0" class="bigCard spotlightCard"></div>
-        <div id="spotlightCard3" class="bigCard spotlightCard"></div>
-        <div id="spotlightCard1" class="bigCard spotlightCard"></div>
-        <div id="spotlightCard2" class="bigCard spotlightCard"></div>
+        <div id="spotlightCard0" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
+        <div id="spotlightCard3" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
+        <div id="spotlightCard1" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
+        <div id="spotlightCard2" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
       </div>
     </div>
     <div id="flyerPanel" class="flyerPanel"></div>
@@ -581,12 +590,22 @@
           <option value="high">Need to Know — shows up a lot more, especially as it gets close</option>
         </select>
       </div>
-      <div class="field"><label>How long to stay on screen (seconds)</label><input id="flyerDuration" type="number" min="3" max="120" placeholder="Default — 14s (22s for Need to Know)"></div>
-      <div class="field">
-        <label>Which days should it show?</label>
-        <div class="dayPicker" id="flyerDayPicker"></div>
-      </div>
-      <div class="hint" style="margin-top:-6px;">All days on = shows every day. Turn off days to repeat weekly on just the ones you pick — e.g. only Fridays, or once a week.</div>
+      <details class="advancedSchedule">
+        <summary>Advanced: custom duration, days, or times (optional — flyers show all the time by default)</summary>
+        <div class="advancedScheduleBody">
+          <div class="field"><label>How long to stay on screen (seconds)</label><input id="flyerDuration" type="number" min="3" max="120" placeholder="Default — 14s (22s for Need to Know)"></div>
+          <div class="field">
+            <label>Only show on certain days?</label>
+            <div class="dayPicker" id="flyerDayPicker"></div>
+          </div>
+          <div class="hint" style="margin-top:-6px;">Leave every day on to show it all the time. Turn off days to repeat weekly on just the ones you pick — e.g. only Fridays, or once a week.</div>
+          <div class="row">
+            <div class="field"><label>Only show after (optional)</label><input id="flyerStartTime" type="time"></div>
+            <div class="field"><label>Only show before (optional)</label><input id="flyerEndTime" type="time"></div>
+          </div>
+          <div class="hint" style="margin-top:-6px;">Leave both blank to show it all day. Set both to only show during a window \u2014 e.g. 8:00\u20139:30 AM for a morning minyan reminder.</div>
+        </div>
+      </details>
       <button class="addBtn" id="addFlyer">+ Add Flyer</button>
       <div style="height:8px;"></div>
       <div class="saveStatus" id="flyerStatus"></div>
@@ -2441,52 +2460,47 @@ function buildSpotlightItems(){
   return {pinned, rotating, halacha};
 }
 
-const SPOTLIGHT_SWAP_MS = 380;
+// Two-layer crossfade: content goes into the currently-hidden layer while
+// nobody can see it, then both layers animate opacity at once (old 1→0,
+// new 0→1) over the same stretch. At every instant there's real content
+// visible — never a shared gap of bare background — which is what actually
+// reads as "smooth" instead of "flashing."
 function paintSpotlightSlot(slotIdx, item){
   const card = document.getElementById('spotlightCard' + slotIdx);
   if(!card) return;
   clearTimeout(slotRevealTimers[slotIdx]);
+  const layers = card.querySelectorAll('.spotlightLayer');
+  if(layers.length < 2) return;
+  const activeIdx = card.dataset.activeLayer === '1' ? 1 : 0;
+  const activeLayer = layers[activeIdx];
+  const nextLayer = layers[activeIdx === 0 ? 1 : 0];
 
-  const applyContent = ()=>{
-    if(!item){
-      card.innerHTML = `<div class="widgetEyebrow">Board</div><h2 class="widgetTitle">Tap the gear to add content</h2>`;
-    } else {
-      card.style.setProperty('--accent', item.accent || 'var(--gold)');
-      card.innerHTML = `
-        <div class="widgetEyebrow">${item.icon ? `<span class="widgetIcon">${escapeHtml(item.icon)}</span>` : ''}${item.eyebrow}</div>
-        <h2 class="widgetTitle">${escapeHtml(item.title)}</h2>
-        <div class="cardScroll">${item.body}</div>
-        <div class="spotlightMeta">
-          <div class="spotlightProgress"><div class="spotlightProgressFill" style="animation-duration:${SPOTLIGHT_DURATION}ms;"></div></div>
-        </div>
-      `;
-    }
-    // The card is still sitting in its faded-out .spotlightSwapping state
-    // right now (that's what we're transitioning away from) — flush that as
-    // the committed starting point, then drop the class a frame later so
-    // the transition actually has something to animate from instead of the
-    // two changes coalescing into one silent jump.
-    void card.offsetWidth;
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=> card.classList.remove('spotlightSwapping'));
-    });
-    const revealEl = card.querySelector('[data-reveal]');
-    if(item && item.isReveal && revealEl){
-      slotRevealTimers[slotIdx] = setTimeout(()=>{ revealEl.classList.add('show'); }, 5000);
-    }
-  };
-
-  card.classList.add('spotlightSwapping');
-  if(card.dataset.slotPainted){
-    // Already showing something — fade it out first, THEN swap the content
-    // while it's invisible, so the old and new text never overlap or cut
-    // directly from one to the other.
-    setTimeout(applyContent, SPOTLIGHT_SWAP_MS);
+  if(!item){
+    nextLayer.innerHTML = `<div class="widgetEyebrow">Board</div><h2 class="widgetTitle">Tap the gear to add content</h2>`;
   } else {
-    // Nothing on screen yet (first paint) — no need to wait, just fade the
-    // very first content in.
-    card.dataset.slotPainted = '1';
-    applyContent();
+    card.style.setProperty('--accent', item.accent || 'var(--gold)');
+    nextLayer.innerHTML = `
+      <div class="widgetEyebrow">${item.icon ? `<span class="widgetIcon">${escapeHtml(item.icon)}</span>` : ''}${item.eyebrow}</div>
+      <h2 class="widgetTitle">${escapeHtml(item.title)}</h2>
+      <div class="cardScroll">${item.body}</div>
+      <div class="spotlightMeta">
+        <div class="spotlightProgress"><div class="spotlightProgressFill" style="animation-duration:${SPOTLIGHT_DURATION}ms;"></div></div>
+      </div>
+    `;
+  }
+  // Flush the new (still invisible) content as committed, then flip both
+  // layers' opacity together a frame later so the browser actually
+  // transitions between the two states instead of jumping straight there.
+  void nextLayer.offsetWidth;
+  requestAnimationFrame(()=>{
+    activeLayer.classList.remove('active');
+    nextLayer.classList.add('active');
+  });
+  card.dataset.activeLayer = String(activeIdx === 0 ? 1 : 0);
+
+  const revealEl = nextLayer.querySelector('[data-reveal]');
+  if(item && item.isReveal && revealEl){
+    slotRevealTimers[slotIdx] = setTimeout(()=>{ revealEl.classList.add('show'); }, 5000);
   }
 }
 
@@ -2639,6 +2653,10 @@ function flyerCellDuration(item){
 // Flyers get a target the same way countdown entries do (falls back to end
 // of day if no time was set), plus a weight that grows sharply as the event
 // gets closer and again if the rabbi marked it High Priority.
+function timeStrToMinutes(hhmm){
+  const [h,m] = String(hhmm).split(':').map(Number);
+  return (h||0)*60 + (m||0);
+}
 function getActiveFlyers(){
   const now = new Date();
   // config can be null for a beat on a cold start, and flyers can come back
@@ -2662,6 +2680,20 @@ function getActiveFlyers(){
     // A non-empty list only lets the flyer through on those weekdays,
     // which is what makes "just Fridays" or "once a week" possible.
     .filter(f=> !f.days || !f.days.length || f.days.includes(now.getDay()))
+    // Time-of-day window: same idea as days — no start/end set means no
+    // restriction, shows all the time. Either end can be set on its own
+    // ("only after 8am", "only before noon") or both together for a
+    // window. A start after the end is treated as spanning midnight (e.g.
+    // 10pm-6am), so overnight windows work without any extra option.
+    .filter(f=>{
+      if(!f.startTime && !f.endTime) return true;
+      const nowMins = now.getHours()*60 + now.getMinutes();
+      const startMins = f.startTime ? timeStrToMinutes(f.startTime) : 0;
+      const endMins = f.endTime ? timeStrToMinutes(f.endTime) : 24*60;
+      return startMins <= endMins
+        ? (nowMins >= startMins && nowMins < endMins)
+        : (nowMins >= startMins || nowMins < endMins);
+    })
     .map(f=>{
       if(!f.target){
         const priorityMult = f.priority === 'high' ? 2 : 1;
@@ -3792,6 +3824,8 @@ function syncFormToConfig(){
     const v = Number(el.value);
     config.flyers[Number(el.dataset.idx)].durationSec = (v && v > 0) ? v : null;
   });
+  document.querySelectorAll('[data-field="flyerStartTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].startTime = el.value || null);
+  document.querySelectorAll('[data-field="flyerEndTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].endTime = el.value || null);
   // Day checkboxes fire once per day per flyer (7 boxes per idx), so rebuild
   // each flyer's `days` list from scratch the first time its idx is seen,
   // then push every checked day onto it as we go.
@@ -3936,7 +3970,7 @@ function populateModal(){
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
-              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
             </div>
           </div>
           <div class="flyerSummaryChevron">▾</div>
@@ -3980,11 +4014,21 @@ function populateModal(){
             </select>
           </div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input type="number" min="3" max="120" data-field="flyerDurationEdit" data-idx="${i}" value="${f.durationSec ? escapeAttr(String(f.durationSec)) : ''}" placeholder="Default — 14s (22s for Need to Know)"></div>
-          <div class="field">
-            <label>Which days should it show?</label>
-            <div class="dayPicker">${dayPickerMarkup(i, f.days)}</div>
-          </div>
-          <div class="hint" style="margin-top:-6px;">All days on = shows every day. Turn off days to repeat weekly on just the ones you pick.</div>
+          <details class="advancedSchedule" ${(f.days && f.days.length) || f.startTime || f.endTime ? 'open' : ''}>
+            <summary>Advanced: only certain days or times (optional — this flyer shows all the time by default)</summary>
+            <div class="advancedScheduleBody">
+              <div class="field">
+                <label>Only show on certain days?</label>
+                <div class="dayPicker">${dayPickerMarkup(i, f.days)}</div>
+              </div>
+              <div class="hint" style="margin-top:-6px;">All days on = shows every day. Turn off days to repeat weekly on just the ones you pick.</div>
+              <div class="row">
+                <div class="field"><label>Only show after (optional)</label><input type="time" data-field="flyerStartTimeEdit" data-idx="${i}" value="${escapeAttr(f.startTime||'')}"></div>
+                <div class="field"><label>Only show before (optional)</label><input type="time" data-field="flyerEndTimeEdit" data-idx="${i}" value="${escapeAttr(f.endTime||'')}"></div>
+              </div>
+              <div class="hint" style="margin-top:-6px;">Leave both blank to show it all day.</div>
+            </div>
+          </details>
         </div>` : ''}`;
       flyersList.appendChild(div);
       // Direct "replace this flyer's image" upload — reuses the same imgbb
@@ -4213,6 +4257,11 @@ document.getElementById('addCountdown').onclick = ()=>{
 // checked) shows every day — that's the same as today's behavior, so old
 // saved flyers with no `days` field at all keep working exactly as before.
 const FLYER_DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function formatTimeOfDay(hhmm){
+  const [h,m] = String(hhmm).split(':').map(Number);
+  const d = new Date(); d.setHours(h||0, m||0, 0, 0);
+  return d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
 function dayPickerMarkup(idx, activeDays){
   // idx is undefined for the "add new flyer" form (no data-idx needed there).
   const isEdit = idx !== undefined;
@@ -4548,6 +4597,8 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const showOnBoard = document.getElementById('flyerShowOnBoard').checked;
   const durationVal = Number(document.getElementById('flyerDuration').value);
   const durationSec = (durationVal && durationVal > 0) ? durationVal : null;
+  const startTime = document.getElementById('flyerStartTime').value || null;
+  const endTime = document.getElementById('flyerEndTime').value || null;
   let days = Array.from(document.querySelectorAll('#flyerDayPicker .flyerDayCb:checked')).map(cb=>Number(cb.value));
   if(days.length === 7) days = []; // all on = no restriction, same as the old no-`days` behavior
   const status = document.getElementById('flyerStatus');
@@ -4585,7 +4636,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeMediaUrl(url, type === 'pdf');
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days});
+  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime});
   document.getElementById('flyerEventName').value = '';
   document.getElementById('flyerUrl').value = '';
   document.getElementById('flyerDate').value = '';
@@ -4594,6 +4645,8 @@ document.getElementById('addFlyer').onclick = async ()=>{
   document.getElementById('flyerShowCountdown').checked = false;
   document.getElementById('flyerShowOnBoard').checked = true;
   document.getElementById('flyerDuration').value = '';
+  document.getElementById('flyerStartTime').value = '';
+  document.getElementById('flyerEndTime').value = '';
   document.getElementById('flyerDayPicker').innerHTML = dayPickerMarkup();
   if(flyerTypeSelect){
     flyerTypeSelect.value = 'image';
