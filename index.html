@@ -671,6 +671,11 @@
         <textarea id="addQuoteBulk" rows="3"></textarea>
       </div>
       <div class="bankCount" id="quoteCount"></div>
+      <div class="field">
+        <label>Add Yahrzeits (one per line: Month Day | Name | Blurb | Photo URL (optional) | star (optional, makes it a featured/bold one))</label>
+        <textarea id="addYahrzeitBulk" rows="3" placeholder="Cheshvan 15 | The Chazon Ish | Rav Avraham Yeshaya Karelitz... | https://.../photo.jpg | star"></textarea>
+      </div>
+      <div class="bankCount" id="yahrzeitCount"></div>
 
       <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
         <label style="display:block;margin-bottom:8px;">Daily Halacha — year-round pool</label>
@@ -1526,8 +1531,325 @@ const YAHRZEIT_DB = [
   {month:8, day:24, name:'Hacham Avraham Azulai', blurb:'Kabbalist in Morocco and Hebron, author of Chesed L\u2019Avraham, and ancestor of the Chida, passed away on 24 Cheshvan, 5404 (1643).'},
   {month:8, day:25, name:'Hacham Abraham Bittan', blurb:'Sephardic Torah scholar, passed away on 25 Cheshvan, 5761 (2001).'},
   {month:8, day:26, name:'Hacham Shalom Aaron Lopes', blurb:'Sephardic Torah scholar, passed away on 26 Cheshvan, 5755 (1994).'},
-  {month:8, day:28, name:'Hacham David Eben Khalifa', blurb:'Sephardic Torah scholar, passed away on 28 Cheshvan, 5751 (1991).'}
+  {month:8, day:28, name:'Hacham David Eben Khalifa', blurb:'Sephardic Torah scholar, passed away on 28 Cheshvan, 5751 (1991).'},
+
+  // ---- Added batch: Teves, Shevat, Kislev, some Cheshvan/Av ----
+  {month:10, day:1, name:"Rav Yair Chaim Bachrach", blurb:"Author of Chavos Yair and Rov of Worms, a descendant of the Maharal, passed away in 1702."},
+  {month:10, day:1, name:"Rav Avraham Moshe of Peshischa", blurb:"Son of Rav Simcha Bunim of Peshischa, passed away in 1828."},
+  {month:10, day:3, name:"Rav Chaim Leib Shmuelevitz", blurb:"Legendary Rosh Yeshiva of the Mirrer Yeshiva, passed away in 1978."},
+  {month:10, day:4, name:"Rav Gershon Chanoch Leiner of Radzin", blurb:"Baal HaTecheles and author of many seforim, passed away in 1890."},
+  {month:10, day:4, name:"Rav Mordechai Pinchos Teitz", blurb:"Rov of Elizabeth, New Jersey, passed away in 1995."},
+  {month:10, day:5, name:"Rav Aharon of Titiev", blurb:"Son of Rav Tzvi, son of the Baal Shem Tov, passed away in 1828."},
+  {month:10, day:6, name:"Rav Yaakov Reischer", blurb:"Author of Chok Yaakov and Shvus Yaakov."},
+  {month:10, day:7, name:"Rav Mordechai Yosef Leiner of Izhbitza", blurb:"Author of Mei HaShiloach, passed away in 1878."},
+  {month:10, day:7, name:"Rav Boruch of Kaminka", blurb:"A talmid of the Baal Shem Tov."},
+  {month:10, day:9, name:"Ezra HaSofer", blurb:"Led the return to Torah in the early Second Temple era; his yahrzeit is marked on 9 Teves."},
+  {month:10, day:10, name:"Rav Nosson of Nemirov", blurb:"Primary student of Rebbe Nachman of Breslov, who recorded and spread his teachings."},
+  {month:10, day:13, name:"Rav Yechiel Mordechai Gordon", blurb:"Rosh Yeshiva of Lomza, passed away in 1965."},
+  {month:10, day:18, name:"Rav Tzvi Elimelech of Dinov", blurb:"Author of B\u2019nei Yissaschar."},
+  {month:10, day:19, name:"The Ksav Sofer", blurb:"Rav Avraham Shmuel Binyamin Sofer, son of the Chasam Sofer and Rav of Pressburg."},
+  {month:10, day:20, name:"Rav Yaakov Abuchatzeira (Abir Yaakov)", blurb:"Grandfather of the Baba Sali."},
+  {month:10, day:22, name:"Rav Shmuel Heller", blurb:"Rav of Tzefas, passed away in 1884."},
+  {month:10, day:22, name:"The Shotzer Rebbe", blurb:"Rav Sholom Moskowitz of Shotz."},
+  {month:10, day:23, name:"Rav Mordechai Gifter", blurb:"Rosh Yeshiva of Telshe in Cleveland, passed away in 1991."},
+  {month:10, day:24, name:"Rav Shmuel of Sochatchov (Shem MiShmuel)", blurb:"Author of the Shem MiShmuel."},
+  {month:10, day:25, name:"Rav Moshe Tikochinsky", blurb:"Mashgiach of the Slabodka yeshiva."},
+  {month:10, day:27, name:"Rav Shimshon Raphael Hirsch", blurb:"Leader of German Orthodoxy, author of Horeb and the Hirsch Chumash commentary, passed away in 1888."},
+  {month:11, day:1, name:"Shaul HaMelech", blurb:"The first king of Israel; his yahrzeit is marked on 1 Shevat."},
+  {month:11, day:1, name:"The Maharam Shick", blurb:"Rav Moshe Schick, the Ozhrover Rebbe and a leading disciple of the Chasam Sofer."},
+  {month:11, day:2, name:"Rav Meshulam Zusha of Hanipol", blurb:"The Chassidic master Reb Zusha, known for his humility and simple faith."},
+  {month:11, day:2, name:"The Tzemach Tzedek", blurb:"Rav Menachem Mendel Schneersohn, third Lubavitcher Rebbe and a leading halachic authority."},
+  {month:11, day:4, name:"Rav Moshe Leib of Sassov", blurb:"Chassidic Rebbe famed for his love of every Jew and his tzedakah."},
+  {month:11, day:4, name:"The Baba Sali", blurb:"Rav Yisrael Abuchatzeira, the beloved Moroccan-born tzaddik, passed away in 5744 (1984)."},
+  {month:11, day:5, name:"The Sfas Emes", blurb:"Rav Yehudah Aryeh Leib Alter, the Gerrer Rebbe and author of the Sfas Emes."},
+  {month:11, day:9, name:"The Ran", blurb:"Rabbeinu Nissim of Gerona, author of the classic commentary on the Rif."},
+  {month:11, day:10, name:"The Previous Lubavitcher Rebbe (Rayatz)", blurb:"Rabbi Yosef Yitzchak Schneersohn, sixth Rebbe of Chabad-Lubavitch, passed away on 10 Shevat, 5710 (1950)."},
+  {month:11, day:10, name:"Rebbetzin Rivka Schneerson", blurb:"Wife of the Rebbe Rashab; Bais Rivka schools are named for her."},
+  {month:11, day:11, name:"Rav Noach Weinberg", blurb:"Founder of Aish HaTorah."},
+  {month:11, day:12, name:"Rav Meir Atlas", blurb:"Rosh Yeshiva in Chicago and Eretz Yisrael."},
+  {month:11, day:13, name:"Rav Baruch Sorotzkin", blurb:"Rosh Yeshiva of Telshe in Cleveland."},
+  {month:11, day:14, name:"Rav Aryeh Kaplan", blurb:"Author of the Living Torah and many works that made Torah thought accessible in English."},
+  {month:11, day:16, name:"The Maharsham", blurb:"Rav Shalom Mordechai Schwadron, author of the Maharsham responsa."},
+  {month:11, day:17, name:"Rav Chaim Palagi", blurb:"Chief Rabbi of Izmir and prolific author, a leading Sephardic sage."},
+  {month:11, day:17, name:"Rav Yechezkel of Kuzmir", blurb:"Chassidic Rebbe of Kuzmir."},
+  {month:11, day:18, name:"Rav Beinish Finkel", blurb:"Rosh Yeshiva of Mir in Yerushalayim, passed away on 18 Shevat, 5782 (2022)."},
+  {month:11, day:18, name:"Rav Dovid Soloveitchik", blurb:"Rosh Yeshiva in Brisk, Yerushalayim, passed away on 18 Shevat, 5782 (2022)."},
+  {month:11, day:19, name:"Rav Yisroel Belsky", blurb:"Rosh Yeshiva of Torah Vodaas and posek for the OU."},
+  {month:11, day:26, name:"The Taz", blurb:"Rav David HaLevi Segal, author of the Turei Zahav on Shulchan Aruch."},
+  {month:11, day:29, name:"The Alter of Slabodka", blurb:"Rav Nosson Tzvi Finkel (1849\u20131927), founder of the Slabodka yeshiva."},
+  {month:11, day:29, name:"Rav Chananya Yom Tov Lipa Teitelbaum", blurb:"Rav of Sighet."},
+  {month:9, day:1, name:"Rav Yosef Shmuel of Frankfurt", blurb:"Author of Mesoras HaShas, the cross-reference index printed in the Gemara, passed away in 5464 (1703)."},
+  {month:9, day:6, name:"The Stropkover Rebbe", blurb:"Rav Yecheskel Shraga Halberstam."},
+  {month:9, day:9, name:"The Mittler Rebbe", blurb:"Rav DovBer Schneuri, second Rebbe of Chabad."},
+  {month:9, day:10, name:"Rav Isser Zalman Meltzer", blurb:"Author of Even HaEzel, Rosh Yeshiva of Slutzk and Etz Chaim, passed away in 1953."},
+  {month:9, day:11, name:"Rav Tzvi Aryeh Rosenfeld", blurb:"Breslov teacher and author who brought many to the teachings of Rabbeinu Zal."},
+  {month:9, day:12, name:"The Maharshal", blurb:"Rav Shlomo Luria, author of Yam Shel Shlomo."},
+  {month:9, day:12, name:"Rav Avraham Dov of Avrutch", blurb:"Chassidic Rebbe of Avrutch."},
+  {month:9, day:15, name:"Rabbeinu HaKadosh (Rebbi Yehuda HaNasi)", blurb:"Redactor of the Mishnah."},
+  {month:9, day:18, name:"Rav Baruch of Medzhibozh", blurb:"Grandson of the Baal Shem Tov."},
+  {month:9, day:19, name:"The Maggid of Mezritch", blurb:"Rav Dov Ber, successor to the Baal Shem Tov, passed away on 19 Kislev, 5533 (1772)."},
+  {month:9, day:20, name:"Rav Meshullam Feivish of Zbarazh", blurb:"Chassidic master and student of the Maggid."},
+  {month:9, day:24, name:"The Sdei Chemed", blurb:"Rav Chaim Chizkiyahu Medini, author of the Sdei Chemed encyclopedia."},
+  {month:9, day:27, name:"Rav Chaim of Chernowitz", blurb:"Author of Be\u2019er Mayim Chaim."},
+  {month:9, day:29, name:"Rav Gedalia of Linitz", blurb:"Chassidic Rebbe and author of Teshuos Chen."},
+  {month:8, day:3, name:"Rav Yisrael of Rizhin", blurb:"The Rizhiner Rebbe, founder of the Rizhin dynasty."},
+  {month:8, day:7, name:"Rav Yehuda Tzvi Eichenstein of Rozla", blurb:"Chassidic Rebbe of Rozla."},
+  {month:8, day:11, name:"Rav Avraham Weinberg of Slonim", blurb:"Author of Yesod HaAvodah."},
+  {month:8, day:11, name:"Rav Menachem Nachum Twersky of Chernobyl", blurb:"Author of Me\u2019or Einayim."},
+  {month:8, day:17, name:"Rav Menachem Mendel Hager of Kosov", blurb:"Chassidic Rebbe of Kosov."},
+  {month:5, day:20, name:"Rav Levi Yitzchak Schneerson", blurb:"Father of the Lubavitcher Rebbe, passed away in exile in Alma Ata."},
+
+  // ---- Added batch 2: Elul and Av ----
+  {month:6, day:1, name:"Rav Dovid HaNagid", blurb:"Grandson of the Rambam and leader of Egyptian Jewry, passed away in 1300."},
+  {month:6, day:1, name:"Rav Chanoch Henoch of Alesk", blurb:"Author of the Lev Sameach, passed away in 1884."},
+  {month:6, day:2, name:"The Rivash", blurb:"Rav Yitzchak bar Sheshes, a leading halachic authority of Spain and North Africa, passed away in 1408."},
+  {month:6, day:2, name:"Rav Eliezer Hager of Vizhnitz", blurb:"Author of the Damesek Eliezer, passed away in 1946."},
+  {month:6, day:2, name:"Rav Avraham Yaakov Friedman of Boyan", blurb:"Author of Nachalas Yaakov, murdered by the Nazis in 1942."},
+  {month:6, day:3, name:"Rav Shraga Feivel Mendlowitz", blurb:"Legendary head of Yeshiva Torah Vodaas and founder of Torah Umesorah, who built Torah education in America."},
+  {month:6, day:3, name:"Rav Avraham Yitzchak HaKohen Kook", blurb:"First Ashkenazi Chief Rabbi of Eretz Yisrael, passed away in 1935."},
+  {month:6, day:3, name:"Rav Yissochor Bertcha Leifer of Nadvorna", blurb:"Chassidic Rebbe of Nadvorna, passed away in 1848."},
+  {month:6, day:4, name:"Rav Meir Simcha HaKohen of Dvinsk", blurb:"Author of the Ohr Somayach and Meshech Chochmah, passed away in 1926."},
+  {month:6, day:5, name:"Rav Dovid Tzvi Shlomo Biderman of Lelov", blurb:"One of the great tzaddikim of Yerushalayim, passed away in 1918."},
+  {month:6, day:6, name:"The Tosfos Yom Tov", blurb:"Rav Yom Tov Lipmann Heller, author of the Tosfos Yom Tov on the Mishnah, passed away in 1654."},
+  {month:6, day:6, name:"The Yetev Lev of Sighet", blurb:"Rav Yekusiel Yehuda Teitelbaum, grandfather of the Satmar Rebbe, passed away in 1883."},
+  {month:6, day:6, name:"Rav Yechezkel Sarna", blurb:"Rosh Yeshiva of Chevron, a talmid of the Chofetz Chaim and Slabodka, passed away in 1969."},
+  {month:6, day:7, name:"Rav Aryeh Leib Lopian", blurb:"Rosh Yeshiva of Gateshead."},
+  {month:6, day:9, name:"The Pri Tzaddik", blurb:"Rav Tzadok HaKohen Rabinowitz of Lublin, author of Pri Tzaddik and Tzidkas HaTzaddik, passed away in 1900."},
+  {month:6, day:9, name:"Rav Yonoson Shteif", blurb:"Viener Rov and renowned posek, passed away in 1958."},
+  {month:6, day:10, name:"Rav Pinchos of Koritz", blurb:"Close friend and talmid of the Baal Shem Tov, passed away in 1790."},
+  {month:6, day:10, name:"Rav Yitzchok of Bohush", blurb:"Chassidic Rebbe, passed away in 1896."},
+  {month:6, day:11, name:"Rav Sholom Yosef Friedman of Sadigur", blurb:"Oldest son of Rav Yisroel of Ruzhin, passed away in 1851."},
+  {month:6, day:12, name:"Rav Simcha Bunim of Peshischa", blurb:"Talmid of the Chozeh and the Yid HaKadosh, passed away in 1827."},
+  {month:6, day:12, name:"Rav Moshe Elyokim Briah of Koznitz", blurb:"Son of the Koznitzer Maggid, passed away in 1828."},
+  {month:6, day:13, name:"The Ben Ish Chai", blurb:"Rav Yosef Chaim of Baghdad, leading Sephardic halachist and author of the Ben Ish Chai, passed away in 1909."},
+  {month:6, day:13, name:"Rav Avrohom Yissochor Ber of Radomsk", blurb:"Author of Chesed L\u2019Avrohom, passed away in 1892."},
+  {month:6, day:15, name:"Rav Yaakov Koppel Chassid", blurb:"Shliach tzibbur of the Baal Shem Tov and forefather of the Kosov-Vizhnitz dynasty, passed away in 1787."},
+  {month:6, day:16, name:"Rav Yitzchok HaKohen Shapiro", blurb:"Father-in-law of the Maharam Lublin, passed away in 1582."},
+  {month:6, day:17, name:"Rav Chaim Benveniste", blurb:"Rav in Izmir and author of Knesses HaGedolah, passed away in 1673."},
+  {month:6, day:18, name:"The Maharal of Prague", blurb:"Rav Yehuda Loew ben Betzalel, one of the great thinkers and halachists of Jewish history."},
+  {month:6, day:19, name:"Rabbeinu Yaakov of Orleans", blurb:"Talmid of Rabbeinu Tam, killed al kiddush Hashem in London in 1189."},
+  {month:6, day:19, name:"Rav Moshe Tzvi Aryeh Bick", blurb:"Great posek whose family led the Bais Din of Mezibuz since the days of the Baal Shem Tov, passed away in 1990."},
+  {month:6, day:20, name:"Rav Yosef Shlomo Kahaneman", blurb:"Rav of Ponevezh and founder of the Ponevezh Yeshiva in Bnei Brak, passed away in 1969."},
+  {month:6, day:20, name:"Rav Eliyahu Lopian", blurb:"Author of Lev Eliyahu and legendary mashgiach in Kelm and Kfar Chassidim, passed away in 1970."},
+  {month:6, day:20, name:"Rav Avrohom Sternhartz", blurb:"Leader of Breslov, great-grandson of Rebbe Noson, known as the Kochav Lev, passed away in 1955."},
+  {month:6, day:21, name:"Rav Yonoson Eibeschitz", blurb:"Rov of Altona, Hamburg and Metz, author of Kereisi U\u2019Pleisi and Urim VeTumim, passed away in 1764."},
+  {month:6, day:22, name:"The Maharil", blurb:"Rav Yaakov Moellin, the primary source of Minhagei Ashkenaz, passed away in 1427."},
+  {month:6, day:23, name:"Rav Meir Yehuda Getz", blurb:"Rabbi of the Kosel HaMaaravi and Rosh Yeshiva, passed away in 1995."},
+  {month:6, day:23, name:"The Alexander Rebbe", blurb:"Rav Yitzchak Menachem Mendel Danziger, killed in Treblinka with eight of his children in 1942."},
+  {month:6, day:23, name:"Rav Uri of Strelisk", blurb:"The \u201cSeraph,\u201d a talmid of Rav Shlomo of Karlin, passed away in 1826."},
+  {month:6, day:24, name:"Rav Yechezkel Abramsky", blurb:"Rov of Slutsk and London, author of Chazon Yechezkel, passed away in 1976."},
+  {month:6, day:25, name:"The Maggid of Zlotchov", blurb:"Rav Yechiel Michel, talmid of the Baal Shem Tov, passed away in 1786."},
+  {month:6, day:26, name:"Rav Elyakim Getz of Ostroh", blurb:"Printed the seforim of his father and was known for supporting the poor, passed away in 1824."},
+  {month:6, day:27, name:"The Sar Shalom of Belz", blurb:"Rav Sholom Rokeach, the first Belzer Rebbe, passed away in 1855."},
+  {month:6, day:27, name:"Rav Nosson Adler", blurb:"Rebbe of the Chasam Sofer."},
+  {month:6, day:28, name:"Rav Chaim Yehuda Leib Auerbach", blurb:"Rosh Yeshiva of Shaar HaShamayim and father of Rav Shlomo Zalman, passed away in 1954."},
+  {month:6, day:29, name:"Rav Yaakov HaLevi Lipschutz", blurb:"Secretary of Rav Yitzchak Elchonon Spector and author of Zichron Yaakov."},
+  {month:5, day:1, name:"Aharon HaKohen", blurb:"The first Kohen Gadol, who loved peace and pursued peace; his yahrzeit is on Rosh Chodesh Av."},
+  {month:5, day:1, name:"The Bobover Rebbe, Rav Shlomo Halberstam", blurb:"Rebuilt Bobov after the Holocaust into one of the largest chassidic communities, passed away in 2000."},
+  {month:5, day:2, name:"Rav Moshe Stern of Debrecen", blurb:"Author of Be\u2019er Moshe and one of the great poskim of his generation, passed away in 1997."},
+  {month:5, day:2, name:"Rav Aharon Teumim", blurb:"Rov of Krakow, killed al kiddush Hashem in 1690."},
+  {month:5, day:3, name:"Rav Shimshon of Ostropolia", blurb:"Kabbalist and tzaddik, killed al kiddush Hashem."},
+  {month:5, day:4, name:"The Rama MiPano", blurb:"Rav Menachem Azariah of Fano, a leading Italian kabbalist, passed away in 1620."},
+  {month:5, day:4, name:"The Bobover Rebbe, Rav Benzion Halberstam", blurb:"Author of Kedushas Tzion, killed al kiddush Hashem in 1941."},
+  {month:5, day:5, name:"The Arizal", blurb:"Rav Yitzchak Luria Ashkenazi, the master of Kabbalah in Tzefas, passed away in 1572."},
+  {month:5, day:5, name:"Rav Chaim Ozer Grodzinski", blurb:"Rav of Vilna, author of Achiezer and leader of the generation, passed away in 1940."},
+  {month:5, day:5, name:"Rav Yechiel Michel Dorfman", blurb:"Leader of Breslov who risked his life to bring people to Rebbe Nachman\u2019s kever in Uman, passed away in 2006."},
+  {month:5, day:6, name:"Rav Shlomo Zalman Hanau", blurb:"Author of Binyan Shlomo."},
+  {month:5, day:7, name:"The Slonimer Rebbe, Rav Sholom Noach Brezovsky", blurb:"Author of Nesivos Shalom, passed away in 2000."},
+  {month:5, day:8, name:"Rav Simcha Zissel Ziv", blurb:"The Alter of Kelm, a leading student of Rav Yisroel Salanter, passed away in 1898."},
+  {month:5, day:9, name:"The Chozeh of Lublin", blurb:"Rav Yaakov Yitzchak HaLevi Horowitz, one of the great chassidic masters of Poland."},
+  {month:5, day:9, name:"Rav Yitzchak Nissim", blurb:"Sephardi Chief Rabbi of Israel from 1955 to 1972."},
+  {month:5, day:10, name:"Don Yitzchak Abarbanel", blurb:"Statesman and Torah commentator, passed away in 1508."},
+  {month:5, day:10, name:"Yissachar ben Yaakov", blurb:"Son of Yaakov Avinu and forefather of the tribe of Yissachar."},
+  {month:5, day:11, name:"Rav Hillel of Paritch", blurb:"One of the greatest tzaddikim in Chabad, passed away in 1864."},
+  {month:5, day:11, name:"Rav Yitzchak Blazer", blurb:"Talmid of Rav Yisroel Salanter and author of Pri Yitzchok, passed away in 1907."},
+  {month:5, day:12, name:"Rav Aryeh Leib Katzenellenbogen", blurb:"Rov of Vilna, passed away in 1837."},
+  {month:5, day:13, name:"The Megaleh Amukos", blurb:"Rav Nosson Nota Shapiro of Krakow, passed away in 1633."},
+  {month:5, day:13, name:"Rav Yosef Eliyahu Henkin", blurb:"Posek and head of Ezras Torah, passed away in 1973."},
+  {month:5, day:14, name:"Rav Tzvi Hirsch of Liska", blurb:"Talmid of the Divrei Chaim and Rebbe of Rav Shayele Kerestirer, passed away in 1874."},
+  {month:5, day:15, name:"Nochum Ish Gamzu", blurb:"Tanna known for saying \u201cgam zu letovah\u201d about everything that happened to him."},
+  {month:5, day:15, name:"Rav Shimon Labi", blurb:"Author of Kesem Paz and composer of the song Bar Yochai, passed away in 1585."},
+  {month:5, day:15, name:"Rav Yaakov Leiner of Izhbitza", blurb:"Author of Beis Yaakov, passed away in 1878."},
+  {month:5, day:17, name:"Rav Shlomo Chaim Perlow of Koidenov", blurb:"Chassidic Rebbe, passed away in 1862."},
+  {month:5, day:18, name:"Rav Shlomo Chanoch HaKohen of Radomsk", blurb:"Great-grandson of the Tiferes Shlomo, murdered in Warsaw in 1942."},
+  {month:5, day:19, name:"Rav Yaakov Culi", blurb:"Author of Me\u2019am Loez, passed away in 1732."},
+  {month:5, day:19, name:"Rav Naftali of Nemirov", blurb:"One of Rebbe Nachman\u2019s closest talmidim, passed away in 1860."},
+  {month:5, day:21, name:"Rav Chaim Soloveitchik of Brisk", blurb:"Rosh Yeshiva of Volozhin and founder of the Brisker derech, passed away in 1918."},
+  {month:5, day:21, name:"The Belzer Rebbe, Rav Aharon Rokeach", blurb:"Escaped the Nazis and rebuilt Belz, passed away in 1957."},
+  {month:5, day:22, name:"Rav Meir HaGadol of Premishlan", blurb:"Talmid of the Baal Shem Tov, passed away in 1773."},
+  {month:5, day:22, name:"Rav Eliyahu Dushnitzer", blurb:"Mashgiach of Lomza Yeshiva in Petach Tikva and a talmid of the Chofetz Chaim, passed away in 1949."},
+  {month:5, day:23, name:"The Steipler Gaon", blurb:"Rav Yaakov Yisroel Kanievsky, author of Kehillas Yaakov, passed away in 1985."},
+  {month:5, day:24, name:"Rav Ephraim Zalman Margolies", blurb:"Av Beis Din of Brod and author of Mateh Ephraim, passed away in 1828."},
+  {month:5, day:25, name:"Rav Yeshayahu Menachem of Krakow", blurb:"Originator of the Heter Iska, passed away in 1599."},
+  {month:5, day:26, name:"The Satmar Rebbe, Rav Yoel Teitelbaum", blurb:"Author of Vayoel Moshe and Divrei Yoel, passed away in 1979."},
+  {month:5, day:26, name:"Rav Yaakov Meshulam Orenstein", blurb:"Rov of Lvov and author of Yeshuos Yaakov, passed away in 1839."},
+  {month:5, day:27, name:"The Netziv", blurb:"Rav Naftali Tzvi Yehuda Berlin, Rosh Yeshiva of Volozhin and author of Haamek Davar, passed away in 1893."},
+  {month:5, day:27, name:"Rav Yehoshua Charif of Krakow", blurb:"Author of Maginei Shlomo, passed away in 1648."},
+  {month:5, day:27, name:"Reb Heshele of Spinka", blurb:"Rav Shmuel Tzvi Hirsh Horowitz, passed away in 1997."},
+  {month:5, day:28, name:"Rav Avrohom Yaakov Pam", blurb:"Rosh Yeshiva of Torah Vodaas, loved by all, passed away in 2001."},
+  {month:5, day:29, name:"The Skulener Rebbe", blurb:"Rav Eliezer Zusia Portugal, founder of Chesed L\u2019Avraham, passed away in 1982."},
+  {month:5, day:29, name:"Rav Menachem Mendel Alter", blurb:"Son of the Sfas Emes, went to his death in Treblinka in 1942."},
+  {month:5, day:29, name:"Rav Shmuel Salanter", blurb:"Rov of Yerushalayim, passed away in 1909."},
+
+  // ---- Added batch 3: Kislev, Teves, Cheshvan gaps ----
+  {month:9, day:3, name:"Rav Meir HaKohen Katz", blurb:"Father of the Shach (Rav Shabsai HaKohen)."},
+  {month:9, day:3, name:"The Stanislaver Rebbe of London", blurb:"Rav Meshulam Yissachor Ashkenazi, passed away in 1994."},
+  {month:9, day:4, name:"The First Amshenover Rebbe", blurb:"Rav Yaakov Dovid Kalish, son of Rav Yisroel Yitzchok of Vorka, passed away in 1878."},
+  {month:9, day:4, name:"Rav Yaakov Moshe Kulefsky", blurb:"Rosh Yeshiva of Ner Yisroel in Baltimore, passed away in 2002."},
+  {month:9, day:5, name:"The Maharsha", blurb:"Rav Shmuel Eliezer Eidels, whose Chiddushei Halachos and Aggados are printed in the Gemara; the Baal Shem Tov said that if people knew his greatness they would lick the dust of his grave, passed away in 1631."},
+  {month:9, day:5, name:"The Radal", blurb:"Rav Dovid Luria, a talmid of the Vilna Gaon who wrote a commentary on Pirkei D\u2019Rabbi Eliezer, passed away in 1855."},
+  {month:9, day:5, name:"Rav Boruch Ber Leibowitz", blurb:"Rosh Yeshiva of Kamenitz and author of Birchas Shmuel, passed away in 1940."},
+  {month:9, day:7, name:"Rav Shlomo Binyamin Ashlag", blurb:"Son of Rav Yehuda Leib Ashlag, author of HaSulam on the Zohar, passed away in 1983."},
+  {month:9, day:7, name:"Rav Aharon HaLevi Epstein of Krakow", blurb:"Son of the Meor Veshemesh, passed away in 1881."},
+  {month:9, day:8, name:"Rav Dovid Bornstein of Sochatchov", blurb:"Author of Chasdei Dovid, passed away in the Warsaw ghetto in 1942."},
+  {month:9, day:8, name:"The First Bostoner Rebbe", blurb:"Rav Pinchas Dovid Horowitz, passed away in 1941."},
+  {month:9, day:8, name:"Rav Moshe Shapira of Slavita", blurb:"Son of Rav Pinchas of Koritz, passed away in 1839."},
+  {month:9, day:13, name:"Rav Yisroel Friedman of Chortkov", blurb:"Chassidic Rebbe of Chortkov, passed away in 1932."},
+  {month:9, day:13, name:"The First Modzitzer Rebbe", blurb:"Rav Yisroel Taub, author of Divrei Yisroel and a composer of chassidic niggunim, passed away in 1920."},
+  {month:9, day:14, name:"Reuven ben Yaakov", blurb:"Firstborn son of Yaakov Avinu, born on 14 Kislev according to tradition."},
+  {month:9, day:14, name:"Rav Menashe ben Yisroel", blurb:"Rabbi of Amsterdam and author of Nishmas Chaim."},
+  {month:9, day:14, name:"Rav Dovid Abuchatzeira", blurb:"Brother of the Baba Sali, killed al kiddush Hashem in 1919."},
+  {month:9, day:15, name:"Rav Simcha Bunim Sofer of Pressburg", blurb:"Author of Shevet Sofer and son of the Ksav Sofer."},
+  {month:9, day:16, name:"Rav Shaul Yedidya Elazar Taub of Modzitz", blurb:"Modzitzer Rebbe and composer of Chassidic melodies, passed away in 1947."},
+  {month:9, day:16, name:"Rav Meshulam Roth", blurb:"Rov of Tchernovitz and author of Kol Mevaser."},
+  {month:9, day:17, name:"Rav Yosef Yoizel Horowitz", blurb:"The Alter of Novardok, founder of the Novardok mussar yeshivos."},
+  {month:9, day:17, name:"Rav Refoel Shlomo Heiman", blurb:"Rosh Yeshiva of Bais Medrash Elyon and Torah Vodaas."},
+  {month:9, day:17, name:"Rav Noach of Ludmir", blurb:"Talmid of the Chozeh of Lublin."},
+  {month:9, day:21, name:"Rav Tzvi Pesach Frank", blurb:"Rov and posek of Yerushalayim and author of Har Tzvi, passed away in 1961."},
+  {month:9, day:21, name:"Rav Yochonan Perlow of Stolin", blurb:"Passed away in 1956 and buried in Teveria."},
+  {month:9, day:22, name:"Rav Eliezer Ashkenazi", blurb:"Author of Maasei Hashem, a contemporary of the Maharal, passed away in 1586."},
+  {month:9, day:22, name:"Rav Sholom Mordechai Shwadron", blurb:"Maggid of Yerushalayim and grandson of the Maharsham, passed away in 1998."},
+  {month:9, day:23, name:"Rav Dovid of Novardok", blurb:"Author of Geulas Yisrael, passed away in 1837."},
+  {month:9, day:23, name:"Rav Elimelech of Tosh", blurb:"Passed away in 1942 and grandfather of the present Tosher Rebbe."},
+  {month:9, day:25, name:"Rav Shlomo Zalman, Father of the Vilna Gaon", blurb:"Rav Shlomo Zalman, who guided his son\u2019s earliest learning, passed away in 1758."},
+  {month:9, day:25, name:"Rav Yaakov Etlinger", blurb:"Author of Aruch LaNer and Binyan Tzion, passed away in 1871."},
+  {month:9, day:26, name:"The Raavad", blurb:"Rav Avraham ben Dovid, the Baal Hasagos on the Rambam, passed away in 1197."},
+  {month:9, day:26, name:"Rav Elazar of Koznitz", blurb:"Son of Rav Moshe Elyokim Briah, passed away in 1861."},
+  {month:9, day:28, name:"Rav Uziel Meizlish of Ritshval", blurb:"Talmid of the Maggid of Mezritch and author of Tiferes Uziel, passed away in 1785."},
+  {month:9, day:28, name:"Rav Moshe Torgeman", blurb:"A rebbe of the Baba Sali."},
+  {month:9, day:30, name:"Rav Dovid Halberstam of Sokolov", blurb:"Son of Rav Moshe of Shiniva, passed away in 1939."},
+  {month:9, day:30, name:"Rav Dovid Oppenheim", blurb:"Av Beis Din of Reznitz."},
+  {month:10, day:2, name:"Rav Yaakov Ibn Tzur", blurb:"Author of Mishpat U\u2019Tzedakah L\u2019Yaakov."},
+  {month:10, day:8, name:"Rav Yechezkel Halshtuk", blurb:"Rav of Ostrovtza, killed al kiddush Hashem in 1942."},
+  {month:10, day:11, name:"Rav Shlomo Eiger", blurb:"Author of Gilyon Maharsha and son of Rav Akiva Eiger, passed away in 1852."},
+  {month:10, day:11, name:"Rav Yehoshua Horowitz of Dzikov", blurb:"Author of Ateres Yeshua, passed away in 1912."},
+  {month:10, day:12, name:"Rav Moshe Margulies", blurb:"Author of Pnei Moshe on the Talmud Yerushalmi and a teacher of the Vilna Gaon, passed away in 1781."},
+  {month:10, day:12, name:"Rav Moshe HaLevi Sofer of Peshvarsk", blurb:"Talmid of the Maggid of Mezritch, passed away in 1805."},
+  {month:10, day:14, name:"Rav Reuven Dov Dessler", blurb:"Father of Rav Eliyahu Dessler, passed away in 1935."},
+  {month:10, day:14, name:"Rav Tzvi Hirsch of Teplik", blurb:"Breslover tzaddik, passed away in 1928."},
+  {month:10, day:15, name:"Rav Refoel of Barshad", blurb:"Talmid of Rav Pinchas of Koritz, passed away in 1827."},
+  {month:10, day:15, name:"Rav Chaim Mordechai Rosenbaum of Nadvorna", blurb:"Chassidic Rebbe, passed away in 1978."},
+  {month:10, day:16, name:"Rav Aryeh Leibish of Vishnitza", blurb:"Known as Rebbe Leibish Charif, author of Aryeh DeVei Ilai, passed away in 1846."},
+  {month:10, day:16, name:"Rav Chaim Kreiswirth", blurb:"One of the great Torah giants of recent times, known as a walking Shas, passed away in 2001."},
+  {month:10, day:17, name:"Rav Yaakov Kranz", blurb:"The Dubno Maggid, famous for his parables, passed away in 1804."},
+  {month:10, day:21, name:"Rav Yisroel Dov Ber of Vilednik", blurb:"Author of Shearis Yisroel, tzaddik and miracle worker, passed away in 1850."},
+  {month:10, day:21, name:"Rav Yitzchok Abuchatzeira", blurb:"Great-grandson of Rav Yaakov Abuchatzeira, passed away in 1991."},
+  {month:10, day:26, name:"Rav Avrohom Chaim of Zlotchov", blurb:"Author of Orach L\u2019Chaim, talmid of the Maggid of Mezritch, passed away in 1816."},
+  {month:10, day:28, name:"The Maharil Diskin", blurb:"Rav Yehoshua Leib Diskin, Rav of Brisk and Yerushalayim, passed away in 1898."},
+  {month:10, day:28, name:"Rav Nosson Adler", blurb:"Rav of London and author of Nesina LaGer, passed away in 1890."},
+  {month:10, day:29, name:"The Yismach Yisroel", blurb:"Rav Yerachmiel Yisroel Yitzchak Danziger of Alexander, known for his great modesty, passed away in 1910."},
+  {month:10, day:29, name:"Rav Meir Chodosh", blurb:"Mashgiach of Yeshivas Chevron, passed away in 1989."},
+  {month:8, day:14, name:"Rav Avrohom Elimelech Perlow of Karlin", blurb:"Killed al kiddush Hashem in 1942."},
+  {month:8, day:20, name:"The Raavad II", blurb:"Rav Avraham bar Yitzchak, author of Sefer HaEshkol, passed away in 1198."},
+  {month:8, day:20, name:"Rav Mordechai Sharabi", blurb:"One of the greatest mekubalim of his time, Rosh Yeshiva Nahar Shalom, passed away in 1983."},
+  {month:8, day:22, name:"Rav Dovid Shlomo Eibeschitz", blurb:"Author of Levushei Srad and Arvei Nachal, settled in Eretz Yisroel, passed away in 1813."},
+  {month:8, day:22, name:"Rav Yissachor Dov Rokeach of Belz", blurb:"Chassidic Rebbe of Belz, passed away in 1926."},
+  {month:8, day:23, name:"Rav Aharon Katzenellenbogen", blurb:"Rov of Brisk and author of Minchas Aharon, passed away in 1854."},
+  {month:8, day:23, name:"Rav Moshe Midner", blurb:"Talmid of the Slonimer Rebbes and a baal ruach hakodesh, passed away in 1929."},
+  {month:8, day:27, name:"The Pshevorsker Rebbe of Antwerp", blurb:"Rav Yaakov Leizer, passed away in 1998."},
+  {month:8, day:29, name:"Rav Yitzchak Eizik Chover", blurb:"Author of Teshuvos Binyan Olam, passed away in 1852."},
+  {month:8, day:30, name:"The Tzitz Eliezer", blurb:"Rav Eliezer Waldenberg, famous posek especially on medical halacha, passed away in 2006."},
+  {month:8, day:30, name:"Rav Tzvi Hirsch of Rimanov", blurb:"Successor of Rav Mendel of Rimanov and author of Be\u2019eros HaMayim, passed away in 1846."},
+
+  // ---- Added batch 4: 1 Cheshvan (NerTzaddik.com listing) ----
+  {month:8, day:1, name:"Rav Amnon of Magentza", blurb:"Known for composing or reciting the Unesaneh Tokef prayer on Rosh Hashanah, which many communities say on the High Holidays."},
+  {month:8, day:1, name:"Rav Avrohom Ably of Chodosh", blurb:"Rav of Chodosh, passed away in 5576."},
+  {month:8, day:1, name:"Rav Aryeh Yehuda Leib of Lantzhot", blurb:"Known as the Chomas Ariel, passed away in 5584."},
+  {month:8, day:1, name:"Rav Yosef of Dombrov", blurb:"Son of Rav Mordechai Dovid, passed away in 5627."},
+  {month:8, day:1, name:"Rav Yissochor Dov Ber Turnheim", blurb:"The Avodas Yissochor and Velbrozher Rebbe, passed away in 5638."},
+  {month:8, day:1, name:"Rav Chanina Horowitz of Oleinov", blurb:"Chassidic leader of Oleinov, passed away in 5642."},
+  {month:8, day:1, name:"Rav Akiva Meir Turnheim", blurb:"The Divrei Ho\u2019om and Velbrozher Rebbe, passed away in 5679."},
+  // ---- Added batch 5: Iyar, Tammuz (Jewish Press / Chabad lists) ----
+  {month:2, day:1, name:"The Chacham Tzvi", blurb:"Rav Tzvi Hirsch Ashkenazi, Rav of Amsterdam and author of the Chacham Tzvi responsa."},
+  {month:2, day:1, name:"Rav Shmelke of Nikolsburg", blurb:"Chassidic master and talmid of the Maggid of Mezritch, famed for his Torah and kindness."},
+  {month:2, day:3, name:"Rav Yeshaya\u2019la of Kerestir", blurb:"Rav Yeshaya Steiner, the Kerestirer Rebbe, beloved tzaddik and miracle worker."},
+  {month:2, day:10, name:"The Rif", blurb:"Rav Yitzchak Alfasi, author of the Halachos HaRif, one of the foundations of halachic study."},
+  {month:2, day:10, name:"Eli HaKohen", blurb:"Kohen Gadol and Shofet in the time of the Mishkan in Shilo."},
+  {month:2, day:10, name:"Rav Yitzchak Isaac Yehuda Yechiel of Komarna", blurb:"Chassidic master and author of Heichal HaBrachah."},
+  {month:2, day:10, name:"Rav Dovid Twersky of Tolna", blurb:"Chassidic Rebbe of the Tolna dynasty."},
+  {month:2, day:10, name:"Rav Hillel Lichtenstein of Kolomea", blurb:"Leading Hungarian rav and author of Beis Hillel."},
+  {month:2, day:11, name:"Rav Naftali Tzvi of Ropshitz", blurb:"Talmid of the Chozeh of Lublin, known for his wit, holiness, and deep Torah."},
+  {month:2, day:14, name:"Rabbi Meir Baal HaNess", blurb:"Tanna and student of Rabbi Akiva; many give tzedakah in his merit."},
+  {month:2, day:17, name:"The Noda BiYehuda", blurb:"Rav Yechezkel Landau, Rav of Prague and author of the Noda BiYehuda responsa."},
+  {month:2, day:18, name:"The Rema", blurb:"Rav Moshe Isserles of Krakow, whose glosses on the Shulchan Aruch set Ashkenazi halacha."},
+  {month:2, day:19, name:"The Maharam of Rothenburg", blurb:"Rav Meir ben Baruch, leader of German Jewry who died in captivity rather than allow himself to be ransomed."},
+  {month:2, day:19, name:"Rav Menachem Mendel of Rimanov", blurb:"Talmid of the Rebbe Elimelech of Lizhensk and a leading chassidic master."},
+  {month:2, day:20, name:"Rav Mordechai of Chernobyl", blurb:"The Chernobyler Maggid, son of Rav Nachum, who passed on a large chassidic dynasty."},
+  {month:2, day:25, name:"Rav Chaim of Kosov", blurb:"Chassidic Rebbe of Kosov."},
+  {month:2, day:26, name:"The Ramchal", blurb:"Rav Moshe Chaim Luzzatto, author of Mesillas Yesharim, passed away in 1746."},
+  {month:2, day:28, name:"Shmuel HaNavi", blurb:"The prophet who anointed Shaul and Dovid as kings."},
+  {month:2, day:29, name:"Rav Meir\u2019l of Premishlan", blurb:"Beloved tzaddik of Premishlan, renowned for his love for every Jew."},
+  {month:4, day:1, name:"Rav Kalonymus Kalman Epstein of Krakow", blurb:"Author of Maor VaShemesh, a chassidic commentary on the Torah, passed away in 5583 (1823)."},
+  {month:4, day:4, name:"Rabbeinu Tam", blurb:"Rav Yaakov ben Meir, grandson of Rashi and leading Baal Tosafos."},
+  {month:4, day:6, name:"Rav Baruch Frankel-Teomim", blurb:"Rav of Leipnik and a Gadol HaDor of his time."},
+  {month:4, day:19, name:"Rav Yitzchak Isaac HaLevi Herzog", blurb:"Chief Rabbi of Ireland and then of Eretz Yisrael, passed away in 1959."},
+  {month:4, day:23, name:"The Ramak", blurb:"Rav Moshe Cordovero, leading kabbalist of Tzefas and author of Pardes Rimonim."},
+  {month:4, day:25, name:"Rav Meir HaLevi of Apta", blurb:"Chassidic Rebbe of Apta."},
+  {month:4, day:27, name:"Rav Elazar Abuchatzeira", blurb:"Great Moroccan tzaddik of the Abuchatzeira family."},
+  {month:4, day:28, name:"The Yismach Moshe", blurb:"Rav Moshe Teitelbaum of Ujhely, founder of the Teitelbaum dynasty."},
+  {month:4, day:28, name:"Rav Shlomo Ganzfried", blurb:"Author of the Kitzur Shulchan Aruch."},
+  {month:4, day:29, name:"Rabbi Yochanan HaSandlar", blurb:"Tanna and student of Rabbi Akiva."},
+  // ---- Added batch 6: checked entries from the pasted list, cross-checked against earlier sources ----
+  {month:1, day:1, name:"Nadav and Avihu", blurb:"Sons of Aharon HaKohen, who died on the day the Mishkan was inaugurated."},
+  {month:1, day:2, name:"The Rebbe Rashab", blurb:"Rav Sholom DovBer Schneersohn, fifth Rebbe of Chabad and founder of Yeshivas Tomchei Temimim, passed away in Rostov in 5680 (1920)."},
+  {month:1, day:9, name:"Rav Aryeh Levin", blurb:"The beloved \u201ctzaddik of Yerushalayim,\u201d known for his kindness to prisoners, the sick, and the poor."},
+  {month:1, day:10, name:"Miriam HaNeviah", blurb:"Sister of Moshe and Aharon, whose merit gave Bnei Yisrael the well in the desert."},
+  {month:1, day:11, name:"The Shelah HaKadosh", blurb:"Rav Yeshayah Horowitz, author of Shnei Luchos HaBris."},
+  {month:1, day:13, name:"The Tzemach Tzedek", blurb:"Rav Menachem Mendel Schneersohn, third Lubavitcher Rebbe and a leading halachic authority."},
+  {month:1, day:13, name:"Rav Yosef Karo", blurb:"Author of the Beis Yosef and the Shulchan Aruch, the standard code of Jewish law."},
+  {month:1, day:13, name:"Rav Moshe Alshich", blurb:"Tzefas darshan and author of the Alshich commentary on the Torah, passed away around 1593."},
+  {month:1, day:15, name:"Yitzchak Avinu", blurb:"The second of the Avos; his passing is marked on 15 Nissan according to tradition."},
+  {month:1, day:15, name:"Yehuda ben Yaakov", blurb:"Son of Yaakov Avinu and ancestor of the tribe of Yehuda and the kings of Israel."},
+  {month:1, day:16, name:"Levi ben Yaakov", blurb:"Son of Yaakov Avinu and forefather of the Leviim."},
+  {month:1, day:17, name:"Reb Itzikel of Skver", blurb:"Rav Yitzchak Twersky, seventh son of Rav Mordechai of Chernobyl."},
+  {month:1, day:19, name:"Rav Aharon of Karlin", blurb:"Founder of Karlin chassidus, known for his fiery avodah, passed away in 1772."},
+  {month:1, day:25, name:"The Divrei Chaim of Sanz", blurb:"Rav Chaim Halberstam, founder of the Sanz dynasty and a leader famous for his generosity."},
+  {month:1, day:28, name:"Rav Shabsai Sheftl Horowitz", blurb:"Son of the Shelah HaKadosh, passed away in 1660."},
+  {month:1, day:30, name:"Rav Chaim Vital", blurb:"Primary talmid of the Arizal and the one who wrote down his teachings."},
+  {month:3, day:6, name:"David HaMelech", blurb:"King David, author of Tehillim, whose passing is marked on Shavuos according to tradition."},
+  {month:3, day:7, name:"Hoshea HaNavi", blurb:"The prophet Hoshea, whose yahrzeit is marked on 7 Sivan."},
+  {month:12, day:7, name:"Moshe Rabbeinu", blurb:"Moses our teacher, who received the Torah and led Bnei Yisrael for forty years; born and passed away on 7 Adar."},
+  {month:12, day:21, name:"Rav Elimelech of Lizhensk", blurb:"The Noam Elimelech, a central figure in the chassidic movement in Poland and teacher of many leading Rebbes."},
+  {month:11, day:22, name:"Rebbetzin Chaya Mushka Schneerson", blurb:"Wife of the Lubavitcher Rebbe, who stood beside him for sixty years."},
+  {month:11, day:25, name:"Rav Yisroel Salanter", blurb:"Founder of the Mussar movement, which put character growth at the center of Torah life."},
 ];
+
+
+// ---- Famous-tzaddik highlighting and photos ----
+// Anyone whose name matches this list is treated as a "famous" yahrzeit: shown
+// large with their blurb, while the others for that day appear in a smaller
+// "Also today" list (like the printed Israeli luach, where the famous are bold).
+// You can also set star:true on any entry, or in the settings box (see below).
+const YAHRZEIT_STAR_RE = /Rambam|Rashi|Ramban|Baal Shem Tov|Chofetz Chaim|Vilna Gaon|Chasam Sofer|Chazon Ish|Alter Rebbe|Tanya|Lubavitcher|Rayatz|Tzemach Tzedek|Mittler Rebbe|Maggid of Mezritch|Arizal|Maharal|Rav Moshe Feinstein|Rav Aharon Kotler|Rav Shach|Steipler|Satmar|Belzer|Rabbi Shimon Bar Yochai|Rebbe Nachman|Nachman of Breslov|Kedushas Levi|Levi Yitzchak of Berdichev|Maharsha|Shelah|Baal Shem|Ben Ish Chai|Baba Sali|Akiva Eiger|Netziv|Chozeh|Rav Chaim Soloveitchik|Brisker|Rav Elchonon|Chofetz|Rosh\b|Rif\b|Radvaz|Rav Yosef Karo|Beis Yosef|Maharam|Ksav Sofer|Sfas Emes|Divrei Chaim|Rav Isser Zalman|Rav Yaakov Kamenetsky|Rav Ovadia|Rav Elyashiv|Rav Shlomo Zalman|Rav Steinman|Rav Shteinman|Rav Chaim Kanievsky|Rav Chaim Ozer|Alter of Slabodka|Alter of Kelm|Rav Hutner|Hutner|Rabbeinu Yonah|Rabbeinu HaKadosh|Shaul HaMelech|Aharon HaKohen|Ezra HaSofer|Shem MiShmuel|Ohr Somayach|Chida\b/i;
+
+// Photos: add entries here ("Exact Name": "URL") now or later. A photo on a
+// yahrzeit entry itself (photo:"...") or one added through the settings box
+// wins over this table. Photos are only shown when a URL exists; if the image
+// fails to load it simply disappears.
+const YAHRZEIT_PHOTOS = {
+  // "The Chofetz Chaim": "https://example.com/chofetz-chaim.jpg",
+};
+
+// Month names accepted in the settings box ("Cheshvan 1 | Name | Blurb | Photo URL | star")
+const YAHRZEIT_MONTHS = {nissan:1,nisan:1,iyar:2,sivan:3,tammuz:4,av:5,menachemav:5,elul:6,tishrei:7,tishri:7,cheshvan:8,marcheshvan:8,kislev:9,teves:10,tevet:10,shevat:11,shvat:11,adar:12,adari:12,adarii:12,adar1:12,adar2:12};
+
+function allYahrzeits(){
+  const extra = (typeof config !== 'undefined' && config && Array.isArray(config.yahrzeitBank)) ? config.yahrzeitBank : [];
+  return YAHRZEIT_DB.concat(extra);
+}
+function yahrzeitView(e, inDays){
+  return {name:e.name, blurb:e.blurb||'', photo:e.photo || YAHRZEIT_PHOTOS[e.name] || '', star: !!e.star || YAHRZEIT_STAR_RE.test(e.name || ''), inDays};
+}
 
 const HISTORY_DB = [
   {month:1, day:15, text:'Yetzias Mitzrayim — the Jewish People left Egypt on the first Pesach, beginning the journey to Har Sinai and Eretz Yisrael.'},
@@ -1613,7 +1935,11 @@ function computeAutoZmanim(){
     console.error('zmanim location lookup failed', e);
     return blank;
   }
-  const today = new Date();
+  // Use Jerusalem's calendar date, not the screen's. If the board's device
+  // is set to another timezone, new Date() can be a different calendar day
+  // than it is in Jerusalem, which gave zmanim for the wrong day.
+  const jp = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);
+  const today = new Date(jp[0], jp[1]-1, jp[2], 12, 0, 0);
 
   // This week's Shabbos-specific times (candle lighting / havdalah), plus
   // which Parsha that candle lighting is actually for — so "Candle
@@ -1628,7 +1954,8 @@ function computeAutoZmanim(){
       location,
       candlelighting: true,
       candleLightingMins: 40,   // Jerusalem custom: 40 minutes before sunset
-      havdalahMins: 42,         // three medium stars (common practice)
+      // havdalah left at the library default (sun 8.5 degrees below horizon) so
+      // "Shabbos Ends" matches the Tzeis time shown on the same card
       sedrot: true              // also emit the weekly Parsha event, so we can label the candle lighting with it
     });
     for(const ev of events){
@@ -1689,18 +2016,26 @@ function computeAutoZmanim(){
 
 function computeAutoYahrzeitHistory(){
   try{
-    const hd = new HDate(new Date());
+    const now = new Date();
+    const hd = new HDate(now);
     const leap = HDate.isLeapYear(hd.getFullYear());
     const curMonth = hd.getMonth();
     const curDay = hd.getDate();
     const adarMonthNum = leap ? 13 : 12;
     const monthMatches = (entry)=> entry.adar ? (curMonth === adarMonthNum) : (entry.month === curMonth);
-    const y = YAHRZEIT_DB.find(e => e.day === curDay && monthMatches(e));
+    const y = allYahrzeits().filter(e => e.day === curDay && monthMatches(e));
     const h = HISTORY_DB.find(e => e.day === curDay && monthMatches(e));
-    return {
-      yahrzeit: y ? {name:y.name, blurb:y.blurb} : null,
-      history: h ? h.text : ''
-    };
+    let list = y.length ? y.map(e=>yahrzeitView(e)) : null;
+    if(!list){
+      // Nothing recorded for today: show the next yahrzeit coming up so the card is never blank.
+      for(let i=1; i<=45 && !list; i++){
+        const f = new HDate(new Date(now.getTime() + i*86400000));
+        const fAdar = HDate.isLeapYear(f.getFullYear()) ? 13 : 12;
+        const m = allYahrzeits().filter(e => e.day === f.getDate() && (e.adar ? f.getMonth() === fAdar : e.month === f.getMonth()));
+        if(m.length) list = m.map(e=>yahrzeitView(e, i));
+      }
+    }
+    return {yahrzeit: list, history: h ? h.text : ''};
   }catch(e){
     console.error('auto yahrzeit/history calc failed', e);
     return {yahrzeit:null, history:''};
@@ -2201,6 +2536,16 @@ function reshuffleSpotlightQueue(){
     const j = Math.floor(Math.random() * (i + 1));
     [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
   }
+  // Keep today's yahrzeit cards together, back to back, famous first, instead of
+  // scattered through the shuffle.
+  const yz = shuffledQueue.filter(it => String(it.key).startsWith('yahrzeit:'));
+  if(yz.length > 1){
+    const firstIdx = shuffledQueue.findIndex(it => String(it.key).startsWith('yahrzeit:'));
+    const rest = shuffledQueue.filter(it => !String(it.key).startsWith('yahrzeit:'));
+    const yzOrdered = rotatingItems.filter(it => String(it.key).startsWith('yahrzeit:'));
+    rest.splice(Math.min(firstIdx, rest.length), 0, ...yzOrdered);
+    shuffledQueue = rest;
+  }
   queuePos = 0;
 }
 
@@ -2329,11 +2674,11 @@ function buildSpotlightItems(){
     // Today's halachic day, in order...
     const todayRows = [];
     if(autoZmanim.sunrise) todayRows.push(['Netz (Sunrise)', autoZmanim.sunrise]);
-    if(sofZmanShema) todayRows.push(['Sof Zman Shema', sofZmanShema]);
-    if(autoZmanim.sofZmanTfilla) todayRows.push(['Sof Zman Tefilah', autoZmanim.sofZmanTfilla]);
+    if(sofZmanShema) todayRows.push(['Sof Zman Shema (GRA)', sofZmanShema]);
+    if(autoZmanim.sofZmanTfilla) todayRows.push(['Sof Zman Tefilah (GRA)', autoZmanim.sofZmanTfilla]);
     if(autoZmanim.chatzot) todayRows.push(['Chatzos', autoZmanim.chatzot]);
     if(autoZmanim.shkiah) todayRows.push(['Shkiah (Sunset)', autoZmanim.shkiah]);
-    if(autoZmanim.tzeit) todayRows.push(['Tzeis HaKochavim', autoZmanim.tzeit]);
+    if(autoZmanim.tzeit) todayRows.push(['Tzeis HaKochavim (8.5\u00B0)', autoZmanim.tzeit]);
     // ...then this week's Shabbos-specific times, set off with a small
     // labeled divider naming the actual Parsha so it's never ambiguous
     // which Shabbos "Candle Lighting" below is for.
@@ -2381,12 +2726,6 @@ function buildSpotlightItems(){
       <div class="qText">${escapeHtml(t.q)}</div>
       <div class="aReveal" data-reveal>${escapeHtml(t.a)}</div>`;
     rotating.push({key:'trivia:'+i, eyebrow:'Trivia', title:'Do You Know?', body, isReveal:true, accent:'var(--red)', icon:'?'});
-  });
-
-  (config.riddleBank || []).forEach((r, i)=>{
-    const body = `<div class="qText">${escapeHtml(r.r)}</div>
-      <div class="aReveal" data-reveal>${escapeHtml(r.a)}</div>`;
-    rotating.push({key:'riddle:'+i, eyebrow:'Riddle', title:'Figure It Out', body, isReveal:true, accent:'var(--purple-light)', icon:'\u25C6'});
   });
 
   (config.wordBank || []).forEach((w, i)=>{
@@ -2453,8 +2792,18 @@ function buildSpotlightItems(){
 
   {
     const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
-    const y = manual ? config.yahrzeit : autoYahrzeit;
-    if(y) rotating.push({key:'yahrzeit', eyebrow:'Yahrzeit Today', title: y.name, body: y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : '', accent:'var(--gold-dim)', icon:'\u2727'});
+    let list = manual ? [Object.assign({star:true}, config.yahrzeit)] : (autoYahrzeit || []);
+    if(list.length){
+      const soon = list[0].inDays;
+      // One person per card. Famous ones come first, then the rest; each gets
+      // its own turn in the rotation (max 8 per day so a huge day can't crowd out
+      // the rest of the board).
+      const ordered = list.filter(y=>y.star).concat(list.filter(y=>!y.star)).slice(0, 8);
+      ordered.forEach((y, idx)=>{
+        const body = `<div style="display:flex;gap:22px;align-items:center;">${y.photo ? `<img src="${escapeHtml(y.photo)}" alt="" onerror="this.remove()" style="width:5.5em;height:5.5em;border-radius:50%;object-fit:cover;flex:none;border:3px solid var(--gold);">` : ''}<div>${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : ''}${ordered.length>1 ? `<div style="margin-top:10px;font-size:0.55em;color:var(--muted);letter-spacing:2px;">${idx+1} OF ${ordered.length} TODAY</div>` : ''}</div></div>`;
+        rotating.push({key:'yahrzeit:'+y.name, eyebrow: soon ? 'Yahrzeit \u2014 '+(soon===1 ? 'Tomorrow' : 'In '+soon+' Days') : 'Yahrzeit Today', title: y.name, body, accent:'var(--gold-dim)', icon:'\u2727'});
+      });
+    }
   }
 
   return {pinned, rotating, halacha};
@@ -4158,6 +4507,7 @@ function populateModal(){
   document.getElementById('riddleCount').textContent = `${config.riddleBank.length} riddles in the pool`;
   document.getElementById('wordCount').textContent = `${config.wordBank.length} Hebrew words in the pool`;
   document.getElementById('quoteCount').textContent = `${config.quoteBank.length} quotes in the pool`;
+  document.getElementById('yahrzeitCount').textContent = `${YAHRZEIT_DB.length} built-in yahrzeits + ${(config.yahrzeitBank||[]).length} added by you`;
   document.getElementById('halachaCount').textContent = `${config.halachaBank.length} halachos in the year-round pool`;
   const seasonalCount = (config.halachaSeasonal && config.halachaSeasonal.items) ? config.halachaSeasonal.items.length : 0;
   const seasonalHasRange = config.halachaSeasonal && config.halachaSeasonal.startDate && config.halachaSeasonal.endDate;
@@ -4734,6 +5084,19 @@ function persistModalChanges(){
       if(line.trim()) config.quoteBank.push(line.trim());
     });
     document.getElementById('addQuoteBulk').value = '';
+  }
+  const yzBulk = document.getElementById('addYahrzeitBulk').value.trim();
+  if(yzBulk){
+    config.yahrzeitBank = config.yahrzeitBank || [];
+    yzBulk.split('\n').forEach(line=>{
+      const [md,name,blurb,photo,star] = line.split('|').map(x=>x && x.trim());
+      if(!md || !name) return;
+      const mm = md.match(/^(.+?)\s+(\d{1,2})$/);
+      const month = mm && YAHRZEIT_MONTHS[mm[1].toLowerCase().replace(/[^a-z0-9]/g,'')];
+      if(!month) return;
+      config.yahrzeitBank.push({month, day:Number(mm[2]), name, blurb: blurb||'', photo: photo||'', star: !!(star && /star/i.test(star))});
+    });
+    document.getElementById('addYahrzeitBulk').value = '';
   }
   // These three boxes now show (and are edited in place as) the full
   // current list rather than an append-only staging area, so Save
