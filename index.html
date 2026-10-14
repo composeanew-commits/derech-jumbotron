@@ -88,7 +88,7 @@
   /* Photo mosaic: hero photo + 3 smaller ones, all independently rotating.
      This is the dominant element on screen — the flyer gets its own panel,
      entirely separate from the smaller photo column beside it. */
-  .flyerPanel{flex:2.75;min-width:0;position:relative;display:flex;flex-direction:row;gap:12px;}
+  .flyerPanel{flex:2.75;min-width:0;position:relative;display:block;}
   /* When two flyers are both landscape/horizontal, stacking them on top of
      each other (instead of side by side) makes far better use of the
      central space — a wide landscape image gets to be wide instead of
@@ -100,7 +100,7 @@
      next to it instead holds two landscape flyers stacked on top of each
      other. */
   .flyerStackWrap{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:12px;}
-  .flyerCell{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .45s ease, transform .45s cubic-bezier(.22,.61,.36,1);}
+  .flyerCell{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;border-radius:16px;border:1px solid var(--line);background:var(--panel2);box-shadow:0 0 40px rgba(0,0,0,.25);transition:opacity .45s ease, transform .45s cubic-bezier(.22,.61,.36,1), left .5s ease, top .5s ease, width .5s ease, height .5s ease;}
   /* Outgoing flyer: fades and eases upward out of view. */
   .flyerCell.fadeOut{opacity:0;transform:translateY(-16px);}
   /* Incoming flyer: starts in the mirror-image hidden state (below,
@@ -286,6 +286,9 @@
   .bigCard .translit{font-size:10px;}
   .bigCard .meaning{font-size:11.5px;margin-top:5px;}
   .bigCard .thoughtText{font-size:12.5px;}
+  /* Halacha card must not look like a quote card: no big quotation mark. */
+  .halachaBox::before{display:none;}
+  .bigCard .halachaBox .thoughtText{text-align:left;}
   .bigCard .thoughtSource{font-size:9px;margin-top:6px;}
   .bigCard .zmanimGrid{gap:5px;}
   .bigCard .zmanRow{padding:5px 2px;}
@@ -377,6 +380,8 @@
   @keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
 
   .editBtn{position:fixed;bottom:22px;right:22px;width:52px;height:52px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .2s;}
+  .editBtn{opacity:0;transition:opacity .25s, transform .2s;}
+  .editBtn:hover,.editBtn:focus-visible{opacity:1;}
   .editBtn:hover{transform:rotate(35deg);}
   .modalOverlay{position:fixed;inset:0;background:rgba(6,4,16,.85);z-index:100;display:none;align-items:center;justify-content:center;padding:30px;}
   .modalOverlay.open{display:flex;}
@@ -2518,38 +2523,80 @@ function loadSpotlightState(){
 function saveSpotlightState(){
   try{
     localStorage.setItem(SPOTLIGHT_STATE_KEY, JSON.stringify({
-      order: shuffledQueue.map(it => it.key),
-      pos: queuePos,
       pinnedPos: pinnedQueuePos,
       halachaOrder: halachaQueue.map(it => it.key),
       halachaPos: halachaQueuePos
     }));
-  }catch(e){ /* storage unavailable (private browsing, etc.) — just skip persisting */ }
+  }catch(e){ /* storage unavailable — just skip persisting */ }
 }
 
-// Shuffles a fresh copy of rotatingItems and resets the read pointer. Slots
-// 1 and 2 pull from this shared queue one at a time, so the same item never
-// shows in both at once, and every item gets a turn before anything repeats.
-function reshuffleSpotlightQueue(){
-  shuffledQueue = [...rotatingItems];
-  for(let i = shuffledQueue.length - 1; i > 0; i--){
+// ---- Category-aware rotation for sidebar slots 1 & 2 ----
+// The old approach shuffled ~500 cards together, so the few important ones
+// (shoutouts, yahrzeit, history, standings) almost never came up, and two
+// quote-like cards could land side by side. Now each category keeps its own
+// shuffled bag (every item shows before any repeats), and a "category deck"
+// decides what comes next: important categories get 2 tickets, filler gets
+// 1, and a category already visible in the other slot is skipped.
+const IMPORTANT_CATS = ['shoutouts','yahrzeit','history','standings'];
+let catBags = {};
+let catDecks = {};
+let slotCats = {};
+function catOf(it){
+  const c = String(it.key).split(':')[0];
+  // Quotes and the 48-ways "trait" cards are both wisdom-style: one category.
+  return (c === 'quote' || c === 'ways') ? 'wisdom' : c;
+}
+function shuffleArr(a){
+  a = [...a];
+  for(let i = a.length - 1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffledQueue[i], shuffledQueue[j]] = [shuffledQueue[j], shuffledQueue[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  // Keep today's yahrzeit cards together, back to back, famous first, instead of
-  // scattered through the shuffle.
-  const yz = shuffledQueue.filter(it => String(it.key).startsWith('yahrzeit:'));
-  if(yz.length > 1){
-    const firstIdx = shuffledQueue.findIndex(it => String(it.key).startsWith('yahrzeit:'));
-    const rest = shuffledQueue.filter(it => !String(it.key).startsWith('yahrzeit:'));
-    const yzOrdered = rotatingItems.filter(it => String(it.key).startsWith('yahrzeit:'));
-    rest.splice(Math.min(firstIdx, rest.length), 0, ...yzOrdered);
-    shuffledQueue = rest;
+  return a;
+}
+function rebuildCatBags(){
+  const groups = {};
+  rotatingItems.forEach(it => { (groups[catOf(it)] = groups[catOf(it)] || []).push(it); });
+  const next = {};
+  Object.keys(groups).forEach(c => {
+    const items = groups[c];
+    const old = catBags[c];
+    if(old){
+      const byKey = {}; items.forEach(i => { byKey[i.key] = i; });
+      const kept = old.items.map(i => byKey[i.key]).filter(Boolean);
+      const keptKeys = new Set(kept.map(i => i.key));
+      items.filter(i => !keptKeys.has(i.key)).forEach(i => {
+        const at = Math.min(old.pos + Math.floor(Math.random() * (kept.length - old.pos + 1)), kept.length);
+        kept.splice(at, 0, i);
+      });
+      next[c] = {items: kept, pos: Math.min(old.pos, kept.length)};
+    } else {
+      // Yahrzeit keeps its order (famous first); everything else is shuffled.
+      next[c] = {items: c === 'yahrzeit' ? items : shuffleArr(items), pos: 0};
+    }
+  });
+  catBags = next;
+}
+function nextCategory(avoid, slotIdx){
+  const all = Object.keys(catBags).filter(c => catBags[c].items.length);
+  if(!all.length) return null;
+  // Slot 1 is the "important" box (shoutouts, yahrzeit, history, standings);
+  // slot 2 gets the filler (trivia, words, wisdom). Falls back if one is empty.
+  const pref = all.filter(c => (slotIdx === ROTATING_SLOTS[0]) === IMPORTANT_CATS.includes(c));
+  const cats = pref.length ? pref : all;
+  const usable = cats.filter(c => !avoid.includes(c));
+  const pool = usable.length ? usable : cats;
+  let deck = catDecks[slotIdx] || [];
+  let idx = deck.findIndex(c => pool.includes(c));
+  if(idx < 0){
+    deck = shuffleArr(cats.flatMap(c => IMPORTANT_CATS.includes(c) ? [c, c] : [c]));
+    idx = deck.findIndex(c => pool.includes(c));
   }
-  queuePos = 0;
+  catDecks[slotIdx] = deck;
+  return deck.splice(idx, 1)[0];
 }
 
-// Same shuffle-bag approach as reshuffleSpotlightQueue above, just for the
+// Same shuffle-bag approach as the spotlight bags above, just for the
 // halacha square's own independent queue.
 function reshuffleHalachaQueue(){
   halachaQueue = [...halachaItems];
@@ -2582,28 +2629,7 @@ function refreshSpotlightPools(){
   rotatingItems = built.rotating;
   halachaItems = built.halacha;
 
-  const byKey = {};
-  rotatingItems.forEach(it => { byKey[it.key] = it; });
-  const rotatingKeys = rotatingItems.map(it => it.key);
-
-  // Drop queue entries for keys that no longer exist, refreshing the rest
-  // in place so their content (e.g. an edited quote's text) stays current.
-  const kept = shuffledQueue
-    .map(it => byKey[it.key])
-    .filter(Boolean);
-  const keptKeys = new Set(kept.map(it => it.key));
-  const newOnes = rotatingKeys.filter(k => !keptKeys.has(k)).map(k => byKey[k]);
-  if(newOnes.length){
-    // Slot new items into random positions among what's left still ahead of
-    // queuePos, so they don't all wait until the very end of the cycle to
-    // debut, but also don't just get tacked on right after the current spot.
-    newOnes.forEach(item=>{
-      const insertAt = queuePos + 1 + Math.floor(Math.random() * Math.max(1, kept.length - queuePos));
-      kept.splice(Math.min(insertAt, kept.length), 0, item);
-    });
-  }
-  shuffledQueue = kept;
-  queuePos = Math.min(queuePos, shuffledQueue.length);
+  rebuildCatBags();
 
   // Same reconciliation, in parallel, for the halacha square's own queue.
   const byKeyH = {};
@@ -2643,11 +2669,21 @@ function refreshSpotlightPools(){
   }
 }
 
-function nextSpotlightQueueItem(){
+function nextSpotlightQueueItem(slotIdx){
   if(!rotatingItems.length) return null;
-  if(queuePos >= shuffledQueue.length) reshuffleSpotlightQueue();
-  const item = shuffledQueue[queuePos++];
-  saveSpotlightState();
+  const avoid = ROTATING_SLOTS.filter(x => x !== slotIdx).map(x => slotCats[x]).filter(Boolean);
+  const cat = nextCategory(avoid, slotIdx);
+  if(!cat) return null;
+  const bag = catBags[cat];
+  if(bag.pos >= bag.items.length){
+    // Reshuffle, but never let the card just shown lead the new round.
+    const last = bag.items[bag.items.length - 1];
+    bag.items = cat === 'yahrzeit' ? bag.items : shuffleArr(bag.items);
+    if(bag.items.length > 1 && bag.items[0] === last) bag.items.push(bag.items.shift());
+    bag.pos = 0;
+  }
+  const item = bag.items[bag.pos++];
+  slotCats[slotIdx] = cat;
   return item;
 }
 
@@ -2777,7 +2813,7 @@ function buildSpotlightItems(){
     const eyebrow = manualActive ? 'Seasonal Halacha' : (calendarSeason ? calendarSeason.label : 'Halacha');
     activeHalachos.forEach((h, i)=>{
       const parts = h.split(/\s*\((.*?)\)\s*$/);
-      const body = `<div class="thoughtBox">
+      const body = `<div class="thoughtBox halachaBox">
         <div class="thoughtText">${escapeHtml(parts[0])}</div>
         ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
       </div>`;
@@ -2860,7 +2896,7 @@ function advancePinnedSlot(){
 }
 
 function advanceSpotlightSlot(slotIdx){
-  paintSpotlightSlot(slotIdx, nextSpotlightQueueItem());
+  paintSpotlightSlot(slotIdx, nextSpotlightQueueItem(slotIdx));
   clearTimeout(slotTimers[slotIdx]);
   slotTimers[slotIdx] = setTimeout(()=>advanceSpotlightSlot(slotIdx), SPOTLIGHT_DURATION);
 }
@@ -2886,18 +2922,8 @@ function startSpotlightRotation(){
   // is still around. If content was added/removed since then, the saved
   // order no longer lines up, so fall back to a fresh shuffle.
   const saved = loadSpotlightState();
-  const rotatingKeys = rotatingItems.map(it => it.key);
-  const savedOrder = saved && Array.isArray(saved.order) ? saved.order : null;
-  const sameSet = !!savedOrder && savedOrder.length === rotatingKeys.length &&
-    rotatingKeys.every(k => savedOrder.includes(k));
-  if(sameSet){
-    const byKey = {};
-    rotatingItems.forEach(it => { byKey[it.key] = it; });
-    shuffledQueue = savedOrder.map(k => byKey[k]);
-    queuePos = Math.min(Math.max(saved.pos || 0, 0), shuffledQueue.length);
-  } else {
-    reshuffleSpotlightQueue();
-  }
+  catBags = {}; catDecks = {}; slotCats = {};
+  rebuildCatBags();
   pinnedQueuePos = (saved && Number.isFinite(saved.pinnedPos)) ? saved.pinnedPos : 0;
 
   const halachaKeys = halachaItems.map(it => it.key);
@@ -2956,7 +2982,7 @@ function startSpotlightRotation(){
     if(!card) return;
     if(i < activeRotatingSlots){
       card.style.display = '';
-      paintSpotlightSlot(s, nextSpotlightQueueItem());
+      paintSpotlightSlot(s, nextSpotlightQueueItem(s));
       if(rotatingItems.length > 1){
         slotTimers[s] = setTimeout(()=>advanceSpotlightSlot(s), SPOTLIGHT_DURATION + i * 2000);
       }
@@ -3165,7 +3191,7 @@ async function initFlyerPdfCell(cell, item, myGen){
       canvas.height = viewport.height;
       await page.render({canvasContext: ctx, viewport}).promise;
       if(stale()) return;
-      cacheFlyerOrientation(item.url, viewport.width >= viewport.height);
+      setFlyerAspect(item.url, viewport.width, viewport.height);
       updateFlyerPanelLayout();
       if(indicator){
         indicator.style.display = numPages > 1 ? '' : 'none';
@@ -3207,7 +3233,7 @@ function getFlyerOrientation(url){
 }
 function cacheFlyerImgOrientation(imgEl){
   if(!imgEl || !imgEl.naturalWidth || !imgEl.naturalHeight) return;
-  cacheFlyerOrientation(imgEl.getAttribute('src'), imgEl.naturalWidth >= imgEl.naturalHeight);
+  setFlyerAspect(imgEl.getAttribute('src'), imgEl.naturalWidth, imgEl.naturalHeight);
 }
 // This script is type="module", so top-level functions aren't on `window`
 // by default — but the flyer <img> tags call these via inline "onload=..."
@@ -3229,27 +3255,95 @@ window.handleVideoError = handleVideoError;
 // far worse than the same flyer given the panel's full width. Only applies
 // to the plain 2-cell layout; the 3-cell layout already has a fixed
 // arrangement built for exactly this situation, so it's left alone here.
+// ---- Flyer layout: show every flyer at once (up to MAX_FLYER_CELLS) in the
+// arrangement that wastes the least space, based on each flyer's real
+// aspect ratio. Tries every way of splitting the flyers into side-by-side /
+// stacked groups and keeps the one whose overall shape best matches the panel.
+const MAX_FLYER_CELLS = 4;
+const FLYER_GAP = 12;
+let flyerAspectCache = {};      // url -> width/height
+let flyerCurrentPicks = [];
+function setFlyerAspect(url, w, h){ if(url && w > 0 && h > 0) flyerAspectCache[url] = w / h; }
+function getFlyerAspect(f){ return flyerAspectCache[f.url] || (f.type === 'pdf' ? 0.77 : 1.3); }
+
+function preloadFlyerAspects(picks){
+  const todo = picks.filter(f => f.type !== 'pdf' && !flyerAspectCache[f.url]);
+  if(!todo.length) return Promise.resolve();
+  return Promise.race([
+    Promise.all(todo.map(f => new Promise(res => {
+      const im = new Image();
+      im.onload = ()=>{ setFlyerAspect(f.url, im.naturalWidth, im.naturalHeight); res(); };
+      im.onerror = ()=> res();
+      im.src = f.url;
+    }))),
+    new Promise(res => setTimeout(res, 2500))
+  ]);
+}
+
+function bestFlyerLayout(ars, P){
+  const n = ars.length;
+  const cand = new Array(1 << n);
+  for(let m = 1; m < (1 << n); m++){
+    const idxs = [];
+    for(let i = 0; i < n; i++) if(m & (1 << i)) idxs.push(i);
+    if(idxs.length === 1){ cand[m] = [{ar: ars[idxs[0]], node: {leaf: idxs[0]}}]; continue; }
+    const seen = new Set(); const list = [];
+    const low = m & -m;
+    for(let sub = (m - 1) & m; sub > 0; sub = (sub - 1) & m){
+      if(!(sub & low)) continue;
+      const other = m ^ sub;
+      for(const a of cand[sub]) for(const b of cand[other]){
+        [['row', a.ar + b.ar], ['col', 1 / (1 / a.ar + 1 / b.ar)]].forEach(([t, ar]) => {
+          const k = t + ar.toFixed(3);
+          if(seen.has(k)) return;
+          seen.add(k);
+          list.push({ar, node: {t, a, b}});
+        });
+      }
+    }
+    cand[m] = list;
+  }
+  let best = null, bestScore = -1;
+  cand[(1 << n) - 1].forEach(c => {
+    const score = Math.min(c.ar / P, P / c.ar);
+    if(score > bestScore + 1e-9){ bestScore = score; best = c; }
+  });
+  return best;
+}
+
+function layoutFlyerNode(node, x, y, w, h, out){
+  if(node.leaf !== undefined){ out[node.leaf] = {x, y, w, h}; return; }
+  const a = node.a, b = node.b;
+  if(node.t === 'row'){
+    const wa = (w - FLYER_GAP) * a.ar / (a.ar + b.ar);
+    layoutFlyerNode(a.node, x, y, wa, h, out);
+    layoutFlyerNode(b.node, x + wa + FLYER_GAP, y, w - wa - FLYER_GAP, h, out);
+  } else {
+    const ia = 1 / a.ar, ib = 1 / b.ar;
+    const ha = (h - FLYER_GAP) * ia / (ia + ib);
+    layoutFlyerNode(a.node, x, y, w, ha, out);
+    layoutFlyerNode(b.node, x, y + ha + FLYER_GAP, w, h - ha - FLYER_GAP, out);
+  }
+}
+
 function updateFlyerPanelLayout(){
   const panel = document.getElementById('flyerPanel');
-  if(!panel) return;
-  const cell0 = document.getElementById('flyerCell0');
-  const cell1 = document.getElementById('flyerCell1');
-  const cell2 = document.getElementById('flyerCell2');
-  if(cell2 || !cell1){
-    panel.classList.remove('stacked');
-    return;
-  }
-  const img0 = cell0 && cell0.querySelector('img, canvas.flyerPdfCanvas');
-  const img1 = cell1 && cell1.querySelector('img, canvas.flyerPdfCanvas');
-  const isLoadedLandscape = (el)=>{
-    if(!el || el.style.display === 'none') return false;
-    const w = el.tagName === 'CANVAS' ? el.width : el.naturalWidth;
-    const h = el.tagName === 'CANVAS' ? el.height : el.naturalHeight;
-    return w > 0 && h > 0 && w >= h;
-  };
-  panel.classList.toggle('stacked', isLoadedLandscape(img0) && isLoadedLandscape(img1));
+  if(!panel || !flyerCurrentPicks.length) return;
+  const W = panel.clientWidth, H = panel.clientHeight;
+  if(!W || !H) return;
+  const lay = bestFlyerLayout(flyerCurrentPicks.map(getFlyerAspect), W / H);
+  if(!lay) return;
+  const rects = [];
+  layoutFlyerNode(lay.node, 0, 0, W, H, rects);
+  rects.forEach((r, i) => {
+    const c = document.getElementById('flyerCell' + i);
+    if(!c || !r) return;
+    c.style.left = r.x + 'px'; c.style.top = r.y + 'px';
+    c.style.width = r.w + 'px'; c.style.height = r.h + 'px';
+  });
 }
 window.updateFlyerPanelLayout = updateFlyerPanelLayout;
+window.addEventListener('resize', ()=> updateFlyerPanelLayout());
 
 // Weighted-picks up to `count` distinct flyers from `pool`, preferring ones
 // not in `avoidUrls` (so a rotation doesn't immediately repeat what was just
@@ -3267,88 +3361,29 @@ function pickDistinctFlyers(pool, count, avoidUrls){
   return picks;
 }
 
-// Decides how many flyer cells to show this cycle and which flyers fill
-// them.
-//  - 1 or 2 active flyers: everything active shows, always, and none of it
-//    rotates — with nothing else to rotate to, nothing should move.
-//  - 3+ active flyers: rotates through them as before. If the flyer picked
-//    to feature is known (from a previous load) to be portrait, and there
-//    are at least two others to pair with it, it gets the 3-up layout: full
-//    height on one side, with two more flyers stacked in the space a single
-//    landscape flyer would otherwise leave half-empty next to it.
+// Decides which flyers show this cycle.
+//  - Up to MAX_FLYER_CELLS active flyers: ALL of them show at once, laid out
+//    for best fit, and nothing rotates.
+//  - More than that: Need to Know flyers get priority, the rest fill in by
+//    weight (avoiding what was just up), and the panel rotates.
 function planFlyerCells(activeFlyers, avoidUrls){
   if(activeFlyers.length === 0) return {mode:'empty', picks:[], rotates:false};
-
-  // A Need to Know flyer takes the lead in the panel and is never squeezed
-  // out of the spotlight by rotation — but as of the fix below, a single
-  // active one shares its panel with a regular flyer rather than blocking
-  // it out entirely. Only once 2+ Need to Know flyers are active at the
-  // same time does the panel go fully dedicated to them (there's simply no
-  // room left). Regular flyers not currently sharing the panel can still
-  // pop up in the photo squares too (see buildExtraInfoFlyerPhotoItems).
-  const needToKnow = activeFlyers.filter(f => f.priority === 'high');
-  if(needToKnow.length > 0){
-    // A *single* active Need to Know flyer still leaves room in a
-    // double-up layout, so a regular flyer gets to share the panel with it
-    // instead of vanishing off-screen entirely (it used to only get a
-    // random, unlabeled chance of showing up in a small photo square while
-    // any Need to Know flyer was live — see buildExtraInfoFlyerPhotoItems).
-    // Two or more Need to Know flyers at once already fill the panel on
-    // their own, so that case is left as-is below.
-    if(needToKnow.length === 1){
-      const regulars = activeFlyers.filter(f => f.priority !== 'high');
-      if(regulars.length){
-        const companion = pickDistinctFlyers(regulars, 1, avoidUrls)[0];
-        if(companion) return {mode:'double', picks:[needToKnow[0], companion], rotates:true};
-      }
-      return {mode:'single', picks: needToKnow, rotates:false};
-    }
-    // Show as many Need to Know flyers at once as will fit, the same way
-    // regular flyers double/triple up below — just restricted to the Need
-    // to Know pool, so a second (or third) urgent flyer never has to wait
-    // its turn behind another one. Regular flyers still never mix into this
-    // panel while 2+ Need to Know flyers are active (see
-    // buildExtraInfoFlyerPhotoItems).
-    if(needToKnow.length === 2) return {mode:'double', picks: needToKnow.slice(0,2), rotates:false};
-
-    const main = pickDistinctFlyers(needToKnow, 1, avoidUrls)[0];
-    const others = needToKnow.filter(f => f.url !== main.url);
-    if(getFlyerOrientation(main.url) === 'portrait' && others.length >= 2){
-      const landscapeOthers = others.filter(f => getFlyerOrientation(f.url) === 'landscape');
-      const pool = landscapeOthers.length >= 2 ? landscapeOthers : others;
-      const side = pickDistinctFlyers(pool, 2, avoidUrls);
-      if(side.length === 2) return {mode:'triple', picks:[main, side[0], side[1]], rotates:true};
-    }
-    const second = pickDistinctFlyers(others, 1, avoidUrls)[0];
-    return {mode: second ? 'double' : 'single', picks: second ? [main, second] : [main], rotates:true};
+  if(activeFlyers.length <= MAX_FLYER_CELLS) return {mode:'grid', picks: activeFlyers, rotates:false};
+  const ntk = activeFlyers.filter(f => f.priority === 'high');
+  let picks;
+  if(ntk.length >= MAX_FLYER_CELLS){
+    picks = pickDistinctFlyers(ntk, MAX_FLYER_CELLS, avoidUrls);
+  } else {
+    const rest = activeFlyers.filter(f => f.priority !== 'high');
+    picks = ntk.concat(pickDistinctFlyers(rest, MAX_FLYER_CELLS - ntk.length, avoidUrls));
   }
-
-  if(activeFlyers.length === 1) return {mode:'single', picks: activeFlyers.slice(0,1), rotates:false};
-  if(activeFlyers.length === 2) return {mode:'double', picks: activeFlyers.slice(0,2), rotates:false};
-
-  const main = pickDistinctFlyers(activeFlyers, 1, avoidUrls)[0];
-  const others = activeFlyers.filter(f => f.url !== main.url);
-  if(getFlyerOrientation(main.url) === 'portrait' && others.length >= 2){
-    const landscapeOthers = others.filter(f => getFlyerOrientation(f.url) === 'landscape');
-    const pool = landscapeOthers.length >= 2 ? landscapeOthers : others;
-    const side = pickDistinctFlyers(pool, 2, avoidUrls);
-    if(side.length === 2) return {mode:'triple', picks:[main, side[0], side[1]], rotates:true};
-  }
-  const second = pickDistinctFlyers(others, 1, avoidUrls)[0];
-  return {mode: second ? 'double' : 'single', picks: second ? [main, second] : [main], rotates:true};
+  picks.sort((a, b) => activeFlyers.indexOf(a) - activeFlyers.indexOf(b));
+  return {mode:'grid', picks, rotates:true};
 }
 
-function flyerCellsMarkup(mode){
-  if(mode === 'triple'){
-    return `<div class="flyerCell" id="flyerCell0"></div>
-      <div class="flyerStackWrap">
-        <div class="flyerCell" id="flyerCell1"></div>
-        <div class="flyerCell" id="flyerCell2"></div>
-      </div>`;
-  }
-  if(mode === 'double') return `<div class="flyerCell" id="flyerCell0"></div><div class="flyerCell" id="flyerCell1"></div>`;
-  if(mode === 'single') return `<div class="flyerCell" id="flyerCell0"></div>`;
-  return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+function flyerCellsMarkup(plan){
+  if(plan.mode === 'empty') return `<div class="photoEmptyState">Add an event flyer from the gear icon</div>`;
+  return plan.picks.map((_, i) => `<div class="flyerCell" id="flyerCell${i}"></div>`).join('');
 }
 
 let flyerRotationTimer = null;
@@ -3427,7 +3462,8 @@ function renderFlyerPanel(animate){
     if(myGen !== flyerPanelGeneration) return; // superseded by a newer render — don't clobber it
     flyerPdfGeneration++; // invalidate any still-looping PDF page flip from the previous render
     panel.classList.remove('stacked');
-    panel.innerHTML = flyerCellsMarkup(plan.mode);
+    flyerCurrentPicks = plan.picks;
+    panel.innerHTML = flyerCellsMarkup(plan);
     // Brand-new elements, so there's no prior "faded out" state for the CSS
     // transition to ease away from — without this they'd just pop straight
     // in at full opacity. Marking them .flyerEnter the instant they're
@@ -3457,11 +3493,12 @@ function renderFlyerPanel(animate){
   };
 
   clearTimeout(flyerRotationTimer);
+  const aspectsReady = preloadFlyerAspects(plan.picks);
   if(animate){
     panel.querySelectorAll('.flyerCell').forEach(c=>c.classList.add('fadeOut'));
-    setTimeout(doRender, FLYER_TRANSITION_MS);
+    Promise.all([aspectsReady, new Promise(r => setTimeout(r, FLYER_TRANSITION_MS))]).then(doRender);
   } else {
-    doRender();
+    aspectsReady.then(doRender);
   }
 
   // Only 1-2 active flyers means everything active is already on screen —
@@ -3722,8 +3759,10 @@ let brokenPhotoUrls = new Set();
 // recent-history list) let the same handful of higher-weighted items come
 // up again and again well before the rest of the set ever got a turn, which
 // is what was showing up as "many photos on repeat."
-let photoBags = { old: [], new: [] };
-let photoBagPos = { old: 0, new: 0 };
+let photoBags = { old: [], new: [], all: [] };
+let photoBagPos = { old: 0, new: 0, all: 0 };
+let recentPhotoUrls = [];
+function photoDedupeKey(url){ return String(url||'').split('?')[0].replace(/-\d+x\d+(\.[a-zA-Z0-9]+)$/, '$1'); }
 
 function reshufflePhotoBag(poolKey, pool){
   const bag = [...pool];
@@ -3838,42 +3877,36 @@ const OLD_PHOTOS_CELL_INDEX = 0;
 const EXTRA_INFO_FLYER_CELL_INDEX = PHOTO_CELL_COUNT - 1;
 
 function pickNextForCell(cellIdx){
-  const isOldCell = cellIdx === OLD_PHOTOS_CELL_INDEX;
   const isExtraInfoCell = cellIdx === EXTRA_INFO_FLYER_CELL_INDEX;
-  let poolKey = isOldCell ? 'old' : 'new';
-  let pool = isOldCell ? buildOlderPhotoItems() : buildNewerPhotoItems(false);
-  // Drop anything already proven broken this session (see brokenPhotoUrls)
-  // so a dead link never gets picked again and doesn't quietly shrink the
-  // pool down toward "nothing left" without the rest of this function
-  // noticing — the empty-pool fallback right below still applies on top.
-  pool = pool.filter(p => !brokenPhotoUrls.has(p.url));
-  // If the intended pool for this cell is empty (e.g. no custom photos have
-  // been added yet, or the built-in gallery was cleared), fall back to the
-  // other pool rather than leaving the cell permanently blank.
-  if(!pool.length){
-    poolKey = isOldCell ? 'new' : 'old';
-    pool = isOldCell ? buildNewerPhotoItems(false) : buildOlderPhotoItems();
-    pool = pool.filter(p => !brokenPhotoUrls.has(p.url));
-  }
+  // One combined, de-duplicated pool for every cell (same photo under two
+  // URLs/sizes counts once). Newer photos get extra copies in the bag so they
+  // show more often than the archive, but the recent-history guard below
+  // stops any photo from coming back until most of the pool has been seen.
+  const seen = new Set(); const uniq = [];
+  buildNewerPhotoItems(false).concat(buildOlderPhotoItems()).forEach(p => {
+    const k = photoDedupeKey(p.url);
+    if(!p.url || brokenPhotoUrls.has(p.url) || seen.has(k)) return;
+    seen.add(k); uniq.push(p);
+  });
+  if(!uniq.length) return null;
+  const newCount = uniq.filter(p => p.isCustom).length;
+  const copies = newCount ? Math.max(1, Math.min(3, Math.round((uniq.length - newCount) / (newCount * 2)))) : 1;
+  const pool = [];
+  uniq.forEach(p => { for(let c = 0; c < (p.isCustom ? copies : 1); c++) pool.push(p); });
+
   const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
     .map(k => currentlyShownPhotoUrls[k]);
+  const keep = Math.max(0, Math.min(16, uniq.length - 4));
 
-  // The bottom photo square also occasionally surfaces an Extra Info flyer
-  // while a Need to Know flyer has taken over the main panel. That pool is
-  // transient (tied to whichever flyers happen to be active right now), so
-  // it stays a simple weighted pick on the side rather than living in the
-  // persistent shuffle bag — but it now only wins some of the time instead
-  // of crowding out regular photos in that square entirely.
+  let item = null;
   if(isExtraInfoCell){
     const extras = buildExtraInfoFlyerPhotoItems();
-    if(extras.length && Math.random() < 0.3){
-      const item = pickWeightedPhoto(extras, onScreen);
-      if(item) return item;
-    }
+    if(extras.length && Math.random() < 0.3) item = pickWeightedPhoto(extras, onScreen);
   }
-
-  return nextFromPhotoBag(poolKey, pool, onScreen);
+  if(!item) item = nextFromPhotoBag('all', pool, onScreen.concat(recentPhotoUrls.slice(-keep)));
+  if(item){ recentPhotoUrls.push(item.url); if(recentPhotoUrls.length > 40) recentPhotoUrls.shift(); }
+  return item;
 }
 
 // A video that's stuck (autoplay silently blocked, still buffering, or a
@@ -4068,7 +4101,34 @@ function paintDayBadge(){
 const editOpen = document.getElementById('editOpen');
 const modalOverlay = document.getElementById('modalOverlay');
 document.getElementById('closeModal').onclick = ()=>{ persistModalChanges(); modalOverlay.classList.remove('open'); };
-editOpen.onclick = ()=>{ if(!config) return; populateModal(); modalOverlay.classList.add('open'); };
+const GEAR_PASSWORD = 'derech';   // <-- change this to your own password
+editOpen.onclick = ()=>{
+  if(!config) return;
+  // Remembered for this browser session only, so it re-asks after a reload.
+  if(sessionStorage.getItem('derechGearOk') !== '1'){
+    const pw = prompt('Password to edit the board:');
+    if(pw === null) return;
+    if(pw !== GEAR_PASSWORD){ alert('Wrong password.'); return; }
+    try{ sessionStorage.setItem('derechGearOk','1'); }catch(e){}
+  }
+  populateModal(); modalOverlay.classList.add('open');
+};
+
+// ---- Keep the screen awake ----
+let wakeLockSentinel = null;
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator && document.visibilityState === 'visible'){
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', ()=>{ wakeLockSentinel = null; });
+    }
+  }catch(e){ /* not supported or denied — ignore */ }
+}
+requestWakeLock();
+// The lock is dropped whenever the tab is hidden, so grab it again on return.
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') requestWakeLock(); });
+// Some browsers only allow it after a touch/click — retry on first interaction.
+document.addEventListener('click', ()=>{ if(!wakeLockSentinel) requestWakeLock(); });
 modalOverlay.onclick = (e)=>{ if(e.target === modalOverlay){ persistModalChanges(); modalOverlay.classList.remove('open'); } };
 
 document.querySelectorAll('.tab').forEach(tab=>{
