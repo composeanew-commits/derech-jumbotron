@@ -681,6 +681,10 @@
         <textarea id="addYahrzeitBulk" rows="3" placeholder="Cheshvan 15 | The Chazon Ish | Rav Avraham Yeshaya Karelitz... | https://.../photo.jpg | star"></textarea>
       </div>
       <div class="bankCount" id="yahrzeitCount"></div>
+      <div class="field">
+        <label>Yahrzeit Photo Database (one per line: Name | Photo URL) — shows next to their blurb</label>
+        <textarea id="yahrzeitPhotoDb" rows="5" placeholder="Rambam | https://.../rambam.jpg&#10;The Chofetz Chaim | https://.../chofetz-chaim.jpg"></textarea>
+      </div>
 
       <div style="border-top:1px solid var(--line);margin:20px 0 16px 0;padding-top:16px;">
         <label style="display:block;margin-bottom:8px;">Daily Halacha — year-round pool</label>
@@ -771,11 +775,41 @@ function isImgbbConfigured(){
   return !!(IMGBB_API_KEY && !IMGBB_API_KEY.includes('PASTE_'));
 }
 
+// Big phone photos (5-15MB) are slow to upload and slow/fail to load on the
+// board. Shrink anything over ~1.2MB to max 2000px JPEG before uploading.
+function downscaleImageFile(file){
+  return new Promise(resolve=>{
+    try{
+      if(!file || !/^image\/(jpeg|png|webp)/.test(file.type) || file.size < 1200000) return resolve(file);
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = ()=>{
+        const MAX = 2000, r = Math.min(1, MAX/Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.naturalWidth*r); c.height = Math.round(im.naturalHeight*r);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(b=> resolve(b ? new File([b], (file.name||'photo').replace(/\.\w+$/,'')+'.jpg', {type:'image/jpeg'}) : file), 'image/jpeg', 0.85);
+      };
+      im.onerror = ()=>{ URL.revokeObjectURL(url); resolve(file); };
+      im.src = url;
+    }catch(e){ resolve(file); }
+  });
+}
+
+// Google Drive's lh3 link serves the FULL original unless a size is given,
+// which is why large photos never appeared. Ask for a 1920px version, and
+// fall back to Drive's thumbnail endpoint if that fails.
+function driveIdFromLh3(u){ const m = String(u||'').match(/lh3\.googleusercontent\.com\/d\/([^=/?]+)(=.*)?$/); return m ? m[1] : null; }
+function sizedPhotoUrl(u){ const id = driveIdFromLh3(u); return id ? `https://lh3.googleusercontent.com/d/${id}=w1920` : u; }
+function drivePhotoFallback(u){ const id = driveIdFromLh3(u); return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1600` : ''; }
+
 // Uploads a File object to imgbb and resolves with the hosted image URL, or throws.
 async function uploadImageToImgbb(file){
   if(!isImgbbConfigured()){
     throw new Error("Direct upload isn't set up yet — paste a free imgbb API key near the top of the script (see the comment above IMGBB_API_KEY).");
   }
+  file = await downscaleImageFile(file);
   const formData = new FormData();
   formData.append('image', file);
   const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(IMGBB_API_KEY)}`, {
@@ -1852,8 +1886,119 @@ function allYahrzeits(){
   const extra = (typeof config !== 'undefined' && config && Array.isArray(config.yahrzeitBank)) ? config.yahrzeitBank : [];
   return YAHRZEIT_DB.concat(extra);
 }
+// Photo database: config.yahrzeitPhotoList = [{name, url}], edited in Settings > Photos.
+function yzKey(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+// Auto-gathered photos: exact yahrzeit name -> English Wikipedia article title.
+// The board fetches each article's lead image (Wikimedia, free to hotlink) once
+// and caches it for 30 days. Photos only for people with real/traditional
+// images; anything you add in the Photo Database below overrides these.
+const YAHRZEIT_WIKI = {
+  "The Rambam (Maimonides)":"Maimonides","Rashi":"Rashi","The Vilna Gaon":"Elijah ben Solomon",
+  "The Chofetz Chaim":"Yisrael Meir Kagan","The Baal Shem Tov":"Baal Shem Tov",
+  "The Lubavitcher Rebbe":"Menachem Mendel Schneerson","The Chazon Ish":"Avrohom Yeshaya Karelitz",
+  "Rav Aharon Kotler":"Aharon Kotler","The Ramban (Nachmanides)":"Nachmanides","The Chasam Sofer":"Moses Sofer",
+  "Rav Ovadia Yosef":"Ovadia Yosef","Rav Shlomo Zalman Auerbach":"Shlomo Zalman Auerbach",
+  "The Baal HaTanya (Alter Rebbe)":"Shneur Zalman of Liadi","Rav Yaakov Kamenetsky":"Yaakov Kamenetsky",
+  "The Ksav Sofer":"Avraham Sofer","The Maharam Shick":"Moses Schick","The Tzemach Tzedek":"Menachem Mendel Schneersohn",
+  "The Baba Sali":"Yisrael Abuhatzeira","The Sfas Emes":"Yehudah Aryeh Leib Alter",
+  "The Previous Lubavitcher Rebbe (Rayatz)":"Yosef Yitzchak Schneersohn","The Maharsham":"Shalom Mordechai Schwadron",
+  "The Alter of Slabodka":"Nosson Tzvi Finkel","The Mittler Rebbe":"Dovber Schneuri","Rav Isser Zalman Meltzer":"Isser Zalman Meltzer",
+  "The Maharshal":"Solomon Luria","The Maggid of Mezritch":"Dov Ber of Mezeritch","The Ben Ish Chai":"Yosef Hayyim",
+  "The Maharal of Prague":"Judah Loew ben Bezalel","The Arizal":"Isaac Luria","Rav Chaim Ozer Grodzinski":"Chaim Ozer Grodzinski",
+  "The Chozeh of Lublin":"Yaakov Yitzchak of Lublin","Rav Chaim Soloveitchik of Brisk":"Chaim Soloveitchik",
+  "The Belzer Rebbe, Rav Aharon Rokeach":"Aharon Rokeach","The Steipler Gaon":"Yaakov Yisrael Kanievsky",
+  "The Satmar Rebbe, Rav Yoel Teitelbaum":"Joel Teitelbaum","The Netziv":"Naftali Zvi Yehuda Berlin",
+  "The Maharsha":"Samuel Eliezer Edels","The Rif":"Isaac Alfasi","The Maharam of Rothenburg":"Meir of Rothenburg",
+  "The Shelah HaKadosh":"Isaiah Horowitz","Rav Yosef Karo":"Joseph Karo","The Divrei Chaim of Sanz":"Chaim Halberstam",
+  "Rav Shmuel of Sochatchov (Shem MiShmuel)":"Shmuel Bornstein"
+};
+const YZ_WIKI_CACHE_KEY = 'derechYzWikiPhotos';
+function yzWikiCache(){ try{ return JSON.parse(localStorage.getItem(YZ_WIKI_CACHE_KEY)||'{}'); }catch(e){ return {}; } }
+async function prefetchYahrzeitWikiPhotos(onNew){
+  const cache = yzWikiCache(), now = Date.now(), MAX_AGE = 30*864e5;
+  const todo = Object.values(YAHRZEIT_WIKI).filter((t,i,a)=> a.indexOf(t)===i && !(cache[t] && now - cache[t].t < MAX_AGE));
+  if(!todo.length) return;
+  let got = false;
+  for(const t of todo){
+    try{
+      const r = await fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(t.replace(/ /g,'_')));
+      const j = r.ok ? await r.json() : null;
+      const u = j && j.type === 'standard' && j.thumbnail && j.thumbnail.source;
+      cache[t] = {u: u || '', t: now}; if(u) got = true;
+    }catch(e){ /* offline: try again next load */ }
+  }
+  try{ localStorage.setItem(YZ_WIKI_CACHE_KEY, JSON.stringify(cache)); }catch(e){}
+  if(got && onNew) onNew();
+}
+function yzWikiPhoto(name){
+  const cache = yzWikiCache();
+  const t = YAHRZEIT_WIKI[name];
+  const c = t ? cache[t] : cache['n2:'+name];
+  return (c && c.u) || '';
+}
+// For everyone NOT in the table above: search Wikipedia for the name, and only
+// accept a result whose article title contains every word of the name, has a
+// lead image, and reads as a rabbi/Jewish figure. Anything doubtful is skipped
+// (no photo beats the wrong photo). Only looks up what's on the board now
+// (today's/upcoming yahrzeits); results, including misses, cached 30 days.
+const YZ_SYN = {yaakov:['jacob','yaacov'],yosef:['joseph'],moshe:['moses'],shlomo:['solomon'],avraham:['abraham'],yitzchak:['isaac'],yisrael:['israel'],shmuel:['samuel'],eliyahu:['elijah'],binyamin:['benjamin'],dovid:['david'],shimon:['simeon','simon'],chaim:['hayyim','haim','chayim'],akiva:['akiba'],tzvi:['zvi','hirsch'],zalman:['zalmen'],aharon:['aaron'],menachem:['menahem'],yehuda:['judah'],yehudah:['judah'],nachman:['nahman'],elazar:['eleazar'],mordechai:['mordecai'],ovadia:['obadiah'],yechezkel:['ezekiel'],yehoshua:['joshua'],gedaliah:['gedalia'],refael:['raphael'],tzadok:['zadok'],naftali:['naphtali'],hillel:[],leib:['lieb','leyb']};
+function yzTitleHasWords(title, words){
+  const t = String(title||'').toLowerCase();
+  return words.every(w=> t.includes(w) || (YZ_SYN[w]||[]).some(x=> t.includes(x)));
+}
+const YZ_JEWISH_RE = /rabbi|rebbe|talmud|halach|rosh yeshiva|kabbal|hasidic|torah|jewish/i;
+const YZ_BAD_FILE_RE = /grave|tomb|matzev|cemetery|ohel|signature|letter|sefer|cover|title page|manuscript|stamp|map|book|synagogue|yeshiva building/i;
+async function lazyYahrzeitPhotos(list, onNew){
+  if(!Array.isArray(list)) return;
+  const cache = yzWikiCache(), now = Date.now(), MAX_AGE = 14*864e5;
+  const STOP = /^(the|rav|rabbi|rabbeinu|reb|harav|hagaon|hakadosh|of|and|ben|bar|rebbe)$/;
+  let got = false, changed = false;
+  const j = async u => (await fetch(u)).json();
+  for(const y of list){
+    if(!y || !y.name || y.photo || YAHRZEIT_WIKI[y.name]) continue;
+    const key = 'n2:'+y.name;
+    if(cache[key] && now - cache[key].t < MAX_AGE) continue;
+    const clean = y.name.replace(/\(.*?\)/g,' ').replace(/,.*$/,' ').trim();
+    const words = clean.toLowerCase().split(/[^a-z0-9]+/).filter(w=> w.length>2 && !STOP.test(w));
+    let url = '';
+    if(words.length){
+      try{
+        // 1) Wikipedia article lead image (two query styles)
+        for(const q of [clean+' rabbi', clean]){
+          if(url) break;
+          const d = await j('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=4&gsrsearch='+encodeURIComponent(q)+'&prop=pageimages|extracts&piprop=thumbnail&pithumbsize=400&exintro=1&explaintext=1&exsentences=2');
+          const pages = Object.values((d.query && d.query.pages) || {}).sort((a,b)=> a.index - b.index);
+          for(const pg of pages){
+            if(pg.thumbnail && pg.thumbnail.source && yzTitleHasWords(pg.title, words) && YZ_JEWISH_RE.test(pg.extract||'')){ url = pg.thumbnail.source; break; }
+          }
+        }
+        // 2) Wikimedia Commons file whose name contains every word of the name
+        if(!url){
+          const d = await j('https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch='+encodeURIComponent(clean)+'&prop=imageinfo&iiprop=url&iiurlwidth=400');
+          const pages = Object.values((d.query && d.query.pages) || {}).sort((a,b)=> a.index - b.index);
+          for(const pg of pages){
+            const ii = pg.imageinfo && pg.imageinfo[0];
+            if(ii && ii.thumburl && /\.(jpe?g|png)$/i.test(pg.title) && !YZ_BAD_FILE_RE.test(pg.title) && yzTitleHasWords(pg.title, words)){ url = ii.thumburl; break; }
+          }
+        }
+      }catch(e){ continue; /* offline: retry next time */ }
+    }
+    cache[key] = {u:url, t:now}; changed = true; if(url) got = true;
+  }
+  if(changed){ try{ localStorage.setItem(YZ_WIKI_CACHE_KEY, JSON.stringify(cache)); }catch(e){} }
+  if(got && onNew) onNew();
+}
+function yahrzeitPhotoFor(name){
+  const k = yzKey(name); if(!k) return '';
+  const raw = (typeof config !== 'undefined' && config) ? config.yahrzeitPhotoList : null;
+  const list = Array.isArray(raw) ? raw : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+  const all = list.filter(x=>x && x.url).map(x=>({k:yzKey(x.name), url:x.url}))
+    .concat(Object.keys(YAHRZEIT_PHOTOS).map(n=>({k:yzKey(n), url:YAHRZEIT_PHOTOS[n]})));
+  const hit = all.find(x=>x.k===k) || all.find(x=>Math.min(x.k.length,k.length)>=8 && (x.k.includes(k)||k.includes(x.k)));
+  return hit ? hit.url : yzWikiPhoto(name);
+}
 function yahrzeitView(e, inDays){
-  return {name:e.name, blurb:e.blurb||'', photo:e.photo || YAHRZEIT_PHOTOS[e.name] || '', star: !!e.star || YAHRZEIT_STAR_RE.test(e.name || ''), inDays};
+  return {name:e.name, blurb:e.blurb||'', photo:e.photo || yahrzeitPhotoFor(e.name) || '', star: !!e.star || YAHRZEIT_STAR_RE.test(e.name || ''), inDays};
 }
 
 const HISTORY_DB = [
@@ -2828,7 +2973,7 @@ function buildSpotlightItems(){
 
   {
     const manual = config.yahrzeit && config.yahrzeit.name && config.yahrzeit.name.trim();
-    let list = manual ? [Object.assign({star:true}, config.yahrzeit)] : (autoYahrzeit || []);
+    let list = manual ? [Object.assign({star:true, photo: yahrzeitPhotoFor(config.yahrzeit.name)}, config.yahrzeit)] : (autoYahrzeit || []);
     if(list.length){
       const soon = list[0].inDays;
       // One person per card. Famous ones come first, then the rest; each gets
@@ -2836,7 +2981,7 @@ function buildSpotlightItems(){
       // the rest of the board).
       const ordered = list.filter(y=>y.star).concat(list.filter(y=>!y.star)).slice(0, 8);
       ordered.forEach((y, idx)=>{
-        const body = `<div style="display:flex;gap:22px;align-items:center;">${y.photo ? `<img src="${escapeHtml(y.photo)}" alt="" onerror="this.remove()" style="width:5.5em;height:5.5em;border-radius:50%;object-fit:cover;flex:none;border:3px solid var(--gold);">` : ''}<div>${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : ''}${ordered.length>1 ? `<div style="margin-top:10px;font-size:0.55em;color:var(--muted);letter-spacing:2px;">${idx+1} OF ${ordered.length} TODAY</div>` : ''}</div></div>`;
+        const body = `<div style="display:flex;gap:22px;align-items:center;">${y.photo ? `<img src="${escapeHtml(y.photo)}" alt="" onerror="this.remove()" style="width:5.5em;height:5.5em;border-radius:50%;object-fit:cover;object-position:center 20%;flex:none;border:3px solid var(--gold);">` : ''}<div>${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : ''}${ordered.length>1 ? `<div style="margin-top:10px;font-size:0.55em;color:var(--muted);letter-spacing:2px;">${idx+1} OF ${ordered.length} TODAY</div>` : ''}</div></div>`;
         rotating.push({key:'yahrzeit:'+y.name, eyebrow: soon ? 'Yahrzeit \u2014 '+(soon===1 ? 'Tomorrow' : 'In '+soon+' Days') : 'Yahrzeit Today', title: y.name, body, accent:'var(--gold-dim)', icon:'\u2727'});
       });
     }
@@ -3840,10 +3985,10 @@ function renderPhotoCellMarkup(item, cellIdx){
       </video>
       ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
   }
-  const src = item.isCustom ? item.url : fullResUrl(item.url);
+  const src = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
   const kb = 'kb' + (1 + Math.floor(Math.random()*4));
   return `
-    <img class="${kb}" src="${escapeAttr(src)}" data-fallback="${escapeAttr(item.url)}" alt="board photo" onerror="handlePhotoImgError(this, ${cellIdx})">
+    <img class="${kb}" src="${escapeAttr(src)}" data-orig="${escapeAttr(item.url)}" data-fallback="${escapeAttr(drivePhotoFallback(item.url) || item.url)}" alt="board photo" onerror="handlePhotoImgError(this, ${cellIdx})">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
@@ -3860,7 +4005,7 @@ function handlePhotoImgError(img, cellIdx){
     img.src = fallback;
     return;
   }
-  brokenPhotoUrls.add(fallback || img.src);
+  brokenPhotoUrls.add(img.dataset.orig || fallback || img.src);
   advancePhotoCell(cellIdx);
 }
 
@@ -4106,13 +4251,34 @@ editOpen.onclick = ()=>{
   if(!config) return;
   // Remembered for this browser session only, so it re-asks after a reload.
   if(sessionStorage.getItem('derechGearOk') !== '1'){
-    const pw = prompt('Password to edit the board:');
-    if(pw === null) return;
-    if(pw !== GEAR_PASSWORD){ alert('Wrong password.'); return; }
-    try{ sessionStorage.setItem('derechGearOk','1'); }catch(e){}
+    askGearPassword();
+    return;
   }
-  populateModal(); modalOverlay.classList.add('open');
+  openEditModal();
 };
+function openEditModal(){
+  populateModal(); modalOverlay.classList.add('open');
+  const f = document.querySelector('.tabPanel.active input:not([type=file]):not([type=checkbox]):not([type=radio]):not([type=time]):not([type=date]), .tabPanel.active textarea');
+  if(f) f.focus();
+}
+function askGearPassword(){
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(6,4,16,.8);display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(320px,90vw);"><div style="font-family:Poppins,sans-serif;font-weight:800;color:var(--purple-light);margin-bottom:12px;">Password to edit the board</div><input type="password" autocomplete="off" style="width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:10px 12px;font-size:16px;"><div class="pwErr" style="color:var(--red);font-size:12px;min-height:16px;margin-top:6px;"></div></div>';
+  document.body.appendChild(ov);
+  const inp = ov.querySelector('input');
+  inp.focus();
+  const close = ()=> ov.remove();
+  ov.onclick = e=>{ if(e.target === ov) close(); };
+  inp.onkeydown = e=>{
+    if(e.key === 'Escape') return close();
+    if(e.key !== 'Enter') return;
+    if(inp.value === GEAR_PASSWORD){
+      try{ sessionStorage.setItem('derechGearOk','1'); }catch(_){}
+      close(); openEditModal();
+    } else { ov.querySelector('.pwErr').textContent = 'Wrong password.'; inp.value = ''; inp.focus(); }
+  };
+}
 
 // ---- Keep the screen awake ----
 let wakeLockSentinel = null;
@@ -4567,6 +4733,8 @@ function populateModal(){
   document.getElementById('riddleCount').textContent = `${config.riddleBank.length} riddles in the pool`;
   document.getElementById('wordCount').textContent = `${config.wordBank.length} Hebrew words in the pool`;
   document.getElementById('quoteCount').textContent = `${config.quoteBank.length} quotes in the pool`;
+  { const raw = config.yahrzeitPhotoList, l = Array.isArray(raw) ? raw : (raw ? Object.values(raw) : []);
+    document.getElementById('yahrzeitPhotoDb').value = l.filter(x=>x&&x.name).map(x=>x.name+' | '+(x.url||'')).join('\n'); }
   document.getElementById('yahrzeitCount').textContent = `${YAHRZEIT_DB.length} built-in yahrzeits + ${(config.yahrzeitBank||[]).length} added by you`;
   document.getElementById('halachaCount').textContent = `${config.halachaBank.length} halachos in the year-round pool`;
   const seasonalCount = (config.halachaSeasonal && config.halachaSeasonal.items) ? config.halachaSeasonal.items.length : 0;
@@ -5145,6 +5313,11 @@ function persistModalChanges(){
     });
     document.getElementById('addQuoteBulk').value = '';
   }
+  config.yahrzeitPhotoList = document.getElementById('yahrzeitPhotoDb').value.split('\n').map(l=>{
+    const i = l.indexOf('|'); if(i < 0) return null;
+    const name = l.slice(0,i).trim(), url = normalizeImageUrl(l.slice(i+1).trim());
+    return name && url ? {name, url} : null;
+  }).filter(Boolean);
   const yzBulk = document.getElementById('addYahrzeitBulk').value.trim();
   if(yzBulk){
     config.yahrzeitBank = config.yahrzeitBank || [];
@@ -5207,6 +5380,7 @@ function refreshDailyState(force){
   const auto = computeAutoYahrzeitHistory();
   autoHistory = auto.history;
   autoYahrzeit = auto.yahrzeit;
+  lazyYahrzeitPhotos(auto.yahrzeit, ()=> refreshDailyState(true));
   paintDayBadge();
   if(config) paintTicker();
 }
@@ -5214,6 +5388,7 @@ function refreshDailyState(force){
 async function startBoard(){
   await loadConfig();
   refreshDailyState(true);
+  prefetchYahrzeitWikiPhotos(()=> refreshDailyState(true));
   startDriveFolderPolling();
   startRotation();
   // Belt-and-suspenders against the board running for days without a
