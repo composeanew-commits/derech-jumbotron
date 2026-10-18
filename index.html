@@ -254,6 +254,18 @@
      The old sequential fade-out-then-fade-in approach passed through a
      moment of bare background between them, which read as a flash/flicker
      rather than a smooth transition — this removes that gap entirely. */
+
+  /* Yahrzeit card: photo + name stay pinned at the top; only the blurb scrolls
+     (automatically, since nobody can touch a wall display). */
+  .yzHead{display:flex;gap:12px;align-items:center;flex-shrink:0;margin-bottom:8px;position:relative;z-index:1;}
+  .yzHead .widgetTitle{margin:0;font-size:15px;flex:1;min-width:0;}
+  .yzPhoto,.yzInitials{width:72px;height:72px;border-radius:50%;flex:none;border:2px solid var(--gold);box-shadow:0 0 14px rgba(240,184,77,.25);}
+  .yzPhoto{object-fit:cover;object-position:center 18%;background:#0E0C1B;}
+  .yzInitials{display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:800;font-size:24px;color:var(--gold);background:radial-gradient(circle at 30% 25%, #3a3270, #1c1840);}
+  .yzScroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;position:relative;z-index:1;
+    -webkit-mask-image:linear-gradient(#000 calc(100% - 18px), transparent);mask-image:linear-gradient(#000 calc(100% - 18px), transparent);}
+  .yzScroll::-webkit-scrollbar{display:none;}
+  .yzScroll .yzCount{margin-top:8px;font-size:9px;color:var(--muted);letter-spacing:2px;font-family:'JetBrains Mono',monospace;}
   .spotlightLayer{position:absolute;inset:0;padding:14px 16px 12px 14px;display:flex;flex-direction:column;opacity:0;transition:opacity .6s ease;pointer-events:none;}
   .spotlightLayer.active{opacity:1;pointer-events:auto;z-index:1;}
 
@@ -273,15 +285,6 @@
 
   /* Compact sizing for the stacked sidebar cards */
   .bigCard .qText{font-size:12.5px;line-height:1.35;}
-  /* Yahrzeit cards: title + photo stay pinned on top, blurb auto-scrolls beneath */
-  .yzCard{display:flex;flex-direction:column;height:100%;min-height:0;}
-  .yzHead{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:6px;}
-  .yzHead img{height:92px;width:92px;border-radius:50%;object-fit:cover;object-position:center 20%;border:3px solid var(--gold);background:#0E0C1B;}
-  .yzCount{font-size:9px;color:var(--muted);letter-spacing:2px;}
-  .yzScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
-  .yzInner.yzGo{animation:yzScroll var(--yzDur,10000ms) ease-in-out forwards;}
-  @keyframes yzScroll{0%,18%{transform:translateY(0);}88%,100%{transform:translateY(var(--yzShift,0px));}}
-
   .bigCard .catTag{font-size:8px;padding:2px 7px;margin-bottom:6px;}
   .bigCard .aReveal{font-size:12px;margin-top:8px;padding:8px 10px;gap:7px;border-radius:8px;}
   .bigCard .aReveal::before{width:15px;height:15px;font-size:9px;}
@@ -1606,7 +1609,7 @@ const YAHRZEIT_DB = [
   {month:11, day:1, name:"Shaul HaMelech", blurb:"The first king of Israel; his yahrzeit is marked on 1 Shevat."},
   {month:11, day:1, name:"The Maharam Shick", blurb:"Rav Moshe Schick, the Ozhrover Rebbe and a leading disciple of the Chasam Sofer."},
   {month:11, day:2, name:"Rav Meshulam Zusha of Hanipol", blurb:"The Chassidic master Reb Zusha, known for his humility and simple faith."},
-  {month:1, day:13, name:"The Tzemach Tzedek", blurb:"Rav Menachem Mendel Schneersohn, third Lubavitcher Rebbe and a leading halachic authority."},
+  {month:11, day:2, name:"The Tzemach Tzedek", blurb:"Rav Menachem Mendel Schneersohn, third Lubavitcher Rebbe and a leading halachic authority."},
   {month:11, day:4, name:"Rav Moshe Leib of Sassov", blurb:"Chassidic Rebbe famed for his love of every Jew and his tzedakah."},
   {month:11, day:4, name:"The Baba Sali", blurb:"Rav Yisrael Abuchatzeira, the beloved Moroccan-born tzaddik, passed away in 5744 (1984)."},
   {month:11, day:5, name:"The Sfas Emes", blurb:"Rav Yehudah Aryeh Leib Alter, the Gerrer Rebbe and author of the Sfas Emes."},
@@ -1873,6 +1876,67 @@ const YAHRZEIT_DB = [
 ];
 
 
+
+// ---- Added from the Ohel Sara yahrtzeit calendar (Kislev) — blurbs written for the board ----
+const YAHRZEIT_DB2 = [
+  {month:9, day:2, name:"Rav Nachum Weidenfeld, the Chazon Nachum", blurb:"Rav of Dombrova in Galicia, son of the Kochav MiYaakov and brother of the Tchebiner Rav. He fled when the Nazis invaded in 1939, and the dozens of manuscripts he had sent ahead for safekeeping were lost with the family that held them."},
+  {month:9, day:2, name:"Rav Dr. Dov (Bernard) Revel", blurb:"Born near Kovno and educated in Telz and Kovno, he earned a doctorate in America while never leaving Torah study. As Rosh Yeshiva of RIETS he led the 1928 founding of Yeshiva College, later Yeshiva University."},
+  {month:9, day:2, name:"Rav Akiva Sofer, the Daas Sofer", blurb:"Rav and Rosh Yeshiva of Pressburg at just 24, great-grandson of the Chasam Sofer. On the advice of his uncle, the Erlauer Rav, he moved to Eretz Yisrael in 1940, which saved him from the Holocaust. Author of Daas Sofer."},
+  {month:9, day:2, name:"Rav Nosson Meir Wachtfogel", blurb:"The beloved Mashgiach of Beth Medrash Govoha in Lakewood. Born in Lithuania, he learned in Kelm, Mir and Kamenetz, and from 1941 helped Rav Aharon Kotler build the Lakewood yeshiva into a center of mussar and Torah."},
+  {month:9, day:3, name:"Rav Yaakov Moshe Kulefsky", blurb:"Raised in St. Louis, he learned in Torah Vodaas and joined Ner Israel in Baltimore in 1954. He later succeeded Rav Yaakov Weinberg as Rosh Yeshiva, guiding generations of talmidim."},
+  {month:9, day:6, name:"Rav Yaakov Moshe Charlap", blurb:"Close talmid of Rav Kook, Rosh Yeshiva of Merkaz HaRav and Rav of the Sha\u2019arei Chesed neighborhood in Yerushalayim. Author of Mei Marom, he was known for his deep, kabbalistic Torah thought."},
+  {month:9, day:6, name:"Rav Michoel Dov Weissmandel", blurb:"Rosh Yeshiva of Nitra and a Holocaust rescue hero who tried everything to save Hungarian and Slovak Jews, including urgent appeals to the free world. After the war he founded the Nitra yeshiva in Mount Kisco, NY. Author of Min HaMeitzar."},
+  {month:9, day:6, name:"Rav Chaim Shmuel Lopian", blurb:"One of the first students of the Gateshead Kollel under Rav Eliyahu Eliezer Dessler, and author of Ravcha Shma\u2019atza. A towering talmid chacham of the Anglo-Jewish Torah world."},
+  {month:9, day:7, name:"Rav Shalom Elchonon Yaffe", blurb:"Rav of Beth Medrash HaGadol in New York. Born in Lithuania, he received semicha from the Netziv and wrote Pri Eshel at 21. A founder of Agudas HaRabbonim and of RIETS."},
+  {month:9, day:10, name:"Rav Moshe Mordechai Epstein", blurb:"Rosh Yeshiva of Slabodka and later Chevron, brother-in-law of Rav Isser Zalman Meltzer. A giant of mussar and lomdus, he authored the nine-volume Levush Mordechai."},
+  {month:9, day:12, name:"Rav Yitzchak Lampronti", blurb:"Italian talmid chacham and physician of Ferrara, teacher of the Ramchal, who compiled Pachad Yitzchak, the first great encyclopedia of Talmudic and halachic topics."},
+  {month:9, day:13, name:"Ravina bar Huna", blurb:"Rosh Yeshiva of Sura who, together with Rav Ashi, brought the editing of the Talmud Bavli to its close, and is regarded as the last of the Amoraim."},
+  {month:9, day:13, name:"Rav Yechiel Michel Hager of Horodenka", blurb:"Son of the Imrei Baruch of Vizhnitz and Rebbe of Horodenka. In 1941 he was deported to Transnistria, where he and his son Baruch died of typhus."},
+  {month:9, day:14, name:"Rav Mordechai Yaakov Breish, the Chelkas Yaakov", blurb:"Born in Galicia, he fled Nazi Germany and became Rav of Zurich for forty years. A foremost posek of his generation, he established Kollel Chelkas Yaakov in Bnei Brak."},
+  {month:9, day:14, name:"Rav Shalom Krausz, the Udvari Rav", blurb:"Served as a rav for nearly seventy-five years, succeeding his father in Udvar, Hungary, at age 21. Head of the Beis Horaah of the Hitachdus HaRabbonim and author of the seven-volume Divrei Shalom."},
+  {month:9, day:15, name:"Rav Dovid Leibowitz", blurb:"Grand-nephew and talmid of the Chofetz Chaim, then of the Alter of Slabodka. In 1933 he founded Yeshivas Rabbeinu Yisrael Meir HaKohen in America, now the Chofetz Chaim Yeshiva, bringing Slabodka mussar to these shores."},
+  {month:9, day:23, name:"Rav Dovid Tevele Schiff", blurb:"Chief Rabbi of London and Rav of the Great Synagogue from 1765 until his death, previously head of the beis medrash in Worms and a dayan in Frankfurt."},
+  {month:9, day:25, name:"The Tolna Rebbe, Rav Yochanan Twersky", blurb:"Raised in a Chernobyl-Tolna family, he learned in Yerushalayim under Rav Yerucham Diskin, then built a beis medrash in Montreal, where he worked to bring Holocaust survivors to Canada. He settled in Eretz Yisrael in 1956."},
+  {month:9, day:27, name:"The Toldos Aharon Rebbe, Rav Avraham Yitzchak Kahn", blurb:"Raised in Romania, he learned in Krulle under the Satmar Rebbe, then became the son-in-law and successor of Rav Aharon Roth, founder of Shomrei Emunim in Meah Shearim. Author of Divrei Emunah."},
+  {month:9, day:28, name:"Rav Simcha Zelig Riger", blurb:"Born in Novardok and a talmid of Rav Chaim Brisker, he served as posek and dayan of Brisk. In 1942 he was among the thousands of Brisk Jews murdered by the Nazis during Chanukah."},
+  {month:9, day:29, name:"The Pri Chadash, Rav Chizkiya da Silva", blurb:"Born in Livorno, he left a position in Amsterdam to found Yeshivas Beis Yaakov in Yerushalayim. His Pri Chadash on the Shulchan Aruch drew deeply on Chazal and the Rishonim."},
+  {month:9, day:29, name:"Rav Shlomo Dovid Kahana, the Avi HaAgunos", blurb:"Rav of Warsaw and later of the Old City of Yerushalayim, who devoted his life to freeing agunos after both World Wars, obtaining tens of thousands of affidavits and enabling thousands to remarry."}
+];
+
+// Names -> English Wikipedia article titles (batch-fetched for photo + biography).
+const YAHRZEIT_WIKI_EXTRA = {
+  "Rav Boruch Ber Leibowitz":"Baruch Ber Leibowitz","The Radal":"David Luria","Rav Yaakov Etlinger":"Jacob Ettlinger",
+  "Rav Simcha Bunim Sofer of Pressburg":"Simcha Bunim Sofer","The First Modzitzer Rebbe":"Israel Taub",
+  "Rav Menashe ben Yisroel":"Menasseh Ben Israel","The Sdei Chemed":"Hayyim Hezekiah Medini",
+  "The Raavad":"Abraham ben David","The Raavad II":"Abraham ben Isaac of Narbonne","The First Bostoner Rebbe":"Pinchas David Horowitz",
+  "Rabbeinu HaKadosh (Rebbi Yehuda HaNasi)":"Judah the Prince","Rav Yisrael of Rizhin":"Israel Friedman of Ruzhin",
+  "Rav Aharon Leib Shteinman":"Aharon Leib Shteinman","Rav Elazar Menachem Man Shach":"Elazar Shach",
+  "The Tzitz Eliezer":"Eliezer Waldenberg","Rav Meshulam Roth":"Meshulam Roth","Rav Tzvi Pesach Frank":"Tzvi Pesach Frank",
+  "Rav Yosef Yoizel Horowitz":"Yosef Yozel Horowitz","Rav Refoel Shlomo Heiman":"Shlomo Heiman",
+  "Rav Gedalia of Linitz":"Gedalia of Linitz","Rav Mordechai Sharabi":"Mordechai Sharabi",
+  "Rav Dovid Bornstein of Sochatchov":"David Bornstein","Rav Menachem Nachum Twersky of Chernobyl":"Menachem Nachum Twersky of Chernobyl",
+  "Rav Chaim of Chernowitz":"Chaim Tirer",
+  "Rav Akiva Sofer, the Daas Sofer":"Akiva Sofer","Rav Dr. Dov (Bernard) Revel":"Bernard Revel","Rav Nosson Meir Wachtfogel":"Nathan Meir Wachtfogel",
+  "Rav Yaakov Moshe Charlap":"Yaakov Moshe Charlap","Rav Michoel Dov Weissmandel":"Michael Dov Weissmandl",
+  "Rav Shalom Elchonon Yaffe":"Shalom Elchonon Yaffe","Rav Moshe Mordechai Epstein":"Moshe Mordechai Epstein",
+  "Rav Yitzchak Lampronti":"Isaac Lampronti","Ravina bar Huna":"Ravina II","Rav Mordechai Yaakov Breish, the Chelkas Yaakov":"Mordechai Jakob Breish",
+  "Rav Dovid Leibowitz":"David Leibowitz","Rav Dovid Tevele Schiff":"David Tevele Schiff",
+  "The Tolna Rebbe, Rav Yochanan Twersky":"Yochanan Twersky","The Pri Chadash, Rav Chizkiya da Silva":"Hezekiah da Silva",
+  "Rav Shlomo Dovid Kahana, the Avi HaAgunos":"Shlomo David Kahana","Rav Chaim Shmuel Lopian":"Chaim Shmuel Lopian",
+  "Rav Nachum Weidenfeld, the Chazon Nachum":"Nachum Weidenfeld"
+};
+// Better blurbs for entries whose built-in text is thin (overrides short ones).
+const YAHRZEIT_BLURB_OVERLAY = {
+  "The Stropkover Rebbe":"Rav Yechezkel Shraga Lipschitz-Halberstam, born in Stropkov and descended from the Divrei Chaim of Sanz. He survived Auschwitz, where he lost his wife and five children, rebuilt his life in Eretz Yisrael, and became Admor in 1954. Author of Divrei Yechezkel Shraga.",
+  "The First Bostoner Rebbe":"Rav Pinchas Dovid Horowitz, born in Yerushalayim and a talmid of his uncle, Rav Dovid Tzvi Shlomo of Lelov. He came to America as a refugee in 1915 and, grateful to the Jews of Boston who helped him, made his home there, founding the Bostoner dynasty.",
+  "Rav Dovid Bornstein of Sochatchov":"Rav Dovid Bornstein, the Chasdei Dovid, son of the Shem MiShmuel and grandson of the Avnei Nezer. He served as Rav of Vishogrod and Lodz, worked with Agudas Yisrael, and encouraged Jews to settle in Eretz Yisrael. He passed away in the Warsaw Ghetto in 1942.",
+  "The Radal":"Rav Dovid Luria of Bichov, a talmid of the Vilna Gaon\u2019s circle, wrote a classic commentary on Pirkei DeRabbi Eliezer. Legendary for his diligence, he declined the Warsaw rabbinate and worked for the needs of Russian Jewry.",
+  "Rav Boruch Ber Leibowitz":"Rosh Yeshiva of Kamenitz, talmid muvhak of Rav Chaim Brisker, whose yeshiva moved from Slabodka to Minsk, Vilna and finally Kamenitz. Author of Birkas Shmuel on Shas and father-in-law of Rav Reuven Grozovsky.",
+  "The First Amshenover Rebbe":"Rav Yaakov Dovid Kalish, son of Rav Yisroel Yitzchok of Vorka\u2019s circle and a talmid of the Peshischa-Kotzk tradition. After the Vorka Rebbe\u2019s passing in 1848 many chassidim followed him, and he set up his court in Mszczonow (Amshinov), teaching warmth and kiruv rechokim.",
+  "Rav Isser Zalman Meltzer":"Rosh Yeshiva of Slutzk and Etz Chaim in Yerushalayim, author of Even HaEzel. A talmid of the Netziv and Rav Chaim Brisker, father-in-law of Rav Aharon Kotler and uncle of Rav Shach.",
+  "Rav Yaakov Etlinger":"Born in Karlsruhe and Rosh Metivta in Mannheim at only 18, later Rav of Altona. Author of Aruch LaNer, Binyan Tzion and Bikurei Yaakov. Among his talmidim was Rav Shimshon Raphael Hirsch, whom he ordained."
+};
+
 // ---- Famous-tzaddik highlighting and photos ----
 // Anyone whose name matches this list is treated as a "famous" yahrzeit: shown
 // large with their blurb, while the others for that day appear in a smaller
@@ -1891,298 +1955,9 @@ const YAHRZEIT_PHOTOS = {
 // Month names accepted in the settings box ("Cheshvan 1 | Name | Blurb | Photo URL | star")
 const YAHRZEIT_MONTHS = {nissan:1,nisan:1,iyar:2,sivan:3,tammuz:4,av:5,menachemav:5,elul:6,tishrei:7,tishri:7,cheshvan:8,marcheshvan:8,kislev:9,teves:10,tevet:10,shevat:11,shvat:11,adar:12,adari:12,adarii:12,adar1:12,adar2:12};
 
-
-// ---- Longer blurbs (override the short ones above, matched by exact name) ----
-const YAHRZEIT_LONG = {
- "The Rambam (Maimonides)":"Rabbi Moshe ben Maimon (1138\u20131204), born in Cordoba, fled Spain as a youth and settled in Egypt, where he served as the physician of the royal court and leader of the Jewish community. His Mishneh Torah was the first complete, organized code of all Jewish law; his Guide for the Perplexed and Commentary on the Mishnah (which includes the Thirteen Principles of Faith) shaped Jewish thought for centuries. He passed away on 20 Teves and was brought to rest in Teveria. It was said of him, \u201cFrom Moshe to Moshe, there arose none like Moshe.\u201d",
- "Rashi":"Rabbi Shlomo Yitzchaki (1040\u20131105) of Troyes, France, learned in the yeshivos of Mainz and Worms and then returned home to teach and to write. His clear, concise commentary on the Chumash and nearly the entire Talmud is printed in every standard edition, and is the first thing a child and the greatest scholar alike turn to. Many of the Baalei HaTosafos were his grandsons and students. He passed away on 29 Tammuz, 4865.",
- "The Vilna Gaon":"Rabbi Eliyahu Kramer of Vilna (1720\u20131797) was a child prodigy who mastered Tanach, Talmud, halacha and Kabbalah, and refused any rabbinic post to remain a private scholar. His commentary Biur HaGra on the Shulchan Aruch and his corrections to the text of the Talmud are standard sources. He taught that Torah study must be done with absolute honesty to the text, and his students, led by Rav Chaim of Volozhin, founded the yeshiva world of Lithuania. He passed away on Chol HaMoed Sukkos, 19 Tishrei.",
- "The Chofetz Chaim":"Rabbi Yisrael Meir Kagan (1838\u20131933) of Radin was known first for his book Chofetz Chaim on the laws of proper speech, and then for the Mishnah Berurah, the most widely used guide to daily halacha for all of Klal Yisrael. He lived in great simplicity, ran a small yeshiva in Radin, and traveled to strengthen Jews in every kind of community. Even in his nineties he was a leading voice of the generation. He passed away on 24 Elul, 5693.",
- "The Baal Shem Tov":"Rabbi Yisrael ben Eliezer (c. 1698\u20131760) was a hidden tzaddik in the Carpathian mountains who became known as the Baal Shem Tov, \u201cMaster of the Good Name.\u201d He taught that every Jew can serve Hashem with joy, sincere prayer and love for others, and that a Jew\u2019s simple devotion is precious Above. His students, including the Maggid of Mezritch, spread the Chassidic movement across Eastern Europe. He passed away on Shavuos, 6 Sivan 5520.",
- "The Lubavitcher Rebbe":"Rabbi Menachem Mendel Schneerson (1902\u20131994), the seventh Rebbe of Chabad-Lubavitch, escaped Europe in 1941 and became leader of Chabad in 1951. He sent emissaries (shluchim) to hundreds of cities around the world, encouraged every Jew to do another mitzvah, and gave thousands of public talks and private audiences. His Likutei Sichos and letters cover Chumash, halacha and Chassidus. He passed away on 3 Tammuz, 5754.",
- "Rav Moshe Feinstein":"Rav Moshe Feinstein (1895\u20131986) was Rosh Yeshiva of Mesivta Tifereth Jerusalem on the Lower East Side and the leading halachic authority of American Jewry. His Igros Moshe answers thousands of questions on modern life, from medical ethics to technology, with deep Talmudic reasoning and great compassion for the person asking. He also led Agudath HaRabbonim and Agudas Yisrael of America. He passed away on 13 Adar, 5746.",
- "The Chazon Ish":"Rabbi Avraham Yeshaya Karelitz (1878\u20131953) wrote his Chazon Ish on nearly every area of halacha, and never held a formal position. After moving to Bnei Brak in 1933 he became the guiding voice of Torah life in Eretz Yisrael, supporting yeshivos, farmers observing shemitah, and the early growth of religious Jewry in the new State. He is known for his deep humility and his sharp, penetrating mind. He passed away on 15 Cheshvan, 5714.",
- "Rav Aharon Kotler":"Rav Aharon Kotler (1891\u20131962) was Rosh Yeshiva of Kletzk in Poland, then escaped the war and in 1943 founded Beth Medrash Govoha in Lakewood. He believed that a generation of full-time Torah learning could be built in America, and he built it, together with Chinuch Atzmai, the network of Torah schools for children in Israel. His Mishnas Rabbi Aharon recorded his talks. He passed away on 2 Kislev, 5723.",
- "The Ramban (Nachmanides)":"Rabbi Moshe ben Nachman (1194\u20131270) of Gerona, Spain, was a Talmudist, physician and Kabbalist. His commentary on the Torah is a classic that uses both peshat and Kabbalah, and he wrote on the entire Talmud. In 1263 he defended Judaism in the Disputation of Barcelona before the king, and at the end of his life he moved to Eretz Yisrael, helped revive Jerusalem, and later settled in Acre. He passed away on 11 Nissan.",
- "The Chasam Sofer":"Rabbi Moshe Sofer (1762\u20131839), a student of Rabbi Nosson Adler, was Rav of Pressburg for thirty-three years and head of its great yeshiva. He led Hungarian Jewry in standing firm against the Reform movement, summed up in his slogan that whatever is new is forbidden by the Torah. His responsa, Torah commentary and novellae are among the most cited works of the last centuries. He passed away on 25 Tishrei, 5600.",
- "Rav Ovadia Yosef":"Rav Ovadia Yosef (1920\u20132013), born in Baghdad and raised in Jerusalem, was a young prodigy who became the foremost halachic authority of Sephardic Jewry. His Yabia Omer and Yechaveh Daas rule on virtually every area of Jewish life, building on the Shulchan Aruch of Rav Yosef Karo. He served as Sephardic Chief Rabbi of Israel and founded the Shas party. Hundreds of thousands attended his funeral on 3 Cheshvan, 5774.",
- "The Baba Sali":"Rabbi Yisrael Abuchatzeira (1890\u20131984) was born into a distinguished rabbinic family in Tafilalt, Morocco, and became beloved for his holiness, his blessings, and his tireless efforts for others. He immigrated to Eretz Yisrael in 1951, settling in Netivot, where people came from all over to receive his advice and brachos. His son Rav Mordechai and grandson Rav Elazar continued his legacy. He passed away on 4 Shevat, 5744.",
- "Rav Shlomo Zalman Auerbach":"Rav Shlomo Zalman Auerbach (1910\u20131995), Rosh Yeshiva of Kol Torah in Jerusalem, was one of the great poskim of the modern age. He ruled on questions of medicine, electricity and Shabbos, collected in Minchas Shlomo and Meorei Eish, and was known for his tremendous humility and for living a simple life in a small apartment. Tens of thousands came to his levaya on 20 Adar I, 5755.",
- "The Baal HaTanya (Alter Rebbe)":"Rabbi Schneur Zalman of Liadi (1745\u20131812), a student of the Maggid of Mezritch, founded Chabad Chassidus, the intellectual approach to Chassidus that stresses Chochmah, Binah and Daas. His Tanya sets out how every Jew can overcome inner struggle, and his Shulchan Aruch HaRav is a detailed restatement of halacha. He was imprisoned in Petersburg over a false accusation and released on 19 Kislev, now celebrated as a holiday. He passed away on 24 Teves, 5573."
-};
-Object.assign(YAHRZEIT_WIKI,{
- "Rebbe Nachman of Breslov":"Nachman of Breslov","Rav Elchonon Wasserman":"Elchonon Wasserman","Rav Chaim of Volozhin":"Chaim Volozhin",
- "Rav Levi Yitzchak of Berditchev":"Levi Yitzchak of Berditchev","The Chida":"Chaim Yosef David Azulai","Rav Meir Shapiro":"Meir Shapiro",
- "Rav Chaim Kanievsky":"Chaim Kanievsky","Rav Yisrael Salanter":"Israel Salanter","The Ramchal":"Moshe Chaim Luzzatto","Rav Akiva Eiger":"Akiva Eger",
- "Rav Elimelech of Lizhensk":"Elimelech of Lizhensk","Rav Avraham Yitzchak Kook":"Abraham Isaac Kook","Rav Yosef Dov Soloveitchik":"Joseph B. Soloveitchik",
- "The Kotzker Rebbe":"Menachem Mendel Morgensztern of Kotzk","Rav Simcha Bunim of Peshischa":"Simcha Bunim of Peshischa"});
-(function(){
- const add=[
- {month:7,day:18,name:"Rebbe Nachman of Breslov",blurb:"Rabbi Nachman (1772\u20131810), a great-grandson of the Baal Shem Tov, founded Breslov Chassidus. He taught joy, hisbodedus (personal prayer in one\u2019s own words), and that \u201cit is a great mitzvah to always be happy.\u201d His stories and Likutei Moharan, recorded by his student Rav Nosson of Nemirov, are studied by Jews of every background. He passed away in Uman at age 38 and is buried there."},
- {month:4,day:12,name:"Rav Elchonon Wasserman",blurb:"Rav Elchonon (1874\u20131941), a leading student of the Chofetz Chaim, was Rosh Yeshiva of Baranovich and author of Kovetz Shiurim, Kovetz He\u2019aros and Ikvesa D\u2019Meshicha. He traveled to America in 1939 to raise funds and could have stayed, but returned to his students in Lithuania. He was murdered with them in Kovno on 13 Tammuz, 5701."},
- {month:3,day:14,name:"Rav Chaim of Volozhin",blurb:"Rav Chaim (1749\u20131821), the primary student of the Vilna Gaon, founded the Volozhin Yeshiva in 1803, the mother of the Lithuanian yeshiva world. His Nefesh HaChaim explains the foundations of Torah, prayer and service of Hashem. He passed away on 14 Sivan, 5581."},
- {month:7,day:25,name:"Rav Levi Yitzchak of Berditchev",blurb:"Rav Levi Yitzchak (c. 1740\u20131809), author of Kedushas Levi, was a student of the Maggid of Mezritch and Rav of Berditchev. He is the beloved \u201cDefender of Israel,\u201d who argued Jewish merit before Hashem and found good in every Jew. He passed away on 25 Tishrei, 5570."},
- {adar:true,day:11,name:"The Chida",blurb:"Rabbi Chaim Yosef David Azulai (1724\u20131806), born in Jerusalem, was a Kabbalist, poskim and emissary for the Jews of Eretz Yisrael who traveled through Europe and North Africa. He wrote over 80 works, including Birkei Yosef and Shem HaGedolim, a great bibliography of Jewish authors. He passed away in Livorno on 11 Adar, 5566."},
- {month:8,day:7,name:"Rav Meir Shapiro",blurb:"Rav Meir Shapiro (1887\u20131933), Rav of Lublin, was a Chassidic Rosh Yeshiva who founded Yeshivas Chachmei Lublin, with its grand building, and initiated the Daf Yomi in 1923 so that Jews around the world could learn the same page of Gemara every day. He passed away on 7 Cheshvan, 5694."},
- {month:1,day:18,name:"Rav Chaim Kanievsky",blurb:"Rav Chaim (1928\u20132022), son of the Steipler Gaon and son-in-law of Rav Elyashiv, lived in a small apartment in Bnei Brak and became the address for Jews seeking brachos and advice from all over the world. He wrote on the entire Torah, including Derech Emunah and Orchos Yosher, and learned for many hours each day. He passed away on 18 Nissan, 5782."},
- {month:11,day:25,name:"Rav Yisrael Salanter",blurb:"Rav Yisrael Lipkin (1810\u20131883) of Salant founded the Mussar movement, teaching that Jews must work on their middos with as much seriousness as they learn Gemara. His students include Rav Yitzchak Blazer and the Alter of Slabodka. He passed away in Koenigsberg on 25 Shevat, 5643."},
- {month:2,day:26,name:"The Ramchal",blurb:"Rabbi Moshe Chaim Luzzatto (1707\u20131746), born in Padua, Italy, wrote Mesillas Yesharim, the Path of the Just, a classic guide to character growth, as well as Derech Hashem and Daas Tevunos. He settled in Eretz Yisrael and passed away in Acre on 26 Iyar, 5506."},
- {month:7,day:13,name:"Rav Akiva Eiger",blurb:"Rabbi Akiva Eger (1761\u20131837), Rav of Posen, was one of the greatest halachic authorities of his century. His brief glosses on the Gemara and Shulchan Aruch, printed on the page of almost every edition, show deep analytical power. Known for his humility and tzedakah, he passed away on 13 Tishrei, 5598."},
- {adar:true,day:21,name:"Rav Elimelech of Lizhensk",blurb:"Rav Elimelech (1717\u20131787), a student of the Maggid of Mezritch, wrote Noam Elimelech, a key work of Chassidic thought. He and his brother Rav Zusha wandered in exile before settling in Lizhensk, where he became a leading Rebbe in Poland. He passed away on 21 Adar, 5547."},
- {month:6,day:3,name:"Rav Avraham Yitzchak Kook",blurb:"Rav Kook (1865\u20131935), a Lithuanian-trained Torah scholar, became the first Ashkenazi Chief Rabbi of Mandate Palestine. His writings, including Orot and Olat Re\u2019iyah, combine halacha and Kabbalah with love of every Jew. He founded Yeshivas Merkaz HaRav in Jerusalem. He passed away on 3 Elul, 5695."},
- {month:1,day:18,name:"Rav Yosef Dov Soloveitchik",blurb:"Rav Soloveitchik (1903\u20131993), grandson of Rav Chaim of Brisk, was Rosh Yeshiva at Yeshiva University and RIETS and the leading teacher of Modern Orthodoxy in America, giving thousands of shiurim in the Brisker method. His Halakhic Man and Lonely Man of Faith are widely read. He passed away on 18 Nissan, 5753."},
- {month:11,day:22,name:"The Kotzker Rebbe",blurb:"Rabbi Menachem Mendel Morgenstern of Kotzk (1787\u20131859), a student of the Yid HaKadosh and Rav Simcha Bunim, was known for his demand for absolute truth and sincere avodah. His sayings are widely quoted, and his students included the Chiddushei HaRim of Gur and the founders of Sochatchov. He passed away on 22 Shevat, 5619."},
- {month:6,day:12,name:"Rav Simcha Bunim of Peshischa",blurb:"Rav Simcha Bunim (1765\u20131827), a pharmacist and then Rebbe in Peshischa, taught that a Jew should carry two notes, one saying \u201cthe world was created for me\u201d and the other \u201cI am dust and ashes.\u201d He taught the Kotzker Rebbe and the Chiddushei HaRim. He passed away on 12 Elul, 5587."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
-})();
-
-(function(){
- Object.assign(YAHRZEIT_WIKI,{"Rav Gershon Edelstein":"Gershon Edelstein","Rav Mordechai Eliyahu":"Mordechai Eliyahu","Rav Shlomo Polachek (Meitscheter Illui)":"Shlomo Polachek","Rav Gedalia Schorr":"Gedalia Schorr","Rav Shmuel Rozovsky":"Shmuel Rozovsky","Rav Yerucham Levovitz":"Yeruchom Levovitz","The Chiddushei HaRim":"Yitzchak Meir Alter","Rebbetzin Chaya Mushka Schneerson":"Chaya Mushka Schneerson","The Rebbe Maharash":"Shmuel Schneersohn","Rav Dovid Lifshitz (Suvalker Rav)":"Dovid Lifshitz"});
- const add=[
- {month:3,day:10,name:"Rav Gershon Edelstein",blurb:"Rav Gershon Edelstein (1923\u20132023) was born in the Soviet Union and brought to Eretz Yisrael as a boy, then learned and taught for decades in Ponevezh in Bnei Brak, where he became Rosh Yeshiva. In his later years he was the senior voice of the Litvishe world and head of the Degel HaTorah party. He was known for his short, gentle shmuessen, his total devotion to learning, and his tears of Torah and tefillah. He passed away on 10 Sivan, 5783, at the age of 100."},
- {month:3,day:18,name:"Rav Yerucham Levovitz",blurb:"Rav Yerucham Levovitz (1873\u20131936) was the Mashgiach of the Mirrer Yeshiva in Poland for more than twenty-five years and one of the great teachers of Mussar. His talks, collected as Da\u2019as Chochmah U\u2019Mussar, taught that Torah must change a person: how he thinks, how he treats others, how he sees the world. Many of the great roshei yeshiva of the next generation were his students. He passed away on 18 Sivan, 5696."},
- {month:3,day:25,name:"Rav Mordechai Eliyahu",blurb:"Rav Mordechai Eliyahu (1929\u20132010), born in Jerusalem, was a posek and Kabbalist who served as Sephardic Chief Rabbi of Israel from 1983 to 1993. He was known for his deep Torah learning, his gentle manner and his love for every Jew, and thousands came to him for advice and brachos. His halachic works include Darchei Taharah and Hilchos Shabbos. He passed away on 25 Sivan, 5770."},
- {month:3,day:20,name:"Kaf Sivan \u2014 Kedoshim of Blois and Nemirov",blurb:"The 20th of Sivan is remembered as a day of mourning for Jewish martyrs. In 1171, the Jews of Blois, France, were burned alive after a false blood libel and refused to leave their faith. Rabbeinu Tam and the Baalei Tosafos made the day a fast. In 1648 the community of Nemirov was destroyed in the Chmielnitzki massacres, and Polish Jewry fixed Kaf Sivan as a fast day. After the Holocaust, it was also set aside as a yahrzeit for those whose dates of death are unknown."},
- {month:3,day:1,name:"Rav Yisrael of Shklov",blurb:"Rav Yisrael of Shklov (c. 1770\u20131839) was a leading student of the Vilna Gaon\u2019s disciples and author of Pe\u2019as HaShulchan on the halachos of Eretz Yisrael. He led the group of the Vilna Gaon\u2019s followers who settled in Tzefas and Jerusalem, helping rebuild the Ashkenazi community in the Holy Land. He passed away on 1 Sivan, 5599."},
- {month:4,day:7,name:"Rav Gedalia Schorr",blurb:"Rav Gedalia Schorr (1910\u20131979), Rosh Yeshiva of Torah Vodaas, was born in Poland and raised in the United States. Rav Aharon Kotler called him the first American gadol. He combined a brilliant mind with great humility, and he shaped hundreds of talmidim. His shiurim and Torah thoughts were published as Ohr Gedalyahu. He passed away on 7 Tammuz, 5739."},
- {month:4,day:9,name:"Rav Dovid Lifshitz (Suvalker Rav)",blurb:"Rav Dovid Lifshitz (1907\u20132004), a leading student of Rav Shimon Shkop and Rav Yerucham Levovitz, served as the Rav of Suvalk and later as Rosh Yeshiva at RIETS, Yeshiva University, for nearly fifty years. He also led Ezras Torah and was a member of the Moetzes of Agudas HaRabbonim. He was known for his deep Torah, his humility, and his joy in learning. He passed away on 9 Tammuz, 5764."},
- {month:4,day:21,name:"Rav Shlomo Polachek (Meitscheter Illui)",blurb:"Rav Shlomo Polachek (1877\u20131928), known as the Meitscheter Illui, was a child prodigy who entered the Volozhin yeshiva at twelve. After serving as a rosh yeshiva in Lida and Bialystok, he came to New York in 1922 to teach at RIETS. His sudden passing on 21 Tammuz, 5688, brought more than 15,000 people to his funeral on the Lower East Side."},
- {adar:true,day:1,name:"The Shach",blurb:"Rav Shabsai HaKohen Katz (1621\u20131663), known as the Shach after his Sifsei Kohen, wrote the monumental commentary on the Yoreh Deah and Choshen Mishpat sections of the Shulchan Aruch. He wrote it while still a young man, and it is among the most cited works in halacha. He lived through the Chmielnitzki massacres, which also shaped his writing. He passed away at the age of 41 on 1 Adar, 5423."},
- {adar:true,day:23,name:"The Chiddushei HaRim",blurb:"Rav Yitzchak Meir Alter (1799\u20131866), the first Gerrer Rebbe, was a great Talmudic scholar before he became a Chassidic leader. His Chiddushei HaRim, novellae on the Talmud and Shulchan Aruch, are studied by yeshiva students and Chassidim alike. He taught that a Jew should strive for deep Torah study and simple, sincere avodah. Gur grew to be the largest Chassidic movement in Poland under his students. He passed away on 23 Adar, 5626."},
- {month:11,day:22,name:"Rebbetzin Chaya Mushka Schneerson",blurb:"Rebbetzin Chaya Mushka Schneerson (1901\u20131988), the daughter of the Rebbe Rayatz and wife of the Lubavitcher Rebbe, was a quiet and private figure who supported the Rebbe\u2019s work for decades. She was known for her modesty, wisdom and her care for others, and she kept to a life of simplicity in Crown Heights. She passed away on 22 Shevat, 5748."},
- {month:7,day:13,name:"The Rebbe Maharash",blurb:"Rabbi Shmuel Schneersohn (1834\u20131882), the fourth Rebbe of Chabad-Lubavitch, took over after his father, the Tzemach Tzedek. He is known by his acronym, Maharash, for his sharp wit and his statement that the world says \u201cif you can\u2019t go under it, go over it,\u201d while Chassidus says \u201cgo through it.\u201d He expanded Chabad\u2019s outreach and met with Russian officials to help the community. He passed away on 13 Tishrei, 5643."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
-})();
-
-(function(){
- Object.assign(YAHRZEIT_WIKI,{"Rav Yaakov Tzvi Mecklenburg":"Jacob Zvi Mecklenburg","The Ohev Yisrael of Apt":"Abraham Joshua Heschel of Apt","Rav Aharon Roth":"Aharon Roth","Rav Yaakov Emden":"Jacob Emden","The Avnei Nezer":"Avraham Bornsztain","Rav Alexander Ziskind of Horodna":"Alexander Ziskind"});
- const add=[
- {month:8===0?0:2,day:4,name:"The Beis HaLevi",blurb:"Rav Yosef Dov Soloveitchik (1820\u20131892), the Beis HaLevi, was Rav of Slutsk and later of Brisk. His Beis HaLevi on the Torah and his responsa are known for their clarity and logic, and he was the root of the Brisker approach to learning, passed on through his son Rav Chaim and later generations. He stood up for the poor and for his community against the authorities. He passed away on 4 Iyar, 5652."},
- {month:1,day:4,name:"Rav Yaakov Tzvi Mecklenburg",blurb:"Rav Yaakov Tzvi Mecklenburg (1785\u20131865), Rav of Konigsberg, is best known for HaKsav VeHaKabbalah, a commentary on the Torah that shows how the Written Torah and the Oral Tradition fit together word by word. He was known for his strong stand for Torah in a time of growing Reform. He passed away on 4 Nissan, 5625."},
- {month:1,day:5,name:"The Ohev Yisrael of Apt",blurb:"Rav Avraham Yehoshua Heschel of Apt (c. 1748\u20131822), a student of Rav Elimelech of Lizhensk and Rav Levi Yitzchak of Berditchev, was a leading Chassidic Rebbe of his generation. His Ohev Yisrael, \u201cLover of Israel,\u201d reflects his life: he tried to see every Jew in the best light. He passed away on 5 Nissan, 5582."},
- {month:1,day:6,name:"Rav Aharon Roth",blurb:"Rav Aharon Roth (1894\u20131947), born in Hungary and later of Jerusalem, was a Chassidic Rebbe and the founder of Shomrei Emunim. His Shomer Emunim is a classic of Chassidic thought on faith, and he led a growing group of students in Jerusalem after the Holocaust. He was known for his holiness and his simple, joyful devotion. He passed away on 6 Nissan, 5707."},
- {month:1,day:30,name:"Rav Yaakov Emden",blurb:"Rav Yaakov Emden (1697\u20131776), known as the Yaavetz, was a Talmud scholar, halachic authority and fierce defender of tradition. His siddur with commentary, Amudei Shamayim, and his responsa, She\u2019elas Yaavetz, are still widely used. He also wrote against the false messiah Shabsai Tzvi\u2019s followers. He passed away in Altona on 30 Nissan, 5536."},
- {adar:true,day:18,name:"Rav Alexander Ziskind of Horodna",blurb:"Rav Alexander Ziskind (c. 1739\u20131794) of Horodna was a Torah scholar and Kabbalist who lived very simply and spent his nights learning. He wrote Yesod VeShoresh HaAvodah, a guide to prayer and devotion that has been printed and used for generations. He passed away on 18 Adar II, 5554."},
- {adar:true,day:11,name:"The Avnei Nezer",blurb:"Rav Avraham Bornstein (1839\u20131910), the first Sochatchover Rebbe, was a son-in-law of the Kotzker Rebbe and a great Talmud scholar. His Avnei Nezer responsa are cited by poskim, and his Eglei Tal explains the 39 melachos of Shabbos. His son was the Shem MiShmuel. He passed away on 11 Adar I, 5670."},
- {adar:true,day:1,name:"Rav Immanuel Chai Riki",blurb:"Rav Immanuel Chai Riki (1688\u20131743) of Italy was a Kabbalist and author of Mishnas Chassidim, a work on the mitzvos and customs of Kabbalah. He was murdered al Kiddush Hashem on 1 Adar, 5503."}
- ];
- add.forEach(e=>{ if(e.month===0) e.month=2; });
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
-})();
-
-(function(){
- const add=[
- {month:9,day:2,name:"Rav Dr. Bernard (Dov) Revel",blurb:"Rav Dov Revel (1885\u20131940), born near Kovno and a student of Telz and Kovno, was a rare combination of Talmud scholar and Ph.D. In 1915 he became president of RIETS and in 1928 opened Yeshiva College, which became Yeshiva University. He insisted that Torah and secular study could exist side by side, and he gave a high-level Gemara shiur himself.",star:true},
- {month:9,day:2,name:"Rav Akiva Sofer (Daas Sofer)",blurb:"Rav Akiva Sofer (1878\u20131959), a great-grandson of the Chasam Sofer, succeeded his father, the Shevet Sofer, as Rav and Rosh Yeshiva of Pressburg at age 24. Three generations of his family each led Pressburg for 33 years. He moved to Eretz Yisrael in 1940, just before the war, and wrote Daas Sofer."},
- {month:9,day:2,name:"Rav Nosson Meir Wachtfogel",blurb:"Rav Nosson Meir Wachtfogel (1910\u20131998) learned in Kelm, Mir and Kamenetz and came with Rav Aharon Kotler to build Lakewood. As the Mashgiach of Beth Medrash Govoha for over fifty years, he was known for his warmth, his intense Mussar and his care for each talmid."},
- {month:9,day:2,name:"The Chazon Nachum of Dombrova",blurb:"Rav Nachum Weidenfeld (1875\u20131939) was Rav of Dombrova in Galicia and brother of the Tchebiner Rav. He fled when the Nazis invaded Poland, carrying only a stick and a knapsack, and the manuscripts he had sent ahead to his family were all lost."},
- {month:9,day:2,name:"Rav Meshulam Feivish of Zbarazh",blurb:"Rav Meshulam Feivish (d. 1794) was a student of the Maggid of Mezritch and Rav Yechiel Michel of Zlotchov. He wrote Yosher Divrei Emes, a basic work of Chassidic thought, and Likutim Yekarim. His students included Rav Menachem Mendel of Kosov."},
- {month:9,day:3,name:"The Stanislaver Rebbe (Rav Meshulam Yissachar Ashkenazi)",blurb:"Rav Meshulam Yissachar Dov Ashkenazi (1905\u20131995) encouraged young men in Vienna to attend yeshiva before the war. After the Nazis annexed Austria he fled to London, where his parents, brother and sisters were murdered. In Stamford Hill he became a rebbe to many refugees."},
- {month:9,day:3,name:"Rav Yaakov Moshe Kulefsky",blurb:"Rav Yaakov Moshe Kulefsky (1925\u20132000), born in Chicago, learned at Torah Vodaas while serving in the army. He joined Ner Yisroel in Baltimore in 1954 and succeeded Rav Yaakov Weinberg as Rosh Yeshiva, guiding the yeshiva for decades."},
- {month:9,day:4,name:"Rav Yaakov Dovid Kalish of Amshinov",blurb:"Rav Yaakov Dovid Kalish (1803\u20131878) was the founder of the Amshinov dynasty, following the warm, loving path of Vorka and his teacher Rav Yitzchak of Vorka. His court in Mszczonow became a place for the kind work of bringing distant Jews closer to Torah."},
- {month:9,day:4,name:"Rav Avraham Shmuel Stern",blurb:"Rav Avraham Shmuel Stern (1949\u20132005), born in Hungary to the Serentcher Rav, grew up in London and founded Yeshivas Toras Chessed there. He was close to the Satmar and Pshevorsk Rebbes."},
- {month:9,day:5,name:"The Radal",blurb:"Rav Dovid Luria (1798\u20131855) of Bichov, a student of the Vilna Gaon\u2019s tradition, wrote a commentary on Pirkei D\u2019Rabbi Eliezer. He was famous for sleeping only a few hours a night, and he turned down the rabbinate of Warsaw despite the Gerrer Rebbe\u2019s urging."},
- {month:9,day:5,name:"Rav Baruch Ber Leibowitz",blurb:"Rav Baruch Ber Leibowitz (1864\u20131939), a talmid muvhak of Rav Chaim Brisker, led the Slabodka yeshiva and then the great yeshiva of Kamenitz. His Birkas Shmuel on Shas became a central work of the Lithuanian yeshiva world. His son-in-law Rav Reuven Grozovsky succeeded him.",star:true},
- {month:9,day:5,name:"Rav Mordechai Rimer",blurb:"Rav Mordechai Rimer (1928\u20131999), born in Munkacs, survived Auschwitz as a teenager after his family was murdered. He learned in the Chevron yeshiva and for thirty-eight years was the Mashgiach of the Tchebiner yeshiva in Jerusalem."},
- {month:9,day:6,name:"Rav Yaakov Moshe Charlap",blurb:"Rav Yaakov Moshe Charlap (1883\u20131951) was a close student of Rav Kook, Rosh Yeshiva of Merkaz HaRav and Rav of Sha\u2019arei Chesed in Jerusalem. His writings, Mei Marom and Michtavei Marom, combine deep Torah with a love for every Jew."},
- {month:9,day:6,name:"Rav Michoel Ber Weissmandel",blurb:"Rav Michoel Dov Weissmandel (1903\u20131957), born in Hungary, risked his life during the war to try to rescue Jews of Slovakia and Hungary. He later founded the Nitra yeshiva in Mount Kisco, New York, and wrote Min HaMeitzar. His story is one of total sacrifice for other Jews.",star:true},
- {month:9,day:6,name:"Rav Chaim Shmuel Lopian",blurb:"Rav Chaim Shmuel Lopian (d. 1998) was one of the first students of the Gateshead Kollel under Rav Eliyahu Eliezer Dessler. He wrote Ravcha Shmaatsa and was a respected teacher of Torah and Mussar."},
- {month:9,day:7,name:"Rav Shalom Elchonon Yaffe",blurb:"Rav Shalom Elchonon Yaffe (1858\u20131923) learned at Volozhin and wrote Pri Eshel at age 21. He came to America in 1890 and became Rav of Beth Medrash HaGadol in New York, and helped found Agudath HaRabbonim and RIETS."},
- {month:9,day:8,name:"Rav Aharon Twersky of Chernobyl",blurb:"Rav Aharon Twersky (1786\u20131871), the third Rebbe of Chernobyl, was a grandson of the Meor Einayim. He took over from his father in 1837 and served as head of the fund for Eretz Yisrael in the Ukraine."},
- {month:9,day:8,name:"The Bostoner Rebbe (Rav Pinchas Dovid Horowitz)",blurb:"Rav Pinchas Dovid Horowitz (1876\u20131941), born in Jerusalem, was a student of his uncle Rav Dovid Tzvi Shlomo of Lelov. He came to the United States during World War I and settled in Boston, where he founded the Bostoner Chassidic dynasty."},
- {month:9,day:8,name:"The Chasdei Dovid of Sochatchov",blurb:"Rav Dovid Borenstein (1876\u20131942), the Chasdei Dovid, was a grandson of the Avnei Nezer and son of the Shem MiShmuel. He was Rav in Vishogrod and Lodz, a leader of Agudas Yisrael, and died in the Warsaw Ghetto."},
- {month:9,day:8,name:"Rav Eliezer Geldzahler",blurb:"Rav Eliezer Geldzahler (1958\u20132004), a grandson of Rav Dessler, learned in Zichron Yaakov and in Jerusalem and then founded Yeshiva Ohr Yisrael in Queens. He was critically injured in a bus accident in Israel in 2004 and passed away ten months later."},
- {month:9,day:10,name:"Rav Moshe Mordechai Epstein",blurb:"Rav Moshe Mordechai Epstein (1866\u20131934), the Rosh Yeshiva of Slabodka and later Chevron, learned at Volozhin and married into the family of Rav Isser Zalman Meltzer. He was invited by the Alter of Slabodka to teach in Slabodka and wrote Levush Mordechai.",star:true},
- {month:9,day:10,name:"The Siftei Tzadik of Piltz",blurb:"Rav Pinchas Menachem Elazar Justman (d. 1920), a grandson of the Chiddushei HaRim, led the Chassidim of Piltz in Poland and authored Siftei Tzadik."},
- {month:9,day:11,name:"Rav Yitzchak Friedman of Rimanov",blurb:"Rav Yitzchak Friedman (d. 1924), both of whose parents were grandchildren of the Ruzhiner Rebbe, set up his court in Rimanov after his father\u2019s passing. He passed away while on a fund-raising trip in the United States."},
- {month:9,day:12,name:"Rav Avraham Dov of Avritch (Bas Ayin)",blurb:"Rav Avraham Dov of Avritch (1765\u20131840), a student of Rav Levi Yitzchak of Berditchev, wrote Bat Ayin on the Torah. He moved to Tzefas in 1830, where he survived the earthquake of 1837 and passed away in a plague."},
- {month:9,day:12,name:"Rav Yitzchak Lampronti",blurb:"Rav Yitzchak Lampronti (1679\u20131756) of Ferrara, Italy, a doctor and a teacher of the Ramchal, wrote Pachad Yitzchak, the first major Talmudic encyclopedia."},
- {month:9,day:13,name:"Rav Yisrael Taub of Modzhitz",blurb:"Rav Yisrael Taub (1849\u20131920), the first Modzhitzer Rebbe, was a grandson of Rav Yechezkel of Kuzmir. He wrote Divrei Yisrael and composed deeply spiritual nigunim, including one he sang during a painful operation, and made music a path to avodas Hashem.",star:true},
- {month:9,day:13,name:"Rav Yechiel Michel Hager of Horodenka",blurb:"Rav Yechiel Michel Hager (d. 1941), a son of the Imrei Baruch of Vizhnitz, was the Rebbe of Horodenka. He was deported to Transnistria in 1941 and died of typhus there along with his son."},
- {month:9,day:14,name:"Rav Mordechai Yaakov Breish (Chelkas Yaakov)",blurb:"Rav Mordechai Yaakov Breish (1895\u20131976) served as Rav in Germany and then, after escaping the Nazis, in Zurich for forty years. His Chelkas Yaakov responsa are widely cited, and he established a kollel for halachic study in Bnei Brak in 1967.",star:true},
- {month:9,day:14,name:"Rav Menashe ben Yisrael",blurb:"Rav Menashe ben Yisrael (1604\u20131656) of Amsterdam, a writer, printer and rabbi, wrote Nishmas Chaim and Mikveh Yisrael. Together with Rav Yaakov Sasportas, he asked Oliver Cromwell to allow Jews to return to England."},
- {month:9,day:14,name:"The Udvari Rav (Rav Shalom Krausz)",blurb:"Rav Shalom Krausz (1914\u20132010), born in Hungary, served as Rav of Udvari for nearly seventy-five years. He led the Beis Horaah of the Hitachdus HaRabbonim and wrote the seven-volume Divrei Shalom."},
- {month:9,day:14,name:"Rav Natan Gestetner",blurb:"Rav Natan Gestetner (1932\u20132010) came to London as a Holocaust orphan, moved to Bnei Brak, and became a dayan, the Rosh Yeshiva of Panim Meiros and the author of dozens of seforim, including Lehoros Nosson."},
- {month:9,day:15,name:"The Shevet Sofer (Rav Simcha Bunim Sofer)",blurb:"Rav Simcha Bunim Sofer (1842\u20131906) was a son of the Ksav Sofer and succeeded him as Rav and Rosh Yeshiva of Pressburg in 1872. He wrote Shaarei Simchah and Shevet Sofer."},
- {month:9,day:15,name:"Rav Dovid Leibowitz",blurb:"Rav Dovid Leibowitz (1890\u20131941), a student of the Chofetz Chaim and the Alter of Slabodka, came to America in 1926 and led Torah Vodaas before founding the yeshiva in Forest Hills known today as Yeshiva Chofetz Chaim. His students included Rav Gedalia Schorr and Rav Avraham Pam.",star:true},
- {month:9,day:24,name:"The Sdei Chemed",blurb:"Rav Chaim Chizkiyahu Medini (1832\u20131904), born in Jerusalem, served as Rav of Karasubazar in Crimea for 33 years and later returned to Jerusalem. His 18-volume Sdei Chemed is a universally respected encyclopedia of Talmud and halacha.",star:true},
- {month:9,day:25,name:"Rav Yaakov Ettlinger",blurb:"Rav Yaakov Ettlinger (1798\u20131871) became Rosh Yeshiva in Mannheim at 18 and later Rav of Altona. His works include Aruch LaNer, Binyan Tzion and Bikurei Yaakov. Rav Shimshon Raphael Hirsch received smicha from him."},
- {month:9,day:25,name:"The Tolna Rebbe (Rav Yochanan Twersky)",blurb:"Rav Yochanan Twersky (1906\u20131988), a Tolna Rebbe, learned in Jerusalem for seven years as a young man, then served in Montreal and appealed to the Canadian government to admit Holocaust survivors. In 1956 he moved to Eretz Yisrael."},
- {month:9,day:26,name:"Rav Meshulam Roth",blurb:"Rav Meshulam Roth (1875\u20131962) was Rav of Shatz and Czernowitz and escaped to Eretz Yisrael in 1944. A devoted student of the Chasam Sofer, he wrote Kol Mevasser."},
- {month:9,day:26,name:"Rav Yehoshua Zelig Diskin",blurb:"Rav Yehoshua Zelig Diskin (1896\u20131970) was Rav of Pardes Chana and one of the Roshei Yeshiva of Kol Torah, a descendant of the Maharal."},
- {month:9,day:26,name:"Rav Menachem Mendel Weinbach",blurb:"Rav Mendel Weinbach (1933\u20132012) was a founder of Ohr Somayach in Jerusalem. He helped create one of the first yeshivos for young men with little background, bringing thousands closer to Torah."},
- {month:9,day:27,name:"The Toldos Aharon Rebbe (Rav Avraham Yitzchak Kahn)",blurb:"Rav Avraham Yitzchak Kahn (1914\u20131996) was the Rebbe of Toldos Aharon in Meah Shearim. He was a son-in-law and successor of Rav Aharon Roth, the founder of Shomrei Emunim, and wrote Divrei Emunah."},
- {month:9,day:28,name:"Rav Simcha Zelig Riger",blurb:"Rav Simcha Zelig Riger (1864\u20131942) was the posek and dayan of Brisk, a talmid of Rav Chaim Brisker. In 1942, he and 4,000 other Jews were shot at the edge of open graves on the fourth night of Chanukah."},
- {month:9,day:29,name:"Rav Shlomo Dovid Kahana (Avi HaAgunos)",blurb:"Rav Shlomo Dovid Kahana (1869\u20131953) worked after both World Wars to free thousands of agunos, collecting tens of thousands of affidavits. He settled in Jerusalem in 1941.",star:true},
- {month:9,day:29,name:"The Pri Chadash",blurb:"Rav Chizkiya di Silva (1659\u20131698), born in Livorno, wrote Pri Chadash on the Shulchan Aruch. He established Yeshivas Beis Yaakov in Jerusalem in 1693."},
- {month:9,day:29,name:"Rav Zushe Waltner",blurb:"Rav Zushe Waltner (1918\u20132002), born in Hungary, led the Otzar HaTorah yeshiva network in Tangier and Morocco at the advice of Rav Dessler and the Chazon Ish. Thousands of religious Jews in North Africa and beyond credit him for their Torah lives."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
- Object.assign(YAHRZEIT_WIKI,{"Rav Dr. Bernard (Dov) Revel":"Bernard Revel","Rav Akiva Sofer (Daas Sofer)":"Akiva Sofer","Rav Nosson Meir Wachtfogel":"Nosson Meir Wachtfogel","Rav Baruch Ber Leibowitz":"Baruch Ber Leibowitz","Rav Yaakov Moshe Charlap":"Yaakov Moshe Charlap","Rav Michoel Ber Weissmandel":"Michoel Dov Weissmandl","Rav Moshe Mordechai Epstein":"Moshe Mordechai Epstein","Rav Yisrael Taub of Modzhitz":"Yisroel Taub","Rav Mordechai Yaakov Breish (Chelkas Yaakov)":"Mordechai Yaakov Breish","Rav Dovid Leibowitz":"David Leibowitz","The Sdei Chemed":"Hayyim Hezekiah Medini","Rav Yaakov Ettlinger":"Jacob Ettlinger","Rav Meshulam Roth":"Meshulam Roth","Rav Shlomo Dovid Kahana (Avi HaAgunos)":"Shlomo David Kahana","Rav Menashe ben Yisrael":"Menasseh Ben Israel","The Radal":"David Luria","Rav Menachem Mendel Weinbach":"Mendel Weinbach"});
-})();
-
-(function(){
- const add=[
- {month:3,day:26,name:"Rav Yehoshua Buxbaum (Galanta Rav)",blurb:"Rav Yehoshua Buxbaum was the Rav of Galanta in Slovakia and author of Ohr Pnei Yehoshua. He was murdered in 1944 along with his community."},
- {month:3,day:26,name:"Rav Avraham Yehoshua Heschel of Moglenitz",blurb:"Rav Avraham Yehoshua Heschel (d. 1878) was the Rebbe of Moglenitz, known as the Saraph, a Chassidic leader in Poland."},
- {month:3,day:27,name:"The Panim Meiros",blurb:"Rav Meir Eisenstadt (1670\u20131744) was Rav of Prossnitz and then Chief Rabbi of Eisenstadt, where his yeshiva became famous. His four-volume Panim Meiros collects his responsa and Talmudic novellae. Rav Yonasan Eybeschutz was among his students, and Litvishe gedolim such as the Netziv and Rav Chaim Brisker descend from him."},
- {month:3,day:27,name:"Rav Mordechai Meltzer of Lida",blurb:"Rav Mordechai Meltzer (1797\u20131883) was Rosh Yeshiva of the Ramailles yeshiva in Vilna and later Rav of Kalvaria and Lida. His students published his novellae as Techeiles Mordechai."},
- {month:3,day:27,name:"Rav Chaim Stein (Telz)",blurb:"Rav Chaim Stein (1913\u20132011) learned in Kelm and Telz, and escaped Lithuania with a group of Telz students in 1940. He helped rebuild Telz in Cleveland and led it for decades. He was known for his daily learning and for finishing Zevachim many times as a boy."},
- {month:3,day:28,name:"The Tosher Rebbe (Rav Meshulam Feivish Lowy)",blurb:"Rav Meshulam Feivish Lowy (d. 1873) founded the Tosh dynasty. A student of the Maharam Ash and Rav Yitzchak Isaac of Kaliv, he was known for his love of every Jew, and his descendants in Montreal still welcome all visitors."},
- {month:3,day:28,name:"Rav Yisrael Zev Gustman",blurb:"Rav Yisrael Zev Gustman (1908\u20131991) was a student of Rav Shimon Shkop, Rosh Yeshiva of Ramailles at a young age, and the youngest dayan in Vilna. He survived the Holocaust and brought his yeshiva, Netzach Yisrael Ramailles, to Jerusalem in 1961. His Kuntresei Shiurim is a classic of Torah analysis.",star:true},
- {month:3,day:28,name:"The Tepliker Rav (Rav Shimshon Aharon Polansky)",blurb:"Rav Shimshon Aharon Polansky (1876\u20131948) was Rav of Teplik in Podolia, and moved to Jerusalem in 1922. Rav Elyashiv and Rav Wosner were among his students."},
- {month:3,day:30,name:"Rav Shlomo Kluger",blurb:"Rav Shlomo Kluger (1783\u20131869), an orphan raised by the Dubno Maggid, became one of the most prolific authors in Torah history, writing on Tanach, the Talmud and the poskim. His Ha\u2019elef Lecha Shlomo responsa has over a thousand chapters. He served as Rav in Brody, and Rav Shalom Mordechai Schwadron was among his students."},
- {month:4,day:1,name:"The Maor VaShemesh",blurb:"Rav Kalonymus Kalman Epstein (d. 1823) of Cracow, a follower of Rav Elimelech of Lizhensk, wrote Maor VaShemesh and led the Cracow community from 1785. He moved to Eretz Yisrael near the end of his life and is buried in Tzefas."},
- {month:4,day:1,name:"The Bobover Rebbe (Rav Shlomo Halberstam)",blurb:"Rav Shlomo Halberstam (1847\u20131906), a grandson of the Divrei Chaim of Sanz, founded the Bobov dynasty in 1893 after serving as Rav in Bukovsk and Wisnicz. His son Rav Benzion succeeded him."},
- {month:4,day:2,name:"Rav Nachman of Horodenka",blurb:"Rav Nachman of Horodenka, an early close companion of the Baal Shem Tov and the grandfather of Rebbe Nachman of Breslov, moved to Tiveria in 1764. He passed away there the next year."},
- {month:4,day:2,name:"The Trisker Maggid",blurb:"Rav Avraham Twersky (1802\u20131889), one of eight sons of Rav Mordechai of Chernobyl, was Rebbe in Trisk for fifty years. His drashos are collected in Magen Avraham."},
- {month:4,day:2,name:"Reb Mike Tress",blurb:"Elimelech Gavriel (Mike) Tress (1909\u20131967) headed Zeirei Agudas Yisrael, founded Pirchei Agudas Yisrael and Camp Agudah, and worked tirelessly during and after the war to raise funds to save Jews and help She\u2019eris HaPleita. He was a close student of Rav Gedalia Schorr."},
- {month:4,day:3,name:"Rav Schneur Kotler",blurb:"Rav Schneur Kotler (1918\u20131982) succeeded his father, Rav Aharon Kotler, as Rosh Yeshiva of Lakewood in 1962, and led it for exactly nineteen years and seven months, the same length as his father. He built the yeshiva and kollel while guiding Torah institutions across America."},
- {month:4,day:3,name:"Rav Shlomo Eiger of Lublin",blurb:"Rav Shlomo Eiger (1872\u20131940), a son of the Shevet Yehudah and great-grandson of Rav Akiva Eiger, became the Lubliner Rebbe in 1914, leading Chassidim in one of Poland\u2019s main Jewish cities."},
- {month:4,day:4,name:"Rabbeinu Tam",blurb:"Rav Yaakov ben Meir (1100\u20131171), a grandson of Rashi and one of the leading Baalei Tosafos, was Rosh Yeshiva in Ramerupt and then Troyes. He survived a Crusader attack that left him wounded. After the Blois blood libel of 1171, he made the 20th of Sivan a fast day. His halachic work includes Sefer HaYashar.",star:true},
- {month:4,day:4,name:"Rav Ezriel Hildesheimer",blurb:"Rav Ezriel Hildesheimer (1820\u20131899), a student of the Aruch LaNer, was Rav of Eisenstadt and then Berlin. In 1873 he founded the Berlin Rabbinical Seminary to prepare Orthodox rabbis to meet the challenge of Reform."},
- {month:4,day:5,name:"Rav Ezriel Meir of Lublin",blurb:"Rav Ezriel Meir Eiger (1873\u20131941), the Lubliner Rebbe, reluctantly took the role after his father in 1914 and founded Yeshivas Ahavas Torah, later in Warsaw."},
- {month:4,day:6,name:"Rav Moshe Hager of Kossov",blurb:"Rav Moshe Hager (1860\u20131926), author of Leket Ani, became Kossover Rebbe at 21. His family descends from Rav Menachem Mendel, the Ohev Yisrael of Kossov, and from the Baal Shem Tov\u2019s students."},
- {month:4,day:6,name:"Rav Yisrael Yaakov Algazi",blurb:"Rav Yisrael Yaakov Algazi (1680\u20131756) led the Sephardic community of Jerusalem and was Rosh Yeshiva of Neveh Shalom and Beit El. His seforim include Yavin Shemua and Ar\u2019a DeRabbanan."},
- {month:4,day:7,name:"The Baal HaFlaah",blurb:"Rav Pinchas HaLevi Horowitz (1730\u20131805) was Rav of Frankfurt and the author of Hafla\u2019ah. He was a Rav muvhak of the Chasam Sofer, who learned with him as a boy. He opposed the Reform movement as it entered Frankfurt."},
- {month:4,day:7,name:"The Gerrer Rebbe, the Lev Simcha",blurb:"Rav Simcha Bunim Alter (1898\u20131992), a son of the Imrei Emes, moved to Eretz Yisrael in 1934 and became Gerrer Rebbe in 1977. He started the Daf Yomi of the Yerushalmi."},
- {month:4,day:7,name:"The Skulener Rebbetzin",blurb:"Rebbetzin Raizel Portugal (1925\u20132005), a daughter of the Rav of Vishava, was the wife of the Skulener Rebbe. She was known for her chesed to Soviet and Romanian Jews and her heart for all who needed help."},
- {month:4,day:8,name:"The Imrei Noam of Dzikov",blurb:"Rav Meir Horowitz (1819\u20131877), a grandson of Rav Naftali Ropshitzer, led the Dzikov Chassidim and wrote Imrei Noam."},
- {month:4,day:9,name:"Rav Zalman Sorotzkin (Lutsker Rav)",blurb:"Rav Zalman Sorotzkin (1881\u20131966) learned at Volozhin and Slabodka, served as Rav of Zhetel and Lutsk, and escaped to Eretz Yisrael in the war. He headed Chinuch Atzmai and wrote Oznayim LaTorah, a commentary on the Torah."},
- {month:4,day:9,name:"The Klausenburger Rebbe",blurb:"Rav Yekusiel Yehuda Halberstam (1905\u20131994), a great-grandson of the Divrei Chaim, lost his wife and eleven children in the Holocaust but rebuilt. He founded Kollelei Shas, Mifal HaShas and Laniado Hospital in Netanya, and the Sanz-Klausenburg communities in Israel and America.",star:true},
- {month:4,day:10,name:"Rav Shlomo Aharon Wertheimer",blurb:"Shlomo Aharon Wertheimer (1866\u20131935), born in Hungary and raised in Jerusalem, was a scholar and bookseller who collected and published Cairo Genizah manuscripts, including Batei Midrashos and Leket Midrash."},
- {month:4,day:11,name:"The Ateres Tzvi of Zidichov",blurb:"Rav Tzvi Hirsch Eichenstein (1785\u20131831), a student of the Chozeh of Lublin and Rav Uri of Strelisk, founded the Zidichov dynasty. He taught that Chassidus must be based on Kabbalah, and wrote Ateres Tzvi and Tzvi LaTzaddik."},
- {month:4,day:11,name:"Rav Yehuda Leib Tzirelson",blurb:"Rav Yehuda Leib Tzirelson (1859\u20131941) was the Chief Rabbi of Bessarabia, a founder of Agudas Yisrael, and a member of the Romanian Parliament. He wrote Atzei Levanon."},
- {month:4,day:11,name:"The Bukovsker Rebbe",blurb:"Rav Shmuel Pinter (1919\u20131994) was born in Vienna, reached London in 1938 and led Merkaz HaTorah and ran the Yesodei HaTorah schools for fifty years."},
- {month:4,day:12,name:"The Baal HaTurim",blurb:"Rav Yaakov ben Asher (1268\u20131348), son of the Rosh, wrote the Arba\u2019ah Turim, which organizes all of halacha into four sections and is the base of the Shulchan Aruch. He also wrote a commentary on the Torah known as the Baal HaTurim. He lived in Toledo after his family fled Germany.",star:true},
- {month:4,day:12,name:"Rav Eliyahu Baruch Kamai",blurb:"Rav Elya Baruch Kamai (1840\u20131917), a descendant of the Vilna Gaon\u2019s family, was Rosh Yeshiva of the Mir from 1899. His shiurim were published as Zichron Eliyahu."},
- {month:4,day:13,name:"Rav Chaim Cohen Rappaport",blurb:"Rav Chaim Cohen Rappaport (d. 1771), Rav of Lemberg for thirty years, was the leading rabbi who confronted the Frankists together with the Baal Shem Tov."},
- {month:4,day:14,name:"The Maharit",blurb:"Rav Yosef Trani (1568\u20131639), born in Tzefas, headed a yeshiva there and later became Rabbi of Constantinople. He is known for his responsa."},
- {month:4,day:14,name:"Rav Yaakov Yitzchak Ruderman",blurb:"Rav Yaakov Yitzchak Ruderman (1901\u20131987), a student of the Alter of Slabodka, founded Yeshivas Ner Yisroel in Baltimore in 1933 and led it for 54 years. His Sichos Levi and Mas\u2019as Levi were published after his passing.",star:true},
- {month:4,day:15,name:"The Ohr HaChaim HaKadosh",blurb:"Rav Chaim ben Attar (1696\u20131743), born in Sal\u00e9, Morocco, wrote the Ohr HaChaim on the Torah. He moved to Eretz Yisrael with a group of followers in 1742 and founded a yeshiva in Jerusalem. The Chida was among his students.",star:true},
- {month:4,day:16,name:"Rav Aharon Yosef Bakst",blurb:"Rav Aharon Yosef Bakst (1867\u20131941) was the last Rav of Shavel, a student of Rav Yitzchak Blazer and Rav Simcha Zissel. He was murdered in the Holocaust."},
- {month:4,day:16,name:"The Kapishnitzer Rebbe",blurb:"Rav Avraham Yehoshua Heschel (1888\u20131967), a descendant of the Ohev Yisrael of Apta and of the Ruzhiner Rebbe, led his Chassidim in Vienna and then New York. He was a founder of Chinuch Atzmai with Rav Aharon Kotler."},
- {month:4,day:25,name:"The Shaagas Aryeh",blurb:"Rav Aryeh Leib Ginzberg (1695\u20131785), born in Pinsk, was Rav of Volozhin and Metz. His Shaagas Aryeh is a classic work of halachic reasoning. He finished Shas a thousand times.",star:true},
- {month:4,day:25,name:"The Ohr LaShamayim of Apta",blurb:"Rav Meir Segal of Apta (d. 1831), a student of the Chozeh of Lublin, followed the Ohev Yisrael as Rav of Apta. His students included the Tiferes Shlomo of Radomsk."},
- {month:4,day:26,name:"Rav Yechezkel Shraga of Shinev",blurb:"Rav Yechezkel Shraga Halberstam (1870\u20131941), a grandson of the Divrei Chaim, was Rav in Zmigrod and later Shinev. He fled the Nazis to Lemberg but was exiled to Siberia and did not survive."},
- {month:4,day:26,name:"Rav Nachman Bulman",blurb:"Rav Nachman Bulman (1925\u20132002), born in New York, was a rabbi and educator who helped found NCSY. He moved to Israel and founded a community in Migdal HaEmek and later became a Mashgiach at Ohr Somayach."},
- {month:4,day:27,name:"The Skverer Rebbe of Flatbush",blurb:"Rav Mordechai Twersky (1924\u20132007), born in Kishinev, came to America as an infant. With his brother he ran his father\u2019s beis medrash in Boro Park, and opened the Skverer beis medrash in Flatbush in 1970."},
- {month:4,day:27,name:"Rav Yaakov Adess",blurb:"Rav Yaakov Adess (1898\u20131963), born in Jerusalem, taught at Yeshivas Ohel Moed and Porat Yosef, and served on the Chief Rabbinate\u2019s Beis Din HaGadol."},
- {month:4,day:28,name:"The Yismach Moshe",blurb:"Rav Moshe Teitelbaum (1759\u20131841) of Ujhely, a descendant of the Rema and a follower of the Chozeh of Lublin, brought Chassidus to Hungary and founded the Satmar and Sighet dynasties. His Yismach Moshe is on the Torah.",star:true},
- {month:4,day:28,name:"Rav Shlomo Ganzfried",blurb:"Rav Shlomo Ganzfried (1804\u20131886) was an orphan raised by the Rav of Ungvar, and is the author of the Kitzur Shulchan Aruch, still the most common guide to practical halacha.",star:true},
- {month:4,day:28,name:"Rav Chaim Friedlander",blurb:"Rav Chaim Friedlander (1923\u20131986), born in Breslau, was a close student of Rav Dessler and Mashgiach of Ponevezh. His Sifsei Chaim is a major work on Jewish thought and character."},
- {month:4,day:28,name:"Rav Yaakov Shaul Elyashar",blurb:"Rav Yaakov Shaul Elyashar (1817\u20131906), born in Tzefas and raised in Jerusalem, became Rishon LeTzion in 1893 and Chacham Bashi. He wrote Yisa Berachah."},
- {month:4,day:28,name:"Rav Moshe Mordechai Chadash",blurb:"Rav Moshe Mordechai Chadash (1940\u20132016) was Rosh Yeshiva of Ohr Elchanan in Jerusalem, taking over after Rav Simcha Wasserman, and expanded the yeshiva into several branches."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
- Object.assign(YAHRZEIT_WIKI,{"The Panim Meiros": "Meir Eisenstadt", "Rav Chaim Stein (Telz)": "Chaim Stein", "Rav Yisrael Zev Gustman": "Israel Zev Gustman", "Rav Shlomo Kluger": "Solomon Kluger", "The Maor VaShemesh": "Kalonymus Kalman Epstein", "The Bobover Rebbe (Rav Shlomo Halberstam)": "Shlomo Halberstam of Bobov", "The Trisker Maggid": "Avraham Twersky of Trisk", "Reb Mike Tress": "Elimelech Tress", "Rabbeinu Tam": "Jacob ben Meir", "Rav Ezriel Hildesheimer": "Azriel Hildesheimer", "The Baal HaFlaah": "Pinchas HaLevi Horowitz", "The Gerrer Rebbe, the Lev Simcha": "Simcha Bunim Alter", "Rav Zalman Sorotzkin (Lutsker Rav)": "Zalman Sorotzkin", "The Klausenburger Rebbe": "Yekusiel Yehudah Halberstam", "The Ateres Tzvi of Zidichov": "Tzvi Hirsch Eichenstein", "The Baal HaTurim": "Jacob ben Asher", "Rav Eliyahu Baruch Kamai": "Elya Baruch Kamai", "The Maharit": "Joseph ben Moses di Trani", "Rav Yaakov Yitzchak Ruderman": "Yaakov Yitzchak Ruderman", "The Ohr HaChaim HaKadosh": "Chaim ibn Attar", "The Shaagas Aryeh": "Aryeh Leib Gunzberg", "The Yismach Moshe": "Moshe Teitelbaum", "Rav Shlomo Ganzfried": "Shlomo Ganzfried", "Rav Chaim Friedlander": "Chaim Friedlander", "Rav Yaakov Shaul Elyashar": "Yaakov Shaul Elyashar"});
-})();
-
-(function(){
- const add=[
- {adar:true,day:9,name:"Rav Shmuel David Ungar (Nitra Rav)",blurb:"Rav Shmuel David Ungar (d. 1945) was the Rav and Rosh Yeshiva of Nitra, a leading Torah center of Slovakia, and the father-in-law of Rav Michoel Ber Weissmandel."},
- {adar:true,day:9,name:"Rav Yechiel Schlesinger",blurb:"Rav Yechiel Schlesinger (d. 1948) learned in Slabodka, Mir and Ponevezh and served as a dayan and Rosh Yeshiva in Frankfurt. He left Germany for Jerusalem in 1939 and founded Yeshivas Kol Torah, which became a Torah home for German Jewry."},
- {adar:true,day:9,name:"Rav Shmuel Auerbach",blurb:"Rav Shmuel Auerbach (1931\u20132018), son of Rav Shlomo Zalman Auerbach, was Rosh Yeshiva of Maalos HaTorah in Jerusalem, a leading voice of the Yerushalmi Torah world and author of Darchei Shmuel."},
- {adar:true,day:11,name:"The Rashash of Vilna",blurb:"Rav Shmuel Strashun (1794\u20131872) was a Talmud scholar and wealthy banker of Vilna who ran a free-loan fund and a yeshiva. His glosses on nearly the entire Talmud, known as the Rashash, appear in every standard Vilna edition.",star:true},
- {adar:true,day:11,name:"The Rogatchover Gaon",blurb:"Rav Yosef Rosen (1858\u20131936) was Rav of Dvinsk and a student of the Beis HaLevi. Known as the Rogatchover Gaon, he was famed for his unique, deep style of analysis. His responsa and novellae are in Tzafnas Paneach.",star:true},
- {adar:true,day:11,name:"Rav Shmuel Brudny",blurb:"Rav Shmuel Brudny (1915\u20131981), a student of the Mir, escaped to Shanghai during the Holocaust after losing his family. He later became a Rosh Yeshiva of the Mir in New York."},
- {adar:true,day:11,name:"Rav Gershon Ashkenazi (Avodas HaGershuni)",blurb:"Rav Gershon Ashkenazi (1618\u20131693) was Chief Rabbi of Moravia and later of Metz, a student of the Bach, and wrote Avodas HaGershuni. He opposed the Sabbatian movement and left a record of the Chmielnitzki massacres."},
- {adar:true,day:12,name:"Rav Alter of Tepliker",blurb:"Rav Moshe Yehoshua Bezhilianski (d. 1919), known as Reb Alter Tepliker, wrote Hishtapchus HaNefesh and other works on Breslov teachings. He was killed during a pogrom while sitting next to a Sefer Torah."},
- {adar:true,day:12,name:"Rav Chaim David HaLevi",blurb:"Rav Chaim David HaLevi (1924\u20131998) was Sephardic Chief Rabbi of Tel Aviv for 25 years. His multi-volume responsa, Aseh Lecha Rav, deal with modern halachic questions."},
- {adar:true,day:12,name:"The Sassover Rebbe (Rav Chananya Yom Tov Lipa Teitelbaum)",blurb:"Rav Chananya Yom Tov Lipa Teitelbaum (1906\u20131966), a son-in-law of the Satmar Rebbe, headed his father-in-law\u2019s yeshiva. He is buried in Tiveria."},
- {adar:true,day:13,name:"Rav Nachman Goldstein of Tcherin",blurb:"Rav Nachman Goldstein (d. 1894), a leader of Breslov, wrote Parparos LeChochmah on Likutei Moharan and other works."},
- {adar:true,day:14,name:"The Ohr HaMeir",blurb:"Rav Zev Wolf of Zhitomir (d. 1800), a student of the Maggid of Mezritch, wrote Ohr HaMeir, an early foundation text of Chassidus."},
- {adar:true,day:14,name:"Rav Shimon Schwab",blurb:"Rav Shimon Schwab (1908\u20131995), born in Frankfurt, learned at Mir and Telz and became Rav in Baltimore and then in Washington Heights, following Rav Joseph Breuer. His Ma\u2019ayan Beis HaSho\u2019eivah, Selected Writings and Selected Speeches are widely read.",star:true},
- {adar:true,day:18,name:"Rav Chanoch Henoch of Alexander",blurb:"Rav Chanoch Henoch HaKohen (1798\u20131870), a descendant of the Shach and a student of Rav Simcha Bunim and the Kotzker Rebbe, led the Alexander Chassidim in Poland."},
- {adar:true,day:18,name:"Rav Yechezkel Levenstein",blurb:"Rav Yechezkel Levenstein (1885\u20131974), the famed Mashgiach of Mir and later Ponevezh, learned in Radin and Kelm. He was a student of Rav Yerucham Levovitz and was known for deep Mussar talks and for caring for people.",star:true},
- {adar:true,day:18,name:"Rav Moshe Weber",blurb:"Rav Moshe Weber (1914\u20132000) prayed at the Kosel almost every day, helped visitors put on tefillin, and gave large sums to charity. The Lubavitcher Rebbe called him one of the holiest and kindest people in the world."},
- {adar:true,day:18,name:"The Kerestirer Rebbe (Rav Avraham Steiner)",blurb:"Rav Avraham Steiner (1883\u20131927) became Rebbe after his father Reb Shayele Kerestirer passed away in 1925. He passed away at age 44."},
- {adar:true,day:19,name:"Rav Yosef Chaim Sonnenfeld",blurb:"Rav Yosef Chaim Sonnenfeld (1848\u20131932) was a student of the Ksav Sofer who moved to Jerusalem in 1873 and became the Rav and Av Beis Din of the Ashkenazi community before the State of Israel. He is buried on Har HaZeisim.",star:true},
- {adar:true,day:19,name:"Rav Mordechai Schwab",blurb:"Rav Mordechai Schwab (1911\u20131994), the younger brother of Rav Shimon Schwab, was a Mashgiach in Monsey and was known for finding merit in everyone he met."},
- {adar:true,day:19,name:"The Ostrovtzer Rebbe",blurb:"Rav Meir Yechiel HaLevi Halstock (1851\u20131928) founded the Ostrovtze court, known for its yeshivos and its gematria-rich drashos collected in Meir Einei Chachamim."},
- {adar:true,day:19,name:"Rav David of Dinov",blurb:"Rav David Tzvi Elimelech of Dinov (1804\u20131874), son of the Bnei Yissaschar, wrote Tzemach David and succeeded his father as Rebbe of Dinov in 1841."},
- {adar:true,day:20,name:"The Maharam Schiff",blurb:"Rav Meir Schiff (1608\u20131644) of Frankfurt became Rav of Fulda at 17. His terse, deep chiddushim on the Talmud are a staple of study. He was appointed Rav of Prague but died at 36 shortly after arriving."},
- {adar:true,day:20,name:"The Bach",blurb:"Rav Yoel Sirkes (1561\u20131641), Chief Rabbi of Cracow, wrote Bayis Chadash on the Tur, tracing each law to the Gemara. He was the teacher and father-in-law of the Taz.",star:true},
- {adar:true,day:20,name:"The Vizhnitzer Rebbe, Rav Moshe Yehoshua Hager",blurb:"Rav Moshe Yehoshua Hager (1916\u20132012), son of the Imrei Chaim, grew up in Vizhnitz and moved to Eretz Yisrael after the war. He became Rebbe in 1972 and later served as president of the Moetzes Gedolei HaTorah."},
- {adar:true,day:21,name:"Rav Yitzchak Elchanan Spektor",blurb:"Rav Yitzchak Elchanan Spektor (1817\u20131896) served as Rav of Kovno for 32 years and was the leading rabbinic voice of Russian Jewry. His responsa include Be\u2019er Yitzchak and Ein Yitzchak.",star:true},
- {adar:true,day:21,name:"Rav Itzele Ponevezher",blurb:"Rav Yitzchak Yaakov Rabinowitz (1854\u20131919) taught in Slabodka and was Rav of Ponevezh, and helped found the Kenesses Yisrael organization with Rav Chaim Brisker. His Zecher Yitzchak was published after his passing."},
- {adar:true,day:21,name:"Rav Moshe Shmuel Glasner",blurb:"Rav Moshe Shmuel Glasner (d. 1924), a great-grandson of the Chasam Sofer, was Rav of Klausenburg and wrote Dor Revi\u2019i on Chullin."},
- {adar:true,day:21,name:"Rav Shlomo Yosef Zevin",blurb:"Rav Shlomo Yosef Zevin (1888\u20131978) edited the Encyclopedia Talmudis, a major reference work on the Talmud. He studied at the Mir and was a Rav in Russia before moving to Eretz Yisrael."},
- {adar:true,day:22,name:"The Aruch HaShulchan",blurb:"Rav Yechiel Michel Epstein (1829\u20131908) was Rav of Novardok for 34 years. His Aruch HaShulchan covers the whole Shulchan Aruch with explanation and sources, and he was the brother-in-law of the Netziv.",star:true},
- {adar:true,day:22,name:"Rav Reuven Grozovsky",blurb:"Rav Reuven Grozovsky (1896\u20131958) succeeded Rav Baruch Ber as Rosh Yeshiva of Kamenitz and later led Torah Vodaas. He was a student of the Alter of Slabodka."},
- {adar:true,day:22,name:"Rav Avraham Dov Ber Kahana-Shapiro",blurb:"Rav Avraham Dov Ber Kahana-Shapiro (1870\u20131943) was Chief Rabbi of Kovno during the war and president of the Lithuanian Agudas HaRabbonim. His rulings are in Devar Avraham.",star:true},
- {adar:true,day:22,name:"Rav Yisrael Moshe Dushinsky",blurb:"Rav Yisrael Moshe Dushinsky (1921\u20132003) became Rosh Yeshiva of Dushinsky at age 27 after his father\u2019s passing, and later the Av Beis Din of the Eidah HaChareidis."},
- {adar:true,day:23,name:"Rav Rafael Shapira of Volozhin",blurb:"Rav Rafael Shapira (1837\u20131921), a son-in-law of the Netziv and father-in-law of Rav Chaim Soloveitchik of Brisk, reopened the Volozhin yeshiva on a smaller scale after the Russians closed it."},
- {adar:true,day:23,name:"Rav Michel Dovid Rozovsky",blurb:"Rav Michel Dovid Rozovsky (1869\u20131935) was Rav of Grodno for forty years and the father of Rav Shmuel Rozovsky of Ponevezh."},
- {adar:true,day:23,name:"The Divrei Binah of Biala",blurb:"Rav Yitzchak Yaakov Rabinowitz of Biala (d. 1905), a descendant of the Yid HaKadosh of Peshischa, led Biala Chassidim and wrote Divrei Binah."},
- {adar:true,day:24,name:"Rav Meir Soloveichik",blurb:"Rav Meir Soloveichik (1929\u20132016) was Rosh Yeshiva of Brisk in Jerusalem, in the seventh generation of Rav Chaim of Volozhin\u2019s descendants."},
- {adar:true,day:24,name:"Rav Eliyahu HaKohen of Izmir",blurb:"Rav Eliyahu HaKohen Ha\u2019Itamari (c. 1650\u20131729) of Izmir wrote Shevet Mussar and almost forty works, including on the miracle that the Jewish quarter was spared when the earthquake and fire destroyed Izmir in 1688."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
- Object.assign(YAHRZEIT_WIKI,{"The Rashash of Vilna": "Samuel Strashun", "The Rogatchover Gaon": "Yosef Rosen", "Rav Shimon Schwab": "Shimon Schwab", "Rav Yechezkel Levenstein": "Yechezkel Levenstein", "Rav Yosef Chaim Sonnenfeld": "Yosef Chaim Sonnenfeld", "The Maharam Schiff": "Meir Schiff", "The Bach": "Joel Sirkes", "The Vizhnitzer Rebbe, Rav Moshe Yehoshua Hager": "Moshe Yehoshua Hager", "Rav Yitzchak Elchanan Spektor": "Yitzchak Elchanan Spektor", "Rav Shlomo Yosef Zevin": "Shlomo Yosef Zevin", "The Aruch HaShulchan": "Yechiel Michel Epstein", "Rav Reuven Grozovsky": "Reuven Grozovsky", "Rav Avraham Dov Ber Kahana-Shapiro": "Abraham Duber Kahana Shapiro", "Rav Rafael Shapira of Volozhin": "Refael Shapiro", "Rav Meir Soloveichik": "Meir Soloveichik"});
-})();
-
-(function(){
- const add=[
- {month:11,day:1,name:"The Ozherover Rebbe (Rav Moshe Yechiel Epstein)",blurb:"Rav Moshe Yechiel Epstein (1890\u20131971), Ozherover Rebbe, led his Chassidim in Poland, then in the Bronx, and in Tel Aviv from 1949. He wrote the 11-volume Aish Daas and the 12-volume Be\u2019er Moshe on the Torah and Tanach, over 10,000 pages in all."},
- {month:11,day:1,name:"Rav Avraham Yehuda Farbstein",blurb:"Rav Avraham Yehuda Farbstein (1917\u20131997), a son-in-law of Rav Yechezkel Sarna, learned with Rav Isser Zalman Meltzer and the Chazon Ish. He taught in the Chevron yeshiva for about fifty years."},
- {month:11,day:1,name:"Rav Chaim Epstein",blurb:"Rav Chaim Epstein (1936\u20132015), a talmid of Rav Aharon Kotler, was the Rosh Yeshiva of Zichron Melech in Boro Park for 42 years, known for powerful shiurim and Mussar talks."},
- {month:11,day:2,name:"The Tzemach Tzedek of Nikolsburg",blurb:"Rav Menachem Mendel Krochmal (1600\u20131661), a student of the Bach and friend of the Taz, was Rav of Nikolsburg and chief rabbi of Moravia. He fled Cracow during the Cossack uprisings."},
- {month:11,day:3,name:"Rav Moshe Soloveitchik",blurb:"Rav Moshe Soloveitchik (1879\u20131941), a son of Rav Chaim of Brisk, served as Rav in Rasin and Rosh Yeshiva in Warsaw. In 1929 he came to America and taught at RIETS for twelve years. His son Rav Yosef Dov Soloveitchik succeeded him."},
- {month:11,day:3,name:"The Amshinover Rebbe (Rav Yosef Kalish)",blurb:"Rav Yosef Kalish (1878\u20131935), a grandson of the first Amshinover Rebbe and great-grandson of Rav Yitzchak of Vorka, led the Amshinov Chassidim from 1918."},
- {month:11,day:4,name:"Rav Yechiel Yaakov Weinberg (Seridei Eish)",blurb:"Rav Yechiel Yaakov Weinberg (1885\u20131966) learned at Mir and Slabodka, earned a doctorate in Germany, and became rector of the Berlin Rabbinical Seminary. His Seridei Eish responsa deal with the major questions of modern times, including the Holocaust.",star:true},
- {month:11,day:4,name:"Rav Avraham of Kalisk",blurb:"Rav Avraham HaKohen of Kalisk (d. 1810), first a student of the Vilna Gaon and then of the Maggid of Mezritch, was known for his fervent prayers. In 1777 he and Rav Menachem Mendel of Vitebsk led about 300 Chassidim to Eretz Yisrael and he later led the community."},
- {month:11,day:4,name:"Rav Avraham Aharon Yudelevitch",blurb:"Rav Avraham Aharon Yudelevitch (1850\u20131930), born in Novardok, was Rav in Russia, Manchester, Boston and New York and wrote Darash Av and Beis Av."},
- {month:11,day:6,name:"The Atzei Chaim of Sighet",blurb:"Rav Chaim Tzvi Teitelbaum (1879\u20131926), eldest son of the Kedushas Yom Tov and brother of the Satmar Rebbe, was Rav of Sighet from 1904."},
- {month:11,day:6,name:"The Oneg Yom Tov",blurb:"Rav Raphael Yom Tov Halpern (1816\u20131879) was Rav of Bialystok and the author of Oneg Yom Tov."},
- {month:11,day:7,name:"The Lelover Rebbe (Rav David Biderman)",blurb:"Rav David Biderman (1746\u20131814), a follower of the Chozeh of Lublin, was known for his deep compassion and refusal to see faults in other Jews. His student Rav Yitzchak of Vorka taught the Amshinov dynasty."},
- {month:11,day:7,name:"Rav Yerucham Perlman of Minsk",blurb:"Rav Yerucham Yehuda Leib Perlman (1835\u20131896) learned in Kovno and became Rav of Minsk in 1883, where his halachic decisions are in Ohr Gadol."},
- {month:11,day:8,name:"Rav Menachem Raichik",blurb:"Rav Menachem Raichik (1918\u20131998), a Lubavitcher Chassid, fled Poland and Japan to Shanghai, where he helped hold the uprooted yeshiva together. He later served in Los Angeles for fifty years."},
- {month:11,day:8,name:"The Spinka Rebbe of Jerusalem",blurb:"Rav Yosef Meir Kahana (d. 1978), the Spinka Rebbe in Jerusalem, was succeeded by his son Rav Mordechai Dovid."},
- {month:11,day:8,name:"Rav Natan Cassuto",blurb:"Rav Natan Cassuto (1909\u20131945) of Florence was an ophthalmologist and Rav who became Chief Rabbi of Milan when Jews were forbidden to serve as doctors. He was deported to Auschwitz and murdered on a death march."},
- {month:11,day:9,name:"Rav Nachum Abba Grossbard",blurb:"Rav Nachum Abba Grossbard (d. 1993), a talmid of Rav Shimon Shkop and Rav Baruch Ber, was Mashgiach of Ponevezh and helped rebuild the yeshiva world of America after the Holocaust."},
- {month:11,day:9,name:"The Skverer Rebbe of Boro Park (Rav Dovid Twersky)",blurb:"Rav Dovid Twersky (d. 2001) succeeded his father, Reb Itzikl Skverer, after his early death, and led the Skver Chassidim in Boro Park."},
- {month:11,day:9,name:"Rav Eliezer Silver",blurb:"Rav Eliezer Silver (1882\u20131968) learned with the Rogatchover and Ohr Somayach, and served as Rav in Cincinnati for decades. He founded the American Agudas Yisrael and the Vaad HaHatzalah to rescue Jews in the war.",star:true},
- {month:11,day:9,name:"Rav Zechariah Fendel",blurb:"Rav Zechariah Fendel (1928\u20132011) was the founding principal of the Yeshiva Chofetz Chaim high school in Forest Hills and wrote nearly twenty books for English readers, including Anvil of Sinai."},
- {month:11,day:10,name:"The Maharam Padua",blurb:"Rav Meir Katzenellenbogen (1482\u20131565) studied in Prague and Padua and became Rav of Padua after his father-in-law. Rav Ovadiah Sforno and the Rema were among the scholars who wrote to him."},
- {month:11,day:10,name:"The Rashash (Rav Shalom Sharabi)",blurb:"Rav Shalom Sharabi (1720\u20131777), born in Yemen, headed Yeshivas Beis El in Jerusalem for thirty years and is the central Kabbalist after the Arizal. The Chida was his student, and his Siddur HaKavanos is still used.",star:true},
- {month:11,day:10,name:"The Lutzker Maggid",blurb:"Rav Shlomo of Lutzk (d. 1813) was a student of the Maggid of Mezritch and compiled Magid Devarav LeYaakov. His students included the Sar Shalom of Belz."},
- {month:11,day:10,name:"Rebbetzin Rivka Schneersohn",blurb:"Rebbetzin Rivka Schneersohn (1833\u20131914), wife of the Rebbe Maharash, was the matriarch of Lubavitch for 33 years after his passing. The Bais Rivka schools are named for her."},
- {month:11,day:10,name:"Rav Yissachar Shlomo Teichtal",blurb:"Rav Yissachar Shlomo Teichtal (1885\u20131945), Rav of Pishtian, wrote Eim HaBanim Semeichah, calling for the settlement of Eretz Yisrael. He was murdered on a train near the end of the war.",star:true},
- {month:11,day:10,name:"Rav Yitzchak Eizik Sher",blurb:"Rav Yitzchak Eizik Sher (1875\u20131952), son-in-law of the Alter of Slabodka, led the Slabodka yeshiva and after the Chevron massacre of 1929 reestablished it in Bnei Brak at the advice of the Chazon Ish."},
- {month:11,day:13,name:"Rav Mordechai of Lechovitz",blurb:"Rav Mordechai of Lechovitz (1742\u20131810), a descendant of the Levush, was a student of Rav Aharon of Karlin and led Chassidim in Lithuania. His teachings are in Toras Avos."},
- {month:11,day:14,name:"The Pnei Yehoshua",blurb:"Rav Yaakov Yehoshua Falk (1680\u20131756), Rav of Lemberg, Berlin, Metz and Frankfurt, was trapped under rubble in 1702 and vowed to write a sefer if saved. He then learned Shas 36 times and wrote the Pnei Yehoshua.",star:true},
- {month:11,day:14,name:"The Alexander Rebbe (Rav Yechiel Danziger)",blurb:"Rav Yechiel Danziger (1828\u20131894), the first Alexander Rebbe, was a student of Rav Yitzchak of Vorka and Rav Dov Ber of Biala."},
- {month:11,day:14,name:"Rav Daniel Frisch",blurb:"Rav Daniel Frisch (1935\u20132005), born in Hungary, wrote Matok MiDevash, a major commentary on Kabbalah, and Otzar HaZohar."},
- {month:11,day:15,name:"Rav Rafael Shlomo Laniado",blurb:"Rav Rafael Shlomo Laniado (d. 1925) was a Rosh Yeshiva of Porat Yosef in Jerusalem and a teacher of Rav Yaakov Adess."},
- {month:11,day:15,name:"Rav Baruch Kunstat",blurb:"Rav Baruch Kunstat (1885\u20131967), a descendant of the Chasam Sofer, was Rav of Fulda. After Buchenwald he came to Jerusalem and helped found Yeshivas Kol Torah with Rav Yechiel Schlesinger."},
- {month:11,day:15,name:"Rav Shmuel David Warshavchik",blurb:"Rav Shmuel David Warshavchik (1909\u20131988), a top talmid of Rav Elchonon Wasserman and Rav Baruch Ber, escaped to Shanghai and led RJJ in New York from 1946 to 1976."},
- {month:11,day:15,name:"Rav Yosef Tendler",blurb:"Rav Yosef Tendler (d. 2012), one of the first American-born students of Rav Aharon Kotler, led the Ner Yisroel Mechina for 47 years. His Torah is collected in Od Yosef Chai."},
- {month:11,day:16,name:"Rav Yonah Navon",blurb:"Rav Yonah Navon (1713\u20131760) was the Rosh Yeshiva of Gedulas Mordechai in Jerusalem at 19. His responsa are in Nechpah BaKesef, and the Chida was one of his students."},
- {month:11,day:16,name:"Rav Alter Yechezkel Horowitz",blurb:"Rav Alter Yechezkel Horowitz (1930\u20131994), a survivor of Auschwitz, came to America alone at 19, learned in Lakewood and became close to the Satmar Rebbe. He opened the Sanzer Kloiz in Monsey in 1968."},
- {month:11,day:16,name:"The Lelover Rebbe of Jerusalem (Rav Avraham Shlomo Biderman)",blurb:"Rav Avraham Shlomo Biderman (1927\u20132000), born in Cracow, moved to Jerusalem as a child and became the Lelover Rebbe after his father\u2019s passing."},
- {month:11,day:17,name:"Rav Yehuda Chitrik",blurb:"Rav Yehuda Chitrik (1899\u20132006), a Lubavitcher Chassid known for his remarkable memory, passed on the stories and customs of earlier Rebbes. He studied in Smolensk and later lived in Montreal and New York."},
- {month:11,day:17,name:"Rav Eliezer Shlomo Schick",blurb:"Rav Eliezer Shlomo Schick (1940\u20132015) published more than 100 books and 1,000 booklets on the teachings of Rebbe Nachman of Breslov and led Breslov City in Yavniel."},
- {month:11,day:19,name:"The Maharshag",blurb:"Rav Shimon Greenfeld (1860\u20131930), a student of the Maharam Shick, was Rav of Semihaly and author of the three-volume Maharshag responsa and Zehav Sheva on the Torah."},
- {month:11,day:19,name:"The Strikover Rebbe",blurb:"Rav Elimelech Menachem Mendel Landau (1859\u20131936) was the first Strikover Rebbe. After World War I he moved to Zgierz and founded Yeshivas Beis Aharon."},
- {month:11,day:19,name:"The Slonimer Rebbe (Divrei Shmuel)",blurb:"Rav Shmuel Weinberg of Slonim (d. 1916), grandson of the Yesod HaAvodah, led the Slonim Chassidim and wrote Divrei Shmuel."}
- ];
- const have=new Set(YAHRZEIT_DB.map(e=>e.name));
- add.forEach(e=>{ if(!have.has(e.name)) YAHRZEIT_DB.push(e); });
- Object.assign(YAHRZEIT_WIKI,{"Rav Moshe Soloveitchik": "Moshe Soloveichik", "Rav Yechiel Yaakov Weinberg (Seridei Eish)": "Yechiel Yaakov Weinberg", "Rav Avraham of Kalisk": "Avraham HaKohen of Kalisk", "The Atzei Chaim of Sighet": "Chaim Tzvi Teitelbaum", "The Lelover Rebbe (Rav David Biderman)": "David of Lelov", "Rav Eliezer Silver": "Eliezer Silver", "The Maharam Padua": "Meir Katzenellenbogen", "The Rashash (Rav Shalom Sharabi)": "Shalom Sharabi", "Rav Yissachar Shlomo Teichtal": "Yissachar Shlomo Teichtal", "Rav Yitzchak Eizik Sher": "Yitzchok Isaac Sher", "Rav Mordechai of Lechovitz": "Mordechai of Lechovitz", "The Pnei Yehoshua": "Jacob Joshua Falk"});
-})();
-
 function allYahrzeits(){
   const extra = (typeof config !== 'undefined' && config && Array.isArray(config.yahrzeitBank)) ? config.yahrzeitBank : [];
-  return YAHRZEIT_DB.concat(extra);
+  return YAHRZEIT_DB.concat(YAHRZEIT_DB2, extra);
 }
 // Photo database: config.yahrzeitPhotoList = [{name, url}], edited in Settings > Photos.
 function yzKey(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
@@ -2210,27 +1985,42 @@ const YAHRZEIT_WIKI = {
   "The Shelah HaKadosh":"Isaiah Horowitz","Rav Yosef Karo":"Joseph Karo","The Divrei Chaim of Sanz":"Chaim Halberstam",
   "Rav Shmuel of Sochatchov (Shem MiShmuel)":"Shmuel Bornstein"
 };
-const YZ_WIKI_CACHE_KEY = 'derechYzWikiPhotos2';
+Object.assign(YAHRZEIT_WIKI, YAHRZEIT_WIKI_EXTRA);
+const YZ_WIKI_CACHE_KEY = 'derechYzWikiPhotos';
 function yzWikiCache(){ try{ return JSON.parse(localStorage.getItem(YZ_WIKI_CACHE_KEY)||'{}'); }catch(e){ return {}; } }
 async function prefetchYahrzeitWikiPhotos(onNew){
-  const cache = yzWikiCache(), now = Date.now();
-  const fresh = c => c && now - c.t < (c.u ? 30*864e5 : 864e5);
-  const todo = Object.values(YAHRZEIT_WIKI).filter((t,i,a)=> a.indexOf(t)===i && !fresh(cache[t]));
+  // One request per 20 articles (photo + intro text together), cached 30 days.
+  const cache = yzWikiCache(), now = Date.now(), MAX_AGE = 30*864e5;
+  const todo = Object.values(YAHRZEIT_WIKI).filter((t,i,a)=> a.indexOf(t)===i && !(cache[t] && cache[t].x !== undefined && now - cache[t].t < MAX_AGE));
   if(!todo.length) return;
   let got = false;
-  for(let i=0;i<todo.length;i+=40){
-    const chunk = todo.slice(i,i+40);
+  for(let k = 0; k < todo.length; k += 20){
+    const chunk = todo.slice(k, k+20);
     try{
-      const r = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=500&titles='+encodeURIComponent(chunk.join('|')));
-      const d = await r.json(), q = d.query || {};
-      const back = {}; // final title -> requested title(s)
-      const hop = {}; (q.normalized||[]).forEach(x=> hop[x.from]=x.to); (q.redirects||[]).forEach(x=> hop[x.from]=x.to);
-      const img = {}; Object.values(q.pages||{}).forEach(p=>{ img[p.title] = (p.thumbnail && p.thumbnail.source) || ''; });
-      chunk.forEach(t=>{ let c=t, n=0; while(hop[c] && n++<4) c=hop[c]; const u = img[c]||''; cache[t]={u,t:now}; if(u) got=true; });
+      const r = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages|extracts&piprop=thumbnail&pithumbsize=400&exintro=1&explaintext=1&exlimit=max&exsentences=4&titles='+encodeURIComponent(chunk.join('|')));
+      const d = await r.json(); const q = d.query || {};
+      const alias = {}; // requested title -> canonical title
+      (q.normalized||[]).forEach(n=>{ alias[n.from] = n.to; });
+      (q.redirects||[]).forEach(n=>{ Object.keys(alias).forEach(a=>{ if(alias[a]===n.from) alias[a]=n.to; }); alias[n.from] = n.to; });
+      const byTitle = {}; Object.values(q.pages||{}).forEach(pg=>{ byTitle[pg.title] = pg; });
+      chunk.forEach(t=>{
+        const pg = byTitle[alias[t] || t];
+        const u = pg && pg.thumbnail && pg.thumbnail.source || '';
+        const x = pg && !('missing' in pg) ? String(pg.extract||'') : '';
+        cache[t] = {u, x, t: now}; if(u) got = true;
+      });
     }catch(e){ /* offline: try again next load */ }
   }
   try{ localStorage.setItem(YZ_WIKI_CACHE_KEY, JSON.stringify(cache)); }catch(e){}
   if(got && onNew) onNew();
+}
+function yzWikiExtract(name){
+  const cache = yzWikiCache(), t = YAHRZEIT_WIKI[name];
+  const c = t ? cache[t] : cache['n2:'+name];
+  let x = (c && c.x) || '';
+  if(!x) return '';
+  x = x.replace(/\s*\([^()]*\)/g,'').replace(/\s+/g,' ').trim();   // drop bracketed dates/transliterations
+  return x.length > 700 ? x.slice(0, x.lastIndexOf('. ', 700) + 1 || 700) : x;
 }
 function yzWikiPhoto(name){
   const cache = yzWikiCache();
@@ -2262,16 +2052,16 @@ async function lazyYahrzeitPhotos(list, onNew){
     if(cache[key] && now - cache[key].t < MAX_AGE) continue;
     const clean = y.name.replace(/\(.*?\)/g,' ').replace(/,.*$/,' ').trim();
     const words = clean.toLowerCase().split(/[^a-z0-9]+/).filter(w=> w.length>2 && !STOP.test(w));
-    let url = '';
+    let url = '', ext = '';
     if(words.length){
       try{
         // 1) Wikipedia article lead image (two query styles)
         for(const q of [clean+' rabbi', clean]){
           if(url) break;
-          const d = await j('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=4&gsrsearch='+encodeURIComponent(q)+'&prop=pageimages|extracts&piprop=thumbnail&pithumbsize=400&exintro=1&explaintext=1&exsentences=2');
+          const d = await j('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=4&gsrsearch='+encodeURIComponent(q)+'&prop=pageimages|extracts&piprop=thumbnail&pithumbsize=400&exintro=1&explaintext=1&exsentences=4');
           const pages = Object.values((d.query && d.query.pages) || {}).sort((a,b)=> a.index - b.index);
           for(const pg of pages){
-            if(pg.thumbnail && pg.thumbnail.source && yzTitleHasWords(pg.title, words) && YZ_JEWISH_RE.test(pg.extract||'')){ url = pg.thumbnail.source; break; }
+            if(pg.thumbnail && pg.thumbnail.source && yzTitleHasWords(pg.title, words) && YZ_JEWISH_RE.test(pg.extract||'')){ url = pg.thumbnail.source; ext = pg.extract||''; break; }
           }
         }
         // 2) Wikimedia Commons file whose name contains every word of the name
@@ -2285,7 +2075,7 @@ async function lazyYahrzeitPhotos(list, onNew){
         }
       }catch(e){ continue; /* offline: retry next time */ }
     }
-    cache[key] = {u:url, t:now}; changed = true; if(url) got = true;
+    cache[key] = {u:url, x:ext, t:now}; changed = true; if(url) got = true;
   }
   if(changed){ try{ localStorage.setItem(YZ_WIKI_CACHE_KEY, JSON.stringify(cache)); }catch(e){} }
   if(got && onNew) onNew();
@@ -2299,8 +2089,49 @@ function yahrzeitPhotoFor(name){
   const hit = all.find(x=>x.k===k) || all.find(x=>Math.min(x.k.length,k.length)>=8 && (x.k.includes(k)||k.includes(x.k)));
   return hit ? hit.url : yzWikiPhoto(name);
 }
+
+// ---- Yahrzeit card helpers: avatar (photo or initials) + gentle auto-scroll ----
+function yzInitials(name){
+  const w = String(name||'').replace(/\(.*?\)/g,' ').replace(/,.*$/,' ').split(/[^A-Za-z]+/)
+    .filter(x=>x && !/^(the|rav|rabbi|rabbeinu|reb|harav|hagaon|of|ben|bar|rebbe|rebbetzin|rebbetzin|maharal|hakadosh)$/i.test(x));
+  return ((w[0]||'?').charAt(0) + (w[1]||'').charAt(0)).toUpperCase();
+}
+function yzAvatarHtml(photo, name){
+  const ini = escapeHtml(yzInitials(name));
+  if(!photo) return `<div class="yzInitials">${ini}</div>`;
+  return `<img class="yzPhoto" src="${escapeHtml(photo)}" alt="" referrerpolicy="no-referrer" data-ini="${ini}" onerror="yzPhotoFail(this)">`;
+}
+function yzPhotoFail(img){
+  const d = document.createElement('div'); d.className = 'yzInitials'; d.textContent = img.dataset.ini || '?';
+  img.replaceWith(d);
+}
+function yzAutoScroll(el){
+  // Long blurbs drift upward slowly, pausing at the top and bottom, finishing
+  // before the card rotates away. Stops by itself once the card is replaced.
+  setTimeout(()=>{
+    if(!el.isConnected) return;
+    const max = el.scrollHeight - el.clientHeight;
+    if(max <= 4) return;
+    const dur = Math.max(SPOTLIGHT_DURATION - 5500, 3000);
+    const t0 = performance.now();
+    const step = now=>{
+      if(!el.isConnected) return;
+      const k = Math.min(1, (now - t0)/dur);
+      el.scrollTop = max * k;
+      if(k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, 2200);
+}
+function yzBestBlurb(e){
+  const own = YAHRZEIT_BLURB_OVERLAY[e.name] || e.blurb || '';
+  if(own.length >= 160) return own;
+  const x = yzWikiExtract(e.name);
+  if(x && x.length > own.length) return own ? own + ' ' + x : x;
+  return own;
+}
 function yahrzeitView(e, inDays){
-  return {name:e.name, blurb:YAHRZEIT_LONG[e.name]||e.blurb||'', photo:e.photo || yahrzeitPhotoFor(e.name) || '', star: !!e.star || YAHRZEIT_STAR_RE.test(e.name || ''), inDays};
+  return {name:e.name, blurb:yzBestBlurb(e), photo:e.photo || yahrzeitPhotoFor(e.name) || '', star: !!e.star || YAHRZEIT_STAR_RE.test(e.name || ''), inDays};
 }
 
 const HISTORY_DB = [
@@ -3283,8 +3114,8 @@ function buildSpotlightItems(){
       // the rest of the board).
       const ordered = list.filter(y=>y.star).concat(list.filter(y=>!y.star)).slice(0, 8);
       ordered.forEach((y, idx)=>{
-        const body = `<div class="yzCard">${y.photo ? `<div class="yzHead"><img src="${escapeHtml(y.photo)}" alt="" onload="setupYzScroll(this.closest('.spotlightLayer'))" onerror="this.parentNode.remove();setupYzScroll(document.querySelector('.spotlightLayer.active'))">${ordered.length>1 ? `<div class="yzCount">${idx+1} OF ${ordered.length} TODAY</div>` : ''}</div>` : ''}<div class="yzScroll"><div class="yzInner">${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : ''}${!y.photo && ordered.length>1 ? `<div class="yzCount" style="margin-top:8px;">${idx+1} OF ${ordered.length} TODAY</div>` : ''}</div></div></div>`;
-        rotating.push({key:'yahrzeit:'+y.name, eyebrow: soon ? 'Yahrzeit \u2014 '+(soon===1 ? 'Tomorrow' : 'In '+soon+' Days') : 'Yahrzeit Today', title: y.name, body, accent:'var(--gold-dim)', icon:'\u2727'});
+        const body = `${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : `<div class="qText" style="color:var(--muted)">Yahrzeit of ${escapeHtml(y.name)}.</div>`}${ordered.length>1 ? `<div class="yzCount">${idx+1} OF ${ordered.length} TODAY</div>` : ''}`;
+        rotating.push({key:'yahrzeit:'+y.name, eyebrow: soon ? 'Yahrzeit \u2014 '+(soon===1 ? 'Tomorrow' : 'In '+soon+' Days') : 'Yahrzeit Today', title: y.name, body, yz:{photo:y.photo||''}, accent:'var(--gold-dim)', icon:'\u2727'});
       });
     }
   }
@@ -3297,14 +3128,6 @@ function buildSpotlightItems(){
 // new 0→1) over the same stretch. At every instant there's real content
 // visible — never a shared gap of bare background — which is what actually
 // reads as "smooth" instead of "flashing."
-function setupYzScroll(layer){
-  if(!layer) return;
-  const sc=layer.querySelector('.yzScroll'), inn=layer.querySelector('.yzInner');
-  if(!sc||!inn) return;
-  inn.classList.remove('yzGo'); void inn.offsetWidth;
-  const shift=inn.scrollHeight-sc.clientHeight+8;
-  if(shift>8){ inn.style.setProperty('--yzShift','-'+shift+'px'); inn.style.setProperty('--yzDur',(SPOTLIGHT_DURATION-400)+'ms'); inn.classList.add('yzGo'); }
-}
 function paintSpotlightSlot(slotIdx, item){
   const card = document.getElementById('spotlightCard' + slotIdx);
   if(!card) return;
@@ -3319,10 +3142,15 @@ function paintSpotlightSlot(slotIdx, item){
     nextLayer.innerHTML = `<div class="widgetEyebrow">Board</div><h2 class="widgetTitle">Tap the gear to add content</h2>`;
   } else {
     card.style.setProperty('--accent', item.accent || 'var(--gold)');
-    nextLayer.innerHTML = `
-      <div class="widgetEyebrow">${item.icon ? `<span class="widgetIcon">${escapeHtml(item.icon)}</span>` : ''}${item.eyebrow}</div>
+    const eyebrowHtml = `<div class="widgetEyebrow">${item.icon ? `<span class="widgetIcon">${escapeHtml(item.icon)}</span>` : ''}${item.eyebrow}</div>`;
+    const mainHtml = item.yz ? `
+      <div class="yzHead">${yzAvatarHtml(item.yz.photo, item.title)}<h2 class="widgetTitle">${escapeHtml(item.title)}</h2></div>
+      <div class="yzScroll">${item.body}</div>` : `
       <h2 class="widgetTitle">${escapeHtml(item.title)}</h2>
-      <div class="cardScroll">${item.body}</div>
+      <div class="cardScroll">${item.body}</div>`;
+    nextLayer.innerHTML = `
+      ${eyebrowHtml}
+      ${mainHtml}
       <div class="spotlightMeta">
         <div class="spotlightProgress"><div class="spotlightProgressFill" style="animation-duration:${SPOTLIGHT_DURATION}ms;"></div></div>
       </div>
@@ -3332,13 +3160,14 @@ function paintSpotlightSlot(slotIdx, item){
   // layers' opacity together a frame later so the browser actually
   // transitions between the two states instead of jumping straight there.
   void nextLayer.offsetWidth;
-  setupYzScroll(nextLayer);
   requestAnimationFrame(()=>{
     activeLayer.classList.remove('active');
     nextLayer.classList.add('active');
   });
   card.dataset.activeLayer = String(activeIdx === 0 ? 1 : 0);
 
+  const yzEl = nextLayer.querySelector('.yzScroll');
+  if(yzEl) yzAutoScroll(yzEl);
   const revealEl = nextLayer.querySelector('[data-reveal]');
   if(item && item.isReveal && revealEl){
     slotRevealTimers[slotIdx] = setTimeout(()=>{ revealEl.classList.add('show'); }, 5000);
@@ -4299,7 +4128,7 @@ function renderPhotoCellMarkup(item, cellIdx){
   const src = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
   const kb = 'kb' + (1 + Math.floor(Math.random()*4));
   return `
-    <img class="${kb}" src="${escapeAttr(src)}" data-orig="${escapeAttr(item.url)}" data-fallback="${escapeAttr(drivePhotoFallback(item.url) || item.url)}" alt="board photo" onerror="handlePhotoImgError(this, ${cellIdx})">
+    <img class="${kb}" src="${escapeAttr(src)}" data-orig="${escapeAttr(item.url)}" data-fallback="${escapeAttr(drivePhotoFallback(item.url) || item.url)}" alt="board photo" referrerpolicy="no-referrer" onerror="handlePhotoImgError(this, ${cellIdx})">
     ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
 }
 
@@ -4310,7 +4139,11 @@ function renderPhotoCellMarkup(item, cellIdx){
 // offering it — see brokenPhotoUrls) and immediately skip this cell to the
 // next photo, rather than leaving a hidden/blank image sitting on screen
 // until its normal timer runs out.
+// Transient failures used to blacklist a photo until the page reloaded;
+// forgive everything every 10 minutes so good photos come back.
+setInterval(()=>{ try{ brokenPhotoUrls.clear(); }catch(e){} }, 10*60*1000);
 function handlePhotoImgError(img, cellIdx){
+  if(!img.isConnected) return;
   const fallback = img.dataset.fallback;
   if(fallback && img.src !== fallback){
     img.src = fallback;
@@ -4412,6 +4245,12 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
       const checkAspect = ()=> applyCellAspect(cell, img.naturalWidth, img.naturalHeight);
       if(img.complete && img.naturalWidth) checkAspect();
       else img.addEventListener('load', checkAspect);
+      // Watchdog: an image that neither loads nor errors (slow/hung host)
+      // used to leave a blank cell until its timer ran out. Treat it as a
+      // failure after 9s so the fallback URL is tried or the next photo shows.
+      setTimeout(()=>{
+        if(img.isConnected && !(img.complete && img.naturalWidth)) handlePhotoImgError(img, cellIdx);
+      }, 9000);
     }
     const vid = cell.querySelector('video');
     if(vid){
