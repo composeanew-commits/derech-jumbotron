@@ -259,9 +259,10 @@
      (automatically, since nobody can touch a wall display). */
   .yzHead{display:flex;gap:12px;align-items:center;flex-shrink:0;margin-bottom:8px;position:relative;z-index:1;}
   .yzHead .widgetTitle{margin:0;font-size:15px;flex:1;min-width:0;}
-  .yzPhoto,.yzInitials{width:72px;height:72px;border-radius:50%;flex:none;border:2px solid var(--gold);box-shadow:0 0 14px rgba(240,184,77,.25);}
+  .yzPhoto,.yzInitials{width:92px;height:92px;border-radius:50%;flex:none;border:2px solid var(--gold);box-shadow:0 0 14px rgba(240,184,77,.25);}
   .yzPhoto{object-fit:cover;object-position:center 18%;background:#0E0C1B;}
-  .yzInitials{display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:800;font-size:24px;color:var(--gold);background:radial-gradient(circle at 30% 25%, #3a3270, #1c1840);}
+  .yzInitials{display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:800;font-size:30px;letter-spacing:1px;color:var(--gold);background:radial-gradient(circle at 30% 25%, #4a3f8a, #1c1840);box-shadow:0 0 0 4px rgba(240,184,77,.12), 0 0 22px rgba(240,184,77,.3), inset 0 0 18px rgba(0,0,0,.35);}
+  .yzHead .widgetTitle{font-size:18px;line-height:1.2;}
   .yzScroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;position:relative;z-index:1;
     -webkit-mask-image:linear-gradient(#000 calc(100% - 18px), transparent);mask-image:linear-gradient(#000 calc(100% - 18px), transparent);}
   .yzScroll::-webkit-scrollbar{display:none;}
@@ -529,7 +530,8 @@
     <div class="tabs">
       <div class="tab" data-tab="quick">Quick Update</div>
       <div class="tab active" data-tab="flyers">Event Flyers</div>
-      <div class="tab" data-tab="league">League / Teams</div>
+      <div class="tab" data-tab="league" style="display:none">League / Teams</div>
+      <div class="tab" data-tab="backups">Backups</div>
       <div class="tab" data-tab="countdown">Countdown</div>
       <div class="tab" data-tab="shoutouts">Shoutouts</div>
       <div class="tab" data-tab="photos">Photos</div>
@@ -573,13 +575,14 @@
     <div class="tabPanel active" data-panel="flyers">
       <div class="hint" style="margin-top:0;">Upload a flyer for an upcoming event — a Shabbaton, a trip, a Melave Malka, anything with a date. It goes up big on the photo screen and shows up more and more often as the date gets closer, so nobody misses it.</div>
 
+      <button type="button" class="addBtn" id="copyLastFlyer" style="margin:0 0 12px 0;">↺ Copy last flyer's settings onto this one</button>
       <label style="display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;" id="flyerFileLabelHeading">Flyer Image</label>
       <div class="fileDrop" id="flyerFileDrop">
-        <input type="file" id="flyerFile" accept="image/*">
+        <input type="file" id="flyerFile" accept="image/*,application/pdf" multiple>
         <span id="flyerFileLabel">📎 Tap to choose a photo from this device</span>
       </div>
       <div class="uploadDivider">or paste a link instead</div>
-      <div class="field"><label>Flyer type</label>
+      <div class="field" style="display:none"><label>Flyer type</label>
         <select id="flyerType">
           <option value="image">Image — one picture</option>
           <option value="pdf">PDF — multiple pages, flips through them on its own</option>
@@ -596,20 +599,17 @@
         <div class="field"><label>Event Date (optional — leave blank if you just want it in rotation)</label><input id="flyerDate" type="date"></div>
         <div class="field"><label>Event Time (optional)</label><input id="flyerTime" type="time"></div>
       </div>
+      <div class="toggleRow" style="margin-top:4px;"><input type="checkbox" id="flyerNTK"><label for="flyerNTK" style="margin:0;font-size:15px;font-weight:600;">⭐ Need to Know <span style="font-weight:400;color:var(--muted);font-size:12px;">— stays on screen. Leave off for normal rotation.</span></label></div>
+      <select id="flyerPriority" style="display:none"><option value="normal">normal</option><option value="high">high</option></select>
+      <details class="advancedSchedule">
+        <summary>More options (optional)</summary>
+        <div class="advancedScheduleBody">
       <div class="toggleRow"><input type="checkbox" id="flyerShowOnBoard" checked><label for="flyerShowOnBoard" style="margin:0;font-size:14px;">Show this flyer on the board</label></div>
       <div class="hint" style="margin-top:-6px;">Uncheck this to save the flyer without posting it \u2014 handy for prepping something ahead of time.</div>
       <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
       <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
-      <div class="field">
-        <label>Need to Know or Extra Info?</label>
-        <select id="flyerPriority">
-          <option value="normal">Extra Info — shows up in the regular rotation</option>
-          <option value="high">Need to Know — shows up a lot more, especially as it gets close</option>
-        </select>
-      </div>
-      <details class="advancedSchedule">
-        <summary>Advanced: custom duration, days, or times (optional — flyers show all the time by default)</summary>
-        <div class="advancedScheduleBody">
+          <div class="field"><label>Stop showing after (optional date — it hides itself, never deleted)</label><input id="flyerExpires" type="date"></div>
+          <div class="hint" style="margin-top:-6px;">Flyers with an event date already hide themselves the day after the event. Use this for undated flyers. Expired flyers stay in the list so you can bring them back by changing the date.</div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input id="flyerDuration" type="number" min="3" max="120" placeholder="Default — 14s (22s for Need to Know)"></div>
           <div class="field">
             <label>Only show on certain days?</label>
@@ -623,11 +623,17 @@
           <div class="hint" style="margin-top:-6px;">Leave both blank to show it all day. Set both to only show during a window \u2014 e.g. 8:00\u20139:30 AM for a morning minyan reminder.</div>
         </div>
       </details>
-      <button class="addBtn" id="addFlyer">+ Add Flyer</button>
+      <button class="addBtn" id="addFlyer">✓ Save &amp; Publish Flyer</button>
       <div style="height:8px;"></div>
       <div class="saveStatus" id="flyerStatus"></div>
       <div style="height:16px;"></div>
       <div id="flyersList"></div>
+    </div>
+
+    <div class="tabPanel" data-panel="backups">
+      <div class="hint">A backup of the board is saved automatically before every save (last 20 kept). If anything ever looks wrong, restore an earlier version here.</div>
+      <button class="addBtn" id="loadBackups">Show backups</button>
+      <div id="backupsList" style="margin-top:12px;"></div>
     </div>
 
     <div class="tabPanel" data-panel="league">
@@ -1457,7 +1463,6 @@ const DEFAULT_GALLERY_PHOTOS = [
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8879-300x200.webp",""],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8873-300x200.webp",""],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8811-300x200.webp",""],
-["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8788-200x300.webp",""],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8696-300x200.webp",""],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-8688-300x200.webp",""],
 ["https://derechyeshiva.org/wp-content/uploads/2026/03/Vann-0715-300x200.webp",""],
@@ -2148,7 +2153,15 @@ const YAHRZEIT_WIKI = {
 };
 Object.assign(YAHRZEIT_WIKI, YAHRZEIT_WIKI_EXTRA, YAHRZEIT_WIKI_EXTRA3, YAHRZEIT_WIKI_EXTRA4, YAHRZEIT_WIKI_EXTRA5, YAHRZEIT_WIKI_EXTRA6);
 Object.assign(YAHRZEIT_BLURB_OVERLAY, YAHRZEIT_BLURB_OVERLAY4);
-const YZ_WIKI_CACHE_KEY = 'derechYzWikiPhotos3';
+
+// ---- Richer blurbs + extra photo lookups (added; only fills gaps for photos) ----
+(function(){
+  const BL={"The Rambam (Maimonides)": "Rabbi Moshe ben Maimon, born in Cordoba in 1138, fled to Egypt and became court physician while writing the Mishneh Torah, the first complete code of Jewish law, and the Moreh Nevuchim. Of him it is said: \u201cFrom Moshe to Moshe, there arose none like Moshe.\u201d", "Rashi": "Rabbi Shlomo Yitzchaki of Troyes, France (1040\u20131105). His clear, concise commentary on the Torah and the entire Talmud is printed on every page, and nearly every Jew has learned Chumash and Gemara through his eyes.", "The Chofetz Chaim": "Rav Yisrael Meir Kagan of Radin (1838\u20131933) wrote the Chofetz Chaim on the laws of lashon hara, plus the Mishnah Berurah, the standard halachic guide for daily Jewish life. Humble and beloved, he founded the great Radin yeshiva.", "The Baal Shem Tov": "Rabbi Yisrael ben Eliezer (c.1698\u20131760), founder of Chassidus. He taught that every Jew can serve Hashem with joy, sincere prayer and love for every fellow Jew, igniting a movement that revived millions after the Chmielnicki massacres.", "The Lubavitcher Rebbe": "Rabbi Menachem Mendel Schneerson (1902\u20131994), the seventh Rebbe of Chabad. A brilliant Torah scholar who also studied engineering, he sent shluchim to nearly every corner of the world and inspired countless Jews to strengthen their Judaism.", "The Chazon Ish": "Rav Avraham Yeshaya Karelitz (1878\u20131953) settled in Bnei Brak and became the guiding light of Torah Jewry in Eretz Yisrael. His Chazon Ish on Shulchan Aruch and Shas shaped a generation; his humble home drew the greatest leaders to seek his advice.", "Rav Aharon Kotler": "Rosh Yeshiva of Kletzk and then Beth Medrash Govoha in Lakewood. After escaping Europe in 1941 he rebuilt Torah learning in America, convinced it could flourish here, and founded Chinuch Atzmai in Israel. Author of Mishnas Rav Aharon.", "Rabbi Shimon Bar Yochai": "A talmid of Rabbi Akiva and the author of the Zohar, according to tradition. He hid in a cave for 13 years with his son, learning Torah, and left the world on Lag BaOmer, when thousands gather in Meron to sing, dance and celebrate.", "Rav Ovadia Yosef": "Born in Baghdad in 1920, he became Sephardic Chief Rabbi of Israel and founder of the Shas movement. A genius of halacha, he wrote Yabia Omer and Yechaveh Daas, and worked to restore the glory of Sephardic tradition to the Jewish world.", "Rav Elazar Menachem Man Shach": "Rosh Yeshiva of Ponevezh in Bnei Brak (1898\u20132001) and a towering Torah leader for decades. Author of Avi Ezri on Rambam, he lived to over 100, and devoted his life to learning Torah and strengthening yeshivos.", "Rav Aharon Leib Shteinman": "Rosh Yeshiva of Ponevezh (1914\u20132017) who lived a life of simplicity in Bnei Brak. He led Torah Jewry into his hundreds, known for sharp advice, deep humility, and a fiercely devoted love for every Jew.", "Rav Shlomo Zalman Auerbach": "Rosh Yeshiva of Kol Torah in Yerushalayim (1910\u20131995) and a leading halachic authority. His Minchas Shlomo and Halichos Shlomo guide modern halacha, and he was known for his gentle humility and a home open to anyone seeking guidance.", "The Baal HaTanya (Alter Rebbe)": "Rabbi Shneur Zalman of Liadi (1745\u20131812), founder of Chabad Chassidus. He authored the Tanya, wrote a famous Shulchan Aruch, and was imprisoned in Petersburg, his release on 19 Kislev still celebrated as the Chag HaGeulah.", "Rav Yaakov Kamenetsky": "Rosh Yeshiva of Torah Vodaath (1891\u20131986), a gaon, tzaddik, and trusted leader of American Jewry. Author of Emes L\u2019Yaakov, he taught that honesty and kindness are the foundations on which Torah stands.", "Rav Shimshon Raphael Hirsch": "Rabbi Hirsch (1808\u20131888) led the Frankfurt Jewish community and founded Torah im Derech Eretz, a vision of living authentically Jewish in the modern world. His commentary on the Chumash and his Nineteen Letters remain classics.", "Rav Aryeh Kaplan": "Rabbi Aryeh Kaplan (1934\u20131983) was a physicist and Torah scholar who left a remarkable body of work in only 48 years, including The Living Torah, Meditation and Kabbalah and Jewish Meditation, bringing deep ideas to English readers.", "Rav Noach Weinberg": "Founder of Aish HaTorah (1930\u20132009), who brought hundreds of thousands of Jews closer to Torah. He taught the 48 Ways to Wisdom and famously asked young Jews: \u201cWhat is the purpose of life?\u201d", "Rav Mordechai Gifter": "Rosh Yeshiva of Telshe Yeshiva in Cleveland (1915\u20131999), a talmid of Rav Elchonon Wasserman. A powerful orator and educator, he shaped American Torah leaders and wrote Pirkei Torah.", "Rav Yisroel Salanter": "Rav Yisrael Lipkin of Salant (1810\u20131883), founder of the Mussar movement. He taught that Torah study must be accompanied by working on one\u2019s character, and his students shaped the great Lithuanian yeshivos.", "Rav Avraham Yitzchak HaKohen Kook": "First Ashkenazi Chief Rabbi of Mandatory Palestine (1865\u20131935), a profound thinker and poet who saw holiness in the return of the Jewish people to Eretz Yisrael. Founder of Yeshivat Mercaz HaRav and author of Orot.", "The Rebbe Rashab": "Rabbi Shalom DovBer Schneersohn (1860\u20131920), the fifth Rebbe of Chabad, founded Yeshivas Tomchei Temimim in 1897 to teach Torah and Chassidus together. His deep teachings shaped generations of Chabad chassidim.", "Rav Aryeh Levin": "The Tzaddik of Yerushalayim (1885\u20131969), famed for visiting Jewish prisoners in the British jails and for his love for every person. Rav Aryeh was tender, humble and devoted, a model of how Torah makes a person kinder.", "Rav Yitzchak Isaac HaLevi Herzog": "First Ashkenazi Chief Rabbi of the State of Israel (1888\u20131959) and author of Heichal Yitzchak. He saved Jewish children during the Holocaust, traveling to plead with leaders for rescue, and guided the new state\u2019s halacha.", "Rav Meir Simcha HaKohen of Dvinsk": "Rav of Dvinsk (1843\u20131926), author of Ohr Somayach on the Rambam and Meshech Chochma on the Torah. His brilliant insights into Chumash are still studied widely today.", "Rebbetzin Chaya Mushka Schneerson": "The wife of the Lubavitcher Rebbe (1901\u20131988). She lived with extraordinary modesty and a warm heart, supporting the Rebbe\u2019s work and caring for others without seeking any recognition.", "Rav Shraga Feivel Mendlowitz": "Founder of Yeshiva Torah Vodaath (1886\u20131948) in Brooklyn and the father of American Orthodox Judaism\u2019s day school movement. His students include many future gedolim and leaders of Torah in America.", "Rav Yosef Eliyahu Henkin": "Born in Belarus, he arrived in America in 1923 and became the leading halachic authority of American Jewry (1881\u20131973). He guided Ezras Torah and was known for modest living, sharp scholarship, and a huge heart.", "Rav Yechezkel Abramsky": "Rosh Yeshiva and Dayan (1886\u20131976), who survived the Gulag and later served as Rosh Av Beis Din of London. His Chazon Yechezkel on the Tosefta is a monumental work of Torah scholarship.", "The Rema": "Rav Moshe Isserles of Krakow (1530\u20131572), who added the Mapah, his glosses on the Shulchan Aruch, so that Ashkenazi Jews could follow its rulings. The Rema\u2019s synagogue in Krakow still stands today.", "The Maharal of Prague": "Rav Yehuda Loew (c.1520\u20131609), the great thinker of Prague, wrote Gur Aryeh and Nesivos Olam. Legend tells of his golem protecting the Jewish community, but his true legacy is a deep vision of Torah and Jewish destiny.", "The Arizal": "Rav Yitzchak Luria (1534\u20131572), the holy master of Tzfas. In only two years his teachings transformed Kabbalah, and Lecha Dodi and the Kabbalas Shabbos celebration at the fields of Tzfas became part of Jewish life.", "Rav Yosef Karo": "Author of the Shulchan Aruch, the code of Jewish law followed by Jews worldwide, and the Beis Yosef (1488\u20131575). Born in Toledo, he found his home in Tzfas, where he said a heavenly maggid taught him Torah.", "The Divrei Chaim of Sanz": "Rav Chaim Halberstam (1793\u20131876), founder of the Sanzer dynasty, led thousands of chassidim while supporting the poor and the needy. His kindness, generosity and Torah scholarship made him beloved throughout Galicia.", "The Ben Ish Chai": "Rav Yosef Chaim of Baghdad (1835\u20131909). His Ben Ish Chai on halacha and Rav Pe\u2019alim are studied across the Sephardic world; he taught Torah from the pulpit in Baghdad every week.", "The Satmar Rebbe, Rav Yoel Teitelbaum": "Rebbe of Satmar (1887\u20131979). A Holocaust survivor, he rebuilt chassidus in Williamsburg after the war, building schools, mosdos and communities, and wrote Vayoel Moshe and Divrei Yoel.", "The Steipler Gaon": "Rav Yaakov Yisrael Kanievsky (1899\u20131985), a close friend and brother-in-law of the Chazon Ish. He was a giant in Torah, famous for hasmadah and for Kehillos Yaakov, and father of Rav Chaim Kanievsky.", "The Netziv": "Rav Naftali Zvi Yehuda Berlin (1816\u20131893), Rosh Yeshiva of Volozhin, whose Ha\u2019amek Davar on Chumash and Ha\u2019amek Sheelah on the She\u2019iltos are classics. He led the greatest yeshiva of his generation.", "The Chozeh of Lublin": "Rav Yaakov Yitzchak Horowitz (1745\u20131815), the Seer of Lublin, a student of the Maggid of Mezritch and a leader of Polish chassidus. His court drew the great Rebbes of the next generation.", "The Maharam of Rothenburg": "Rav Meir ben Baruch (c.1215\u20131293), the leading Ashkenazi sage of his time. Imprisoned and held for ransom, he refused to be redeemed so as not to set a precedent harming Jews; he passed away in captivity in 1293.", "The Noda BiYehuda": "Rav Yechezkel Landau (1713\u20131793), Chief Rabbi of Prague, whose responsa Noda BiYehuda are essential to halacha. He was a leading posek and spoke out against dangers to traditional Jewish life.", "The Ramchal": "Rav Moshe Chaim Luzzatto (1707\u20131746), an Italian-Jewish genius whose Mesillas Yesharim is a timeless guide to perfecting character. He also wrote Derech Hashem and passed away in Acre at only 39.", "The Maharsha": "Rav Shmuel Eliezer Edels (1555\u20131631), Rav of Ostrog, whose Chiddushei Halachos and Aggados appear on nearly every page of the Gemara. Generations have learned his lucid insights.", "The Ksav Sofer": "Rav Avraham Shmuel Binyamin Sofer (1815\u20131871), son of the Chasam Sofer, succeeded his father as Rav of Pressburg. His Ksav Sofer responsa are widely respected, as is his eloquent commentary.", "The Chasam Sofer": "Rav Moshe Sofer (1762\u20131839), Rav of Pressburg, led Hungarian Jewry against the Reform movement and built a great yeshiva. His responsa and chiddushim shaped Torah life in Europe for generations.", "The Baba Sali": "Rav Yisrael Abuchatzeira (1889\u20131984), born in Morocco and settled in Netivot. Revered for his holiness and humility, thousands came for his blessings, and his tomb in Netivot is visited by many today.", "The Sfas Emes": "Rav Yehuda Aryeh Leib Alter (1847\u20131905), the Gerer Rebbe, whose Sfas Emes on Chumash and Yamim Tovim transformed the study of chassidus. He led the largest chassidic community in Poland.", "The Previous Lubavitcher Rebbe (Rayatz)": "Rabbi Yosef Yitzchak Schneersohn (1880\u20131950), sixth Rebbe of Chabad. He fought to keep Judaism alive in the Soviet Union, survived arrest and exile, and arrived in New York in 1940 where he rebuilt Chabad.", "The Tzemach Tzedek": "Rabbi Menachem Mendel Schneersohn (1789\u20131866), third Rebbe of Chabad, a great halachic authority whose responsa Tzemach Tzedek are studied widely. He also worked tirelessly for the Jews of Russia.", "The Mittler Rebbe": "Rabbi Dovber Schneuri (1773\u20131827), son of the Alter Rebbe and second Rebbe of Chabad. He deepened Chabad thought in his many works and settled his community in Lubavitch.", "Rav Isser Zalman Meltzer": "Rosh Yeshiva of Slutzk and Etz Chaim in Yerushalayim (1870\u20131953), author of Even HaEzel. He taught Rav Aharon Kotler, his son-in-law, and was admired for combining simplicity with greatness.", "Rav Chaim Ozer Grodzinski": "Rav of Vilna (1863\u20131940), the leader of Torah Jewry in the years before the Holocaust. His Achiezer responsa and his guidance of yeshivos, communal needs and aid for refugees defined an era.", "Rav Chaim Soloveitchik of Brisk": "Rav Chaim Brisker (1853\u20131918), founder of the Brisker method of Talmud study, which analyzes halachic concepts with razor-sharp precision. His approach changed how Torah is learned in yeshivos worldwide.", "The Belzer Rebbe, Rav Aharon Rokeach": "Rebbe of Belz (1880\u20131957), who escaped the Holocaust after it claimed his family and thousands of chassidim, rebuilt Belz in Eretz Yisrael, and led its resurgence into one of the largest chassidic courts.", "Rav Chaim Vital": "Rav Chaim Vital (1543\u20131620), the foremost student of the Arizal, compiled his master\u2019s teachings in Eitz Chaim and Shaar HaGilgulim, ensuring that the Arizal\u2019s Kabbalah would reach the world.", "The Alter of Slabodka": "Rav Nosson Tzvi Finkel (1849\u20131927), founder of the Slabodka yeshiva and the Slabodka Mussar approach, taught that a person must recognize his own greatness in order to build himself. His students became leaders of the next generation.", "The Maggid of Mezritch": "Rav Dov Ber (d.1772), the successor to the Baal Shem Tov, gathered the brilliant students who spread chassidus across Europe, including the Alter Rebbe, Rav Elimelech of Lizhensk and Rav Levi Yitzchak of Berditchev.", "Rav Elimelech of Lizhensk": "Rav Elimelech Weisblum (1717\u20131787), the Noam Elimelech, a leader of chassidus in Poland. His Tefillah L\u2019Rebbe Elimelech, the prayer to see only the good in others, is recited by many to this day.", "Rav Yisroel Belsky": "Rosh Yeshiva of Torah Vodaath (1938\u20132016) and a leading halachic authority on kashrus and medical halacha. A student of Rav Yaakov Kamenetsky, he was known for his humility and wit.", "Rav Avrohom Yaakov Pam": "Rosh Yeshiva of Torah Vodaath (1913\u20132001), a pillar of American Torah. Famous for his warmth, his stress on kindness and ahavas Yisrael, and his devotion to his talmidim.", "The Skulener Rebbe": "Rav Eliezer Zusia Portugal (1898\u20131982), Skulener Rebbe, known for his moving niggunim and his great work saving Jewish orphans from Romania after the Holocaust, bringing them to safety and Torah.", "Rav Meir HaGadol of Premishlan": "Rav Meir of Premishlan (1780\u20131850), a holy chassidic tzaddik who spoke through his deep love for every Jew; he is remembered for tales of miracles, his tefillos, and his devotion to the poor.", "The Chacham Tzvi": "Rav Tzvi Hirsch Ashkenazi (1656\u20131718), a leading halachic authority, whose responsa are widely cited. He served as Rav in Amsterdam and Altona and was a strong defender of Jewish law.", "The Rif": "Rav Yitzchak Alfasi (1013\u20131103), the father of halachic codification. His Halachos Rav Alfas condensed the Gemara\u2019s practical halacha, and became the foundation for later works such as the Rambam and Shulchan Aruch.", "The Taz": "Rav David HaLevi Segal (1586\u20131667), author of Turei Zahav on the Shulchan Aruch. He survived the Chmielnicki massacres, and his work is cited on nearly every page of Shulchan Aruch.", "Rabbeinu Tam": "Rav Yaakov ben Meir (1100\u20131171), the grandson of Rashi and leading Tosafist. His Sefer HaYashar and his opinions are part of everyday halacha, such as the time Shabbos ends, still debated and followed.", "The Ramak": "Rav Moshe Cordovero (1522\u20131570), a leading Kabbalist of Tzfas and author of Pardes Rimonim. He taught the importance of acting with God-like compassion and was the teacher of Rav Eliyahu de Vidas.", "Rav Shlomo Ganzfried": "Author of Kitzur Shulchan Aruch (1804\u20131886), a concise guide to everyday halacha that has been printed in countless editions and read by Jews around the world.", "The Yismach Moshe": "Rav Moshe Teitelbaum (1759\u20131841), Rebbe of Ujhely, a student of the Chozeh of Lublin who helped bring chassidus to Hungary. He is the ancestor of the Satmar dynasty.", "Rav Naftali Tzvi of Ropshitz": "Rav Naftali Tzvi Horowitz (1760\u20131827), famous for his wisdom, wit and warmth. He was a student of the Chozeh of Lublin and brought joy to those in need of a smile.", "Rabbi Meir Baal HaNess": "A tanna and student of Rabbi Akiva whose name is invoked for charity: donors give to those who study in Eretz Yisrael in his merit. His holy resting place is in Tiberias.", "Rav Shmelke of Nikolsburg": "Rav Shmuel Shmelke Horowitz (1726\u20131778), a student of the Maggid of Mezritch, who became Rav of Nikolsburg and brought chassidus to Moravia. His Divrei Shmuel and holy character inspired many.", "David HaMelech": "The sweet singer of Israel, king and author of Tehillim. He was born and passed away on Shavuos, according to tradition, and his psalms have comforted Jews in joy and sorrow for 3,000 years.", "Moshe Rabbeinu": "The greatest of all prophets, who led the Jewish people out of Egypt and received the Torah at Sinai. He passed away on 7 Adar, at the age of 120, and is remembered each year at the Chevra Kadisha seudah.", "Miriam HaNeviah": "Prophetess and sister of Moshe and Aharon. She watched over baby Moshe at the Nile, led the women in song at the Yam Suf, and Hashem gave the Jews a miraculous well in her merit during the years in the desert.", "Aharon HaKohen": "The first Kohen Gadol, who loved peace and pursued peace. He brought people closer to one another and to Torah, and the entire nation mourned his passing for thirty days.", "Yitzchak Avinu": "The second of the Avos, who was bound on the altar at the Akeidah and later dug wells and blessed his children. He is remembered as a pillar of avodah, prayer and quiet strength.", "Rav Aharon of Karlin": "Rav Aharon \u201cHaGadol\u201d of Karlin (1736\u20131772), a leading disciple of the Maggid of Mezritch, and founder of Karlin chassidus. He taught fervent prayer and passion in serving Hashem.", "Rav Yonoson Eibeschitz": "Rav Yonason Eybeschutz (1690\u20131764), a great talmid chacham and orator, who served as Rav in Prague, Metz and Altona. His Urim VeTumim and Ahavas Yehonason are classics of halachic and aggadic thought.", "Rav Levi Yitzchak Schneerson": "Rav of Yekaterinoslav (1878\u20131944) and father of the Lubavitcher Rebbe. A great Kabbalist and halachic authority, he was exiled by the Soviets to Kazakhstan, where he wrote Torah on scraps of paper until his passing.", "The Ran": "Rav Nissim of Gerona (c.1320\u20131376), the great Spanish authority whose commentary on the Rif, known as the Ran, is learned in yeshivos worldwide. His Drashos HaRan are classic works of Jewish philosophy.", "Don Yitzchak Abarbanel": "Statesman and Torah scholar (1437\u20131508) who served the kings of Portugal, Spain and Naples. After the Expulsion from Spain in 1492 he wrote his great commentary on Tanach.", "Rav Chaim Palagi": "Rav Chaim Palaggi (1788\u20131868), Chief Rabbi of Izmir, a prolific author of more than 80 works. He was known for his passionate calls for charity and unity and for his incredible Torah output.", "The Maharil": "Rav Yaakov Moelin (c.1365\u20131427), the leading authority of Ashkenazic custom. His Sefer Maharil on minhagim is still the key source for many customs of tefillah and holidays.", "Rav Moshe Alshich": "Rav Moshe Alshich (1508\u20131593), a student of Rav Yosef Karo in Tzfas. His commentary on the Torah and Tanach, the Torat Moshe, is revered for its moving ethical lessons.", "Rav Meir Atlas": "Rav Meir Atlas (1848\u20131926), son-in-law of the Netziv and brother-in-law of Rav Chaim Brisker, served as Rav of Shavli and later Rosh Yeshiva of the Shaarei Torah yeshiva.", "Rav Moshe Margulies": "Rav Moshe Margolies (1710\u20131781), known as the Pnei Moshe, author of the commentary on the Yerushalmi. His work is essential for the study of the Talmud Yerushalmi.", "Rav Shabsai Sheftl Horowitz": "Rav Shabsai Sheftel Horowitz of Prague (1565\u20131619), author of Shefa Tal, a work on Kabbalah. He was the son of the Shelah HaKadosh and a leading figure in Prague\u2019s Jewish community.", "Rav Moshe Shapira of Slavita": "Rav Moshe Shapira of Slavita (1759\u20131839), son of Rav Pinchas of Koretz, famed for printing the Slavita Shas, the beautiful edition of the Talmud. His descendants include the Shapira rabbis.", "Rav Yehoshua Charif of Krakow": "Rav Yehoshua Heschel of Krakow (1578\u20131648), author of Maginei Shlomo, called the Charif for his sharp mind. He served as Rosh Yeshiva in Krakow and was known as a leading Talmudist.", "The Tosfos Yom Tov": "Rav Yom Tov Lipmann Heller (1578\u20131654), author of the Tosfos Yom Tov on the Mishnah, a commentary printed in nearly every Mishnah. He survived imprisonment and fought for Jewish unity."};
+  const PH={"Rav Elazar Menachem Man Shach": "Elazar Shach", "Rav Aharon Leib Shteinman": "Aharon Leib Shteinman", "Rav Avrohom Yaakov Pam": "Avraham Yaakov Pam", "Rav Aryeh Levin": "Aryeh Levin", "Rav Avraham Yitzchak HaKohen Kook": "Abraham Isaac Kook", "The Rebbe Rashab": "Shalom Dovber Schneersohn", "Rav Shimshon Raphael Hirsch": "Samson Raphael Hirsch", "Rav Yisroel Salanter": "Israel Salanter", "Rav Yitzchak Isaac HaLevi Herzog": "Isaac Herzog", "Rav Meir Simcha HaKohen of Dvinsk": "Meir Simcha of Dvinsk", "Rebbetzin Chaya Mushka Schneerson": "Chaya Mushka Schneerson", "Rav Aryeh Kaplan": "Aryeh Kaplan", "Rav Noach Weinberg": "Noah Weinberg", "Rav Mordechai Gifter": "Mordechai Gifter", "Rav Yechezkel Abramsky": "Yechezkel Abramsky", "Rav Shraga Feivel Mendlowitz": "Shraga Feivel Mendlowitz", "Rav Yosef Eliyahu Henkin": "Joseph Elijah Henkin", "The Rema": "Moses Isserles", "Rav Elimelech of Lizhensk": "Elimelech of Lizhensk", "Rav Chaim Palagi": "Chaim Palaggi", "Rav Yonoson Eibeschitz": "Jonathan Eybeschutz", "The Taz": "David HaLevi Segal", "The Chacham Tzvi": "Zvi Hirsch Ashkenazi", "The Noda BiYehuda": "Yechezkel Landau", "The Ramchal": "Moshe Chaim Luzzatto", "The Ran": "Nissim of Gerona", "Rabbeinu Tam": "Jacob ben Meir", "Don Yitzchak Abarbanel": "Isaac Abarbanel", "Rav Shlomo Ganzfried": "Shlomo Ganzfried", "The Ramak": "Moses ben Jacob Cordovero", "Rav Chaim Vital": "Chaim Vital", "The Maharil": "Jacob ben Moses Moelin", "Rav Moshe Alshich": "Moshe Alshich", "Rav Yosef Shlomo Kahaneman": "Yosef Shlomo Kahaneman", "Rav Eliyahu Lopian": "Eliyahu Lopian", "Rav Shabsai Sheftl Horowitz": "Shabbethai Sheftel Horowitz", "The Tosfos Yom Tov": "Yom-Tov Lipmann Heller", "Rav Yisroel Belsky": "Yisroel Belsky", "The Skulener Rebbe": "Eliezer Zusia Portugal", "Rav Shmelke of Nikolsburg": "Shmelke of Nikolsburg", "Rav Nosson of Nemirov": "Nathan of Breslov", "Rav Meir Atlas": "Meir Atlas"};
+  Object.assign(YAHRZEIT_BLURB_OVERLAY, BL);
+  Object.keys(PH).forEach(k=>{ if(!YAHRZEIT_WIKI[k]) YAHRZEIT_WIKI[k]=PH[k]; });
+})();
+const YZ_WIKI_CACHE_KEY = 'derechYzWikiPhotos4';
 function yzWikiCache(){ try{ return JSON.parse(localStorage.getItem(YZ_WIKI_CACHE_KEY)||'{}'); }catch(e){ return {}; } }
 async function prefetchYahrzeitWikiPhotos(onNew){
   // Batch (20 per request); anything the batch can't answer falls back to the
@@ -2204,7 +2217,8 @@ function yzWikiPhoto(name){
   const cache = yzWikiCache();
   const t = YAHRZEIT_WIKI[name];
   const c = t ? cache[t] : cache['n2:'+name];
-  return (c && c.u) || '';
+  const alt = cache['n2:'+name];
+  return (c && c.u) || (alt && alt.u) || '';
 }
 // For everyone NOT in the table above: search Wikipedia for the name, and only
 // accept a result whose article title contains every word of the name, has a
@@ -2225,10 +2239,12 @@ async function lazyYahrzeitPhotos(list, onNew){
   let got = false, changed = false;
   const j = async u => (await fetch(u)).json();
   for(const y of list){
-    if(!y || !y.name || y.photo || YAHRZEIT_WIKI[y.name]) continue;
+    if(!y || !y.name || y.photo) continue;
+    const mapped = YAHRZEIT_WIKI[y.name];
+    if(mapped && cache[mapped] && cache[mapped].u) continue;   // already has a photo from the direct lookup
     const key = 'n2:'+y.name;
     if(cache[key] && now - cache[key].t < MAX_AGE) continue;
-    const clean = y.name.replace(/\(.*?\)/g,' ').replace(/,.*$/,' ').trim();
+    const clean = (mapped || y.name).replace(/\(.*?\)/g,' ').replace(/,.*$/,' ').trim();
     const words = clean.toLowerCase().split(/[^a-z0-9]+/).filter(w=> w.length>2 && !STOP.test(w));
     let url = '', ext = '';
     if(words.length){
@@ -2276,12 +2292,13 @@ function yzInitials(name){
 }
 function yzAvatarHtml(photo, name){
   const ini = escapeHtml(yzInitials(name));
-  if(!photo) return '';   // no photo exists (e.g. pre-photography gedolim): show nothing, not initials
+  if(!photo) return `<div class="yzInitials"><span>${ini}</span></div>`;   // no photo exists: elegant monogram medallion instead of a blank space
   return `<img class="yzPhoto" src="${escapeHtml(photo)}" alt="" referrerpolicy="no-referrer" data-ini="${ini}" onerror="yzPhotoFail(this)">`;
 }
 function yzPhotoFail(img){
   if(!img.dataset.retried){ img.dataset.retried = '1'; img.removeAttribute('referrerpolicy'); img.src = img.src + (img.src.includes('?') ? '&' : '?') + 'r=1'; return; }
-  img.remove();
+  const d = document.createElement('div'); d.className = 'yzInitials'; d.innerHTML = '<span>' + (img.dataset.ini || '?') + '</span>';
+  img.replaceWith(d);
 }
 function yzAutoScroll(el){
   // Long blurbs drift upward slowly, pausing at the top and bottom, finishing
@@ -2695,10 +2712,24 @@ if(isFirebaseConfigured()){
         return;
       }
       config = mergeStoredConfig(snap.exists() ? snap.val() : null);
+      if(snap.exists()) rememberGoodConfig(snap.val());
+      if(!hasLoadedOnce && !snap.exists()){
+        // RESET PROTECTION: an empty board on the very first read is almost
+        // never real (it's a connection hiccup). Show defaults for now but
+        // keep SAVING DISABLED so these defaults can never overwrite the
+        // real saved data. The real data will replace this when it arrives.
+        console.warn('Board looked empty on first load — saving disabled until real data arrives');
+        usingLocalFallback = true;
+        hasLoadedOnce = true;
+        resolveFirstLoad();
+        return;
+      }
       if(!hasLoadedOnce){
         hasLoadedOnce = true;
         firebaseReady = true;
         resolveFirstLoad();
+      } else if(usingLocalFallback && !snap.exists()){
+        return; // still nothing real — keep saving disabled
       } else if(usingLocalFallback){
         // THE RELOAD CASE. On a kiosk laptop that just rebooted or
         // refreshed, Firebase regularly takes longer than the 6-second
@@ -2766,6 +2797,30 @@ async function loadConfig(){
   await firstLoadPromise;
 }
 
+function rememberGoodConfig(v){ try{ localStorage.setItem('derechLastGoodConfig', JSON.stringify(v)); }catch(e){} }
+
+async function renderBackupsList(){
+  const box = document.getElementById('backupsList');
+  if(!box || !db) return;
+  box.textContent = 'Loading…';
+  try{
+    const snap = await db.ref('jumbotronBackups').once('value');
+    const v = snap.val() || {};
+    const keys = Object.keys(v).sort().reverse();
+    if(!keys.length){ box.textContent = 'No backups yet — one is made automatically every time you save.'; return; }
+    box.innerHTML = keys.map(k => `<div class="field" style="display:flex;gap:10px;align-items:center;justify-content:space-between;"><span>${escapeHtml(new Date(Number(k)).toLocaleString())}</span><button class="addBtn" style="margin:0;" data-restore="${k}">Restore</button></div>`).join('');
+    box.querySelectorAll('[data-restore]').forEach(b => b.onclick = async ()=>{
+      if(!confirm('Restore this backup? The board will go back to how it was at that time.')) return;
+      window.__allowResetSave = true;
+      config = mergeStoredConfig(v[b.dataset.restore]);
+      const r = await saveConfig();
+      window.__allowResetSave = false;
+      alert(r.ok ? 'Restored. Reloading…' : 'Could not restore: ' + r.error);
+      if(r.ok) location.reload();
+    });
+  }catch(e){ box.textContent = 'Could not load backups: ' + e.message; }
+}
+
 let saveInFlight = false;
 
 async function saveConfig(){
@@ -2774,6 +2829,24 @@ async function saveConfig(){
   if(saveInFlight) return {ok:false, error:'a save is already in progress'};
   saveInFlight = true;
   try{
+    // RESET PROTECTION: look at what's saved right now, back it up, and
+    // refuse any save that would replace real content with bare defaults.
+    let remote = null;
+    try{ const snap = await BOARD_REF.once('value'); remote = snap.exists() ? snap.val() : null; }catch(e){}
+    if(remote){
+      const looksReset = (remote.ticker && remote.ticker !== DEFAULT_CONFIG.ticker && config.ticker === DEFAULT_CONFIG.ticker)
+        && (remote.schedule && remote.schedule !== DEFAULT_CONFIG.schedule && config.schedule === DEFAULT_CONFIG.schedule);
+      if(looksReset && !window.__allowResetSave){
+        return {ok:false, error:'Blocked: this would overwrite your saved ticker and schedule with defaults. Reload the page and try again (a backup is in the Backups tab).'};
+      }
+      try{
+        const k = String(Date.now());
+        await db.ref('jumbotronBackups/' + k).set(remote);
+        const all = await db.ref('jumbotronBackups').once('value');
+        const keys = Object.keys(all.val() || {}).sort();
+        for(const old of keys.slice(0, Math.max(0, keys.length - 20))) await db.ref('jumbotronBackups/' + old).remove();
+      }catch(e){ console.warn('backup failed', e); }
+    }
     await BOARD_REF.set(config);
     return {ok:true};
   }catch(e){
@@ -3513,6 +3586,8 @@ function getActiveFlyers(){
     // Dated flyers keep showing for a day after the event, then drop out
     // (still editable/removable in the Flyers tab).
     .filter(f=> !f.target || (f.target - now > -24*3600*1000))
+    // Optional manual "stop showing after" date (hidden, never deleted).
+    .filter(f=> !f.expiresOn || new Date(f.expiresOn + 'T23:59:59') >= now)
     // Day-of-week schedule: no `days` (or an empty list) means no
     // restriction — the flyer shows every day, same as it always has.
     // A non-empty list only lets the flyer through on those weekdays,
@@ -3722,7 +3797,7 @@ window.handleVideoError = handleVideoError;
 // arrangement that wastes the least space, based on each flyer's real
 // aspect ratio. Tries every way of splitting the flyers into side-by-side /
 // stacked groups and keeps the one whose overall shape best matches the panel.
-const MAX_FLYER_CELLS = 4;
+const MAX_FLYER_CELLS = 3;
 const FLYER_GAP = 12;
 let flyerAspectCache = {};      // url -> width/height
 let flyerCurrentPicks = [];
@@ -3829,16 +3904,27 @@ function pickDistinctFlyers(pool, count, avoidUrls){
 //    for best fit, and nothing rotates.
 //  - More than that: Need to Know flyers get priority, the rest fill in by
 //    weight (avoiding what was just up), and the panel rotates.
+let flyerTurnOffset = 0;
+function takeTurns(pool, count){
+  const n = pool.length, out = [];
+  if(!n) return out;
+  for(let i=0; i<Math.min(count,n); i++) out.push(pool[(flyerTurnOffset + i) % n]);
+  flyerTurnOffset = (flyerTurnOffset + count) % n;
+  return out;
+}
 function planFlyerCells(activeFlyers, avoidUrls){
   if(activeFlyers.length === 0) return {mode:'empty', picks:[], rotates:false};
   if(activeFlyers.length <= MAX_FLYER_CELLS) return {mode:'grid', picks: activeFlyers, rotates:false};
+  // Need to Know flyers stay put; the rest take turns (round-robin) in the
+  // remaining slots. If there are more Need to Know flyers than slots, those
+  // are the ones that take turns.
   const ntk = activeFlyers.filter(f => f.priority === 'high');
   let picks;
   if(ntk.length >= MAX_FLYER_CELLS){
-    picks = pickDistinctFlyers(ntk, MAX_FLYER_CELLS, avoidUrls);
+    picks = takeTurns(ntk, MAX_FLYER_CELLS);
   } else {
     const rest = activeFlyers.filter(f => f.priority !== 'high');
-    picks = ntk.concat(pickDistinctFlyers(rest, MAX_FLYER_CELLS - ntk.length, avoidUrls));
+    picks = ntk.concat(takeTurns(rest, MAX_FLYER_CELLS - ntk.length));
   }
   picks.sort((a, b) => activeFlyers.indexOf(a) - activeFlyers.indexOf(b));
   return {mode:'grid', picks, rotates:true};
@@ -4722,7 +4808,7 @@ function syncFormToConfig(){
   document.querySelectorAll('[data-field="flyerTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].eventTime = el.value);
   document.querySelectorAll('[data-field="flyerShowCountdownEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showCountdown = el.checked);
   document.querySelectorAll('[data-field="flyerShowOnBoardEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].showOnBoard = el.checked);
-  document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.value);
+  document.querySelectorAll('[data-field="flyerPriorityEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].priority = el.checked ? 'high' : 'normal');
   document.querySelectorAll('[data-field="flyerDurationEdit"]').forEach(el=>{
     const v = Number(el.value);
     config.flyers[Number(el.dataset.idx)].durationSec = (v && v > 0) ? v : null;
@@ -4873,7 +4959,7 @@ function populateModal(){
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
-              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : '')}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : ((target && target - new Date() < -864e5) || (f.expiresOn && new Date(f.expiresOn + 'T23:59:59') < new Date()) ? '⌛ Expired — hidden &nbsp;· ' : ''))}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
             </div>
           </div>
           <div class="flyerSummaryChevron">▾</div>
@@ -4895,8 +4981,8 @@ function populateModal(){
             </select>
           </div>
           <div class="fileDrop" data-flyer-file-drop="${i}">
-            <input type="file" accept="${f.type==='pdf' ? 'application/pdf' : 'image/*'}" data-flyer-file-input="${i}">
-            <span data-flyer-file-label="${i}">📎 Tap to replace with a ${f.type==='pdf' ? 'PDF' : 'photo'} from this device</span>
+            <input type="file" accept="image/*,application/pdf" data-flyer-file-input="${i}">
+            <span data-flyer-file-label="${i}">📎 Replace the picture (keeps all its settings)</span>
           </div>
           <div class="uploadDivider">or edit the link</div>
           <div class="field"><label>${f.type==='pdf' ? 'Flyer PDF URL' : 'Flyer Image URL'}</label><input data-field="flyerUrlEdit" data-idx="${i}" value="${escapeAttr(f.url||'')}"></div>
@@ -4909,13 +4995,7 @@ function populateModal(){
           <div class="hint" style="margin-top:-6px;">Uncheck to keep this flyer saved without posting it.</div>
           <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" data-field="flyerShowCountdownEdit" data-idx="${i}" id="flyerShowCountdownEdit${i}" ${f.showCountdown ? 'checked' : ''}><label for="flyerShowCountdownEdit${i}" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
           <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
-          <div class="field">
-            <label>Need to Know or Extra Info?</label>
-            <select data-field="flyerPriorityEdit" data-idx="${i}">
-              <option value="normal" ${f.priority!=='high' ? 'selected':''}>Extra Info — shows up in the regular rotation</option>
-              <option value="high" ${f.priority==='high' ? 'selected':''}>Need to Know — shows up a lot more, especially as it gets close</option>
-            </select>
-          </div>
+          <div class="toggleRow"><input type="checkbox" id="ntk${i}" data-field="flyerPriorityEdit" data-idx="${i}" ${f.priority==='high' ? 'checked':''}><label for="ntk${i}" style="margin:0;font-size:14px;font-weight:600;">⭐ Need to Know <span style="font-weight:400;color:var(--muted);font-size:12px;">(off = normal rotation)</span></label></div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input type="number" min="3" max="120" data-field="flyerDurationEdit" data-idx="${i}" value="${f.durationSec ? escapeAttr(String(f.durationSec)) : ''}" placeholder="Default — 14s (22s for Need to Know)"></div>
           <details class="advancedSchedule" ${(f.days && f.days.length) || f.startTime || f.endTime ? 'open' : ''}>
             <summary>Advanced: only certain days or times (optional — this flyer shows all the time by default)</summary>
@@ -4948,7 +5028,7 @@ function populateModal(){
           const file = editFileInput.files && editFileInput.files[0];
           if(!file) return;
           const urlInput = div.querySelector(`[data-field="flyerUrlEdit"][data-idx="${i}"]`);
-          const isPdf = f.type === 'pdf';
+          const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
           editFileDrop.classList.add('hasFile');
           if(isPdf && file.size > FLYER_PDF_HARD_LIMIT_BYTES){
             editFileLabel.textContent = `⚠ That PDF is ${(file.size/1024/1024).toFixed(1)}MB — too big to embed directly. Host it somewhere (Google Drive works) and paste the link instead.`;
@@ -4960,9 +5040,14 @@ function populateModal(){
             const newUrl = isPdf ? await fileToDataUrl(file) : await uploadImageToImgbb(file);
             if(urlInput) urlInput.value = newUrl;
             syncFormToConfig();
+            config.flyers[i].url = newUrl;
+            config.flyers[i].type = isPdf ? 'pdf' : 'image';
             const thumb = div.querySelector(`[data-thumb-idx="${i}"]`);
             if(thumb) thumb.src = newUrl;
-            editFileLabel.textContent = '✓ Replaced — tap Save & Publish below to send it to the board.';
+            editFileLabel.textContent = 'Publishing…';
+            // One step: swap the picture and publish it, keeping every setting.
+            const ok = await quickSaveIndicator('Saving…', 'flyerStatus');
+            editFileLabel.textContent = ok ? '✓ Replaced and published — the board will show the new picture.' : '⚠ Replaced here, but not saved to the shared board yet — tap Save & Publish below.';
           }catch(e){
             editFileLabel.textContent = e.message || 'Upload failed — try pasting a link instead';
           }
@@ -5133,6 +5218,7 @@ function bindDynamicHandlers(){
   });
 }
 
+document.getElementById('loadBackups').onclick = renderBackupsList;
 document.getElementById('addTeam').onclick = ()=>{
   syncFormToConfig();
   config.teams.push({name:'New Team', color: TEAM_COLORS[config.teams.length % TEAM_COLORS.length], points:0});
@@ -5187,6 +5273,8 @@ const flyerFileLabelHeading = document.getElementById('flyerFileLabelHeading');
 const flyerTypeSelect = document.getElementById('flyerType');
 const flyerPdfHint = document.getElementById('flyerPdfHint');
 let flyerPickedFile = null;
+let flyerUploadPromise = null, flyerUploadedUrl = '';
+let flyerMulti = [];   // several files picked at once: [{file, isPdf, promise}]
 // Transient UI state for the settings-panel flyer list — which flyer cards
 // are expanded for editing, and which are mid delete-confirmation. Keyed by
 // array index; not part of saved config, so it resets when the modal
@@ -5203,7 +5291,7 @@ const FLYER_PDF_HARD_LIMIT_BYTES = 20 * 1024 * 1024; // ~20MB: too big to embed 
 if(flyerTypeSelect){
   flyerTypeSelect.addEventListener('change', ()=>{
     const isPdf = flyerTypeSelect.value === 'pdf';
-    if(flyerFileInput) flyerFileInput.accept = isPdf ? 'application/pdf' : 'image/*';
+    if(flyerFileInput) flyerFileInput.accept = 'image/*,application/pdf';
     if(flyerFileLabelHeading) flyerFileLabelHeading.textContent = isPdf ? 'Flyer PDF' : 'Flyer Image';
     if(flyerPdfHint) flyerPdfHint.style.display = isPdf ? '' : 'none';
     resetFlyerFilePicker();
@@ -5265,7 +5353,8 @@ if(flyerFileDrop){
   };
 }
 function resetFlyerFilePicker(){
-  flyerPickedFile = null;
+  flyerMulti = [];
+  flyerPickedFile = null; flyerUploadPromise = null; flyerUploadedUrl = '';
   if(flyerFileInput) flyerFileInput.value = '';
   if(flyerFileDrop) flyerFileDrop.classList.remove('hasFile');
   const isPdf = flyerTypeSelect && flyerTypeSelect.value === 'pdf';
@@ -5492,10 +5581,100 @@ if(qPhotoUrlInput){
   if(qPhotoTypeSelect) qPhotoTypeSelect.addEventListener('change', runQPhotoPreview);
 }
 
+function resetFlyerForm(){
+  document.getElementById('flyerEventName').value = '';
+  document.getElementById('flyerUrl').value = '';
+  document.getElementById('flyerDate').value = '';
+  document.getElementById('flyerTime').value = '';
+  document.getElementById('flyerPriority').value = 'normal';
+  document.getElementById('flyerNTK').checked = false;
+  document.getElementById('flyerShowCountdown').checked = false;
+  document.getElementById('flyerShowOnBoard').checked = true;
+  document.getElementById('flyerDuration').value = '';
+  document.getElementById('flyerStartTime').value = '';
+  document.getElementById('flyerEndTime').value = '';
+  document.getElementById('flyerDayPicker').innerHTML = dayPickerMarkup();
+  if(flyerTypeSelect){
+    flyerTypeSelect.value = 'image';
+    flyerTypeSelect.dispatchEvent(new Event('change'));
+  }
+  resetFlyerFilePicker();
+  flyerUrlPreviewWrap.style.display = 'none';
+  const ex = document.getElementById('flyerExpires'); if(ex) ex.value = '';
+  flyerMulti = [];
+}
+
+document.getElementById('copyLastFlyer').onclick = ()=>{
+  const st = document.getElementById('flyerStatus');
+  const list = normalizeStoredList(config && config.flyers);
+  const last = list[list.length - 1];
+  if(!last){ st.textContent = 'No previous flyer to copy yet.'; return; }
+  const bump = d => { if(!d) return ''; const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + 7); return t.toISOString().slice(0,10); };
+  document.getElementById('flyerEventName').value = last.eventName || '';
+  document.getElementById('flyerDate').value = bump(last.eventDate);
+  document.getElementById('flyerTime').value = last.eventTime || '';
+  document.getElementById('flyerExpires').value = bump(last.expiresOn);
+  document.getElementById('flyerPriority').value = last.priority === 'high' ? 'high' : 'normal';
+  document.getElementById('flyerNTK').checked = last.priority === 'high';
+  document.getElementById('flyerShowCountdown').checked = !!last.showCountdown;
+  document.getElementById('flyerShowOnBoard').checked = last.showOnBoard !== false;
+  document.getElementById('flyerDuration').value = last.durationSec || '';
+  document.getElementById('flyerStartTime').value = last.startTime || '';
+  document.getElementById('flyerEndTime').value = last.endTime || '';
+  const days = last.days && last.days.length ? last.days : [0,1,2,3,4,5,6];
+  document.querySelectorAll('#flyerDayPicker .flyerDayCb').forEach(cb=> cb.checked = days.includes(Number(cb.value)));
+  st.textContent = '✓ Copied' + (last.eventDate ? ' (dates moved ahead one week — adjust if needed)' : '') + '. Now choose the new picture and tap Save & Publish.';
+};
+function updateMultiStatus(){
+  if(!flyerMulti.length) return;
+  const done = flyerMulti.filter(m=>m.done).length;
+  document.getElementById('flyerStatus').textContent = done === flyerMulti.length
+    ? `✓ All ${done} flyers uploaded — set the date/priority (applies to all) and tap Save & Publish`
+    : `Uploading ${done} of ${flyerMulti.length}…`;
+}
+document.getElementById('flyerNTK').onchange = function(){ document.getElementById('flyerPriority').value = this.checked ? 'high' : 'normal'; };
+// AUTO-UPLOAD: the moment a photo/PDF is chosen it starts uploading in the
+// background, so by the time Save & Publish is tapped it's already done.
+(function(){
+  const orig = flyerFileInput.onchange;
+  flyerFileInput.onchange = ()=>{
+    const f = flyerFileInput.files && flyerFileInput.files[0];
+    flyerUploadPromise = null; flyerUploadedUrl = ''; flyerMulti = [];
+    if(flyerFileInput.files && flyerFileInput.files.length > 1){
+      // SEVERAL FLYERS AT ONCE: all upload in parallel; one Save & Publish posts them all.
+      const st = document.getElementById('flyerStatus');
+      flyerPickedFile = null;
+      flyerMulti = Array.from(flyerFileInput.files).map(file=>{
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        const m = {file, isPdf, done:false};
+        m.promise = (isPdf ? fileToDataUrl(file) : uploadImageToImgbb(file)).then(u=>{ m.done = true; updateMultiStatus(); return u; });
+        m.promise.catch(()=>{});
+        return m;
+      });
+      document.getElementById('flyerUrl').value = '';
+      flyerFileDrop.classList.add('hasFile');
+      flyerFileLabel.textContent = '✓ ' + flyerMulti.length + ' flyers selected';
+      document.getElementById('flyerUrlPreviewWrap').style.display = 'none';
+      updateMultiStatus();
+      return;
+    }
+    if(f && flyerTypeSelect) flyerTypeSelect.value = (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) ? 'pdf' : 'image';
+    orig();
+    if(!flyerPickedFile) return;
+    const status = document.getElementById('flyerStatus');
+    const isPdf = flyerTypeSelect.value === 'pdf';
+    status.textContent = isPdf ? 'Reading PDF…' : 'Uploading photo…';
+    const p = isPdf ? fileToDataUrl(flyerPickedFile) : uploadImageToImgbb(flyerPickedFile);
+    flyerUploadPromise = p;
+    p.then(u=>{ if(flyerUploadPromise !== p) return; flyerUploadedUrl = u; status.textContent = '✓ Uploaded — add the date if you want, then tap Save & Publish'; })
+     .catch(e=>{ if(flyerUploadPromise !== p) return; flyerUploadPromise = null; status.textContent = (e && e.message ? e.message : 'Upload failed') + ' — it will try again when you tap Save & Publish'; });
+  };
+})();
+
 document.getElementById('addFlyer').onclick = async ()=>{
   const eventName = document.getElementById('flyerEventName').value.trim();
   let url = document.getElementById('flyerUrl').value.trim();
-  const type = flyerTypeSelect && flyerTypeSelect.value === 'pdf' ? 'pdf' : 'image';
+  const type = (flyerTypeSelect && flyerTypeSelect.value === 'pdf') || (!flyerPickedFile && /\.pdf(\?|#|$)/i.test(url)) ? 'pdf' : 'image';
   const eventDate = document.getElementById('flyerDate').value;
   const eventTime = document.getElementById('flyerTime').value;
   const priority = document.getElementById('flyerPriority').value;
@@ -5514,6 +5693,19 @@ document.getElementById('addFlyer').onclick = async ()=>{
     return;
   }
 
+  const expiresOn = (document.getElementById('flyerExpires') || {}).value || null;
+  if(flyerMulti.length){
+    status.textContent = 'Finishing uploads…';
+    let urls;
+    try{ urls = await Promise.all(flyerMulti.map(m=>m.promise)); }
+    catch(e){ status.textContent = (e && e.message) || 'One of the uploads failed — re-pick the files and try again'; return; }
+    syncFormToConfig();
+    urls.forEach((u,i)=> config.flyers.push({eventName, url:u, type: flyerMulti[i].isPdf ? 'pdf' : 'image', eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime, expiresOn}));
+    resetFlyerForm();
+    await quickSaveIndicator('Saving…', 'flyerStatus');
+    populateModal();
+    return;
+  }
   if(!url && !flyerPickedFile){
     status.textContent = type === 'pdf'
       ? 'Choose a PDF from this device, or paste a link'
@@ -5524,7 +5716,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(flyerPickedFile && type === 'image'){
     status.textContent = 'Uploading photo…';
     try{
-      url = await uploadImageToImgbb(flyerPickedFile);
+      url = flyerUploadedUrl || await (flyerUploadPromise || uploadImageToImgbb(flyerPickedFile));
     }catch(e){
       status.textContent = e.message || 'Upload failed — try pasting a link instead';
       return;
@@ -5532,7 +5724,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   } else if(flyerPickedFile && type === 'pdf'){
     status.textContent = 'Reading PDF…';
     try{
-      url = await fileToDataUrl(flyerPickedFile);
+      url = flyerUploadedUrl || await (flyerUploadPromise || fileToDataUrl(flyerPickedFile));
     }catch(e){
       status.textContent = e.message || 'Could not read that PDF — try pasting a link instead';
       return;
@@ -5542,24 +5734,8 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeMediaUrl(url, type === 'pdf');
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime});
-  document.getElementById('flyerEventName').value = '';
-  document.getElementById('flyerUrl').value = '';
-  document.getElementById('flyerDate').value = '';
-  document.getElementById('flyerTime').value = '';
-  document.getElementById('flyerPriority').value = 'normal';
-  document.getElementById('flyerShowCountdown').checked = false;
-  document.getElementById('flyerShowOnBoard').checked = true;
-  document.getElementById('flyerDuration').value = '';
-  document.getElementById('flyerStartTime').value = '';
-  document.getElementById('flyerEndTime').value = '';
-  document.getElementById('flyerDayPicker').innerHTML = dayPickerMarkup();
-  if(flyerTypeSelect){
-    flyerTypeSelect.value = 'image';
-    flyerTypeSelect.dispatchEvent(new Event('change'));
-  }
-  resetFlyerFilePicker();
-  flyerUrlPreviewWrap.style.display = 'none';
+  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime, expiresOn});
+  resetFlyerForm();
   await quickSaveIndicator('Saving…', 'flyerStatus');
   populateModal();
 };
