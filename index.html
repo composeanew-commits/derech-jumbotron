@@ -259,10 +259,11 @@
      (automatically, since nobody can touch a wall display). */
   .yzHead{display:flex;gap:12px;align-items:center;flex-shrink:0;margin-bottom:8px;position:relative;z-index:1;}
   .yzHead .widgetTitle{margin:0;font-size:15px;flex:1;min-width:0;}
-  .yzPhoto,.yzInitials{width:92px;height:92px;border-radius:50%;flex:none;border:2px solid var(--gold);box-shadow:0 0 14px rgba(240,184,77,.25);}
+  .yzPhoto,.yzInitials{width:64px;height:64px;border-radius:50%;flex:none;border:2px solid var(--gold);box-shadow:0 0 14px rgba(240,184,77,.25);}
   .yzPhoto{object-fit:cover;object-position:center 18%;background:#0E0C1B;}
   .yzInitials{display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:800;font-size:30px;letter-spacing:1px;color:var(--gold);background:radial-gradient(circle at 30% 25%, #4a3f8a, #1c1840);box-shadow:0 0 0 4px rgba(240,184,77,.12), 0 0 22px rgba(240,184,77,.3), inset 0 0 18px rgba(0,0,0,.35);}
-  .yzHead .widgetTitle{font-size:18px;line-height:1.2;}
+  .yzHead .widgetTitle{font-size:15px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .yzScroll .qText{font-size:15px !important;line-height:1.4;}
   .yzScroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;position:relative;z-index:1;
     -webkit-mask-image:linear-gradient(#000 calc(100% - 18px), transparent);mask-image:linear-gradient(#000 calc(100% - 18px), transparent);}
   .yzScroll::-webkit-scrollbar{display:none;}
@@ -2292,13 +2293,12 @@ function yzInitials(name){
 }
 function yzAvatarHtml(photo, name){
   const ini = escapeHtml(yzInitials(name));
-  if(!photo) return `<div class="yzInitials"><span>${ini}</span></div>`;   // no photo exists: elegant monogram medallion instead of a blank space
+  if(!photo) return '';   // no photo: no bubble at all, the name gets the full width
   return `<img class="yzPhoto" src="${escapeHtml(photo)}" alt="" referrerpolicy="no-referrer" data-ini="${ini}" onerror="yzPhotoFail(this)">`;
 }
 function yzPhotoFail(img){
   if(!img.dataset.retried){ img.dataset.retried = '1'; img.removeAttribute('referrerpolicy'); img.src = img.src + (img.src.includes('?') ? '&' : '?') + 'r=1'; return; }
-  const d = document.createElement('div'); d.className = 'yzInitials'; d.innerHTML = '<span>' + (img.dataset.ini || '?') + '</span>';
-  img.replaceWith(d);
+  img.remove();
 }
 function yzAutoScroll(el){
   // Long blurbs drift upward slowly, pausing at the top and bottom, finishing
@@ -4389,7 +4389,7 @@ function renderPhotoCellMarkup(item, cellIdx){
       </video>
       ${item.caption ? `<div class="photoCaptionBar">${escapeHtml(item.caption)}</div>` : ''}`;
   }
-  const src = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
+  const src = item._okSrc || sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
   const kb = 'kb' + (1 + Math.floor(Math.random()*4));
   return `
     <img class="${kb}" src="${escapeAttr(src)}" data-orig="${escapeAttr(item.url)}" data-fallback="${escapeAttr(drivePhotoFallback(item.url) || item.url)}" alt="board photo" referrerpolicy="no-referrer" onerror="handlePhotoImgError(this, ${cellIdx})">
@@ -4479,11 +4479,15 @@ function applyCellAspect(cell, w, h){
   cell.classList.toggle('tall', h > w * TALL_ASPECT_THRESHOLD);
 }
 
-function paintPhotoCell(cellIdx, animate, extraDelayMs){
+function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
   const cell = document.getElementById('photoCell'+cellIdx);
   if(!cell) return;
+  // Safety nets: a faded-out cell is invisible, so make sure it ALWAYS comes
+  // back even if requestAnimationFrame is throttled (hidden tab / kiosk
+  // power-saving) or something below throws.
+  setTimeout(()=> cell.classList.remove('fadeOut'), PHOTO_TRANSITION_MS + 900);
   const render = ()=>{
-    const item = pickNextForCell(cellIdx);
+    const item = prepared !== undefined ? prepared : pickNextForCell(cellIdx);
     currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
     cell.innerHTML = renderPhotoCellMarkup(item, cellIdx);
     // The cell is still sitting in its faded-out state right now (that's
@@ -4625,6 +4629,67 @@ function paintPhotoCell(cellIdx, animate, extraDelayMs){
   } else {
     render();
   }
+}
+
+// ---- BLANK-PHOTO PROTECTION ----
+// Root causes of blank photo squares, all handled here:
+//  1. The new <img> was put on screen BEFORE it had downloaded, so the square
+//     sat dark/empty while a big or slow file (Drive, WordPress originals)
+//     loaded - or forever if it never did. Now every photo is fully loaded
+//     off-screen first, and the old photo stays up until the new one is ready.
+//  2. A failing full-size URL gave up too early. Now it tries full-size,
+//     then the Drive thumbnail, then the original URL, each with its own timeout.
+//  3. A photo that failed once was blacklisted. Now only after every URL fails,
+//     and the blacklist clears every 3 minutes or whenever the network returns.
+//  4. If nothing can load, the current photo simply stays up and we retry soon
+//     instead of showing an empty square.
+//  5. A cell that faded out could stay invisible if animation frames were
+//     throttled; a timer now guarantees it comes back.
+const photoPaintToken = {};
+function preloadImage(src, ms){
+  return new Promise(resolve=>{
+    const im = new Image();
+    let done = false;
+    const fin = ok => { if(done) return; done = true; clearTimeout(t); resolve(!!ok && im.naturalWidth > 0); };
+    const t = setTimeout(()=> fin(false), ms);
+    im.onload = ()=> fin(true);
+    im.onerror = ()=> fin(false);
+    im.referrerPolicy = 'no-referrer';
+    im.src = src;
+  });
+}
+async function pickLoadablePhoto(cellIdx){
+  for(let attempt = 0; attempt < 6; attempt++){
+    const item = pickNextForCell(cellIdx);
+    if(!item) return null;
+    if(item.type === 'video') return item;
+    const primary = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
+    const candidates = [primary, drivePhotoFallback(item.url), item.url].filter((u,i,a)=> u && a.indexOf(u) === i);
+    for(const src of candidates){
+      if(await preloadImage(src, 8000)) return Object.assign({}, item, {_okSrc: src});
+    }
+    brokenPhotoUrls.add(item.url);
+  }
+  return 'keep';
+}
+window.addEventListener('online', ()=>{ try{ brokenPhotoUrls.clear(); }catch(e){} });
+setInterval(()=>{ try{ brokenPhotoUrls.clear(); }catch(e){} }, 3*60*1000);
+
+async function paintPhotoCell(cellIdx, animate, extraDelayMs){
+  const cell = document.getElementById('photoCell'+cellIdx);
+  if(!cell) return;
+  const token = (photoPaintToken[cellIdx] = (photoPaintToken[cellIdx] || 0) + 1);
+  clearTimeout(photoCellTimers[cellIdx]);
+  let chosen;
+  try{ chosen = await pickLoadablePhoto(cellIdx); }catch(e){ chosen = 'keep'; }
+  if(token !== photoPaintToken[cellIdx]) return;   // a newer paint superseded this one
+  if(chosen === 'keep'){
+    // Nothing loadable right now: leave the current photo up, try again shortly.
+    cell.classList.remove('fadeOut');
+    photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), 4000);
+    return;
+  }
+  paintPhotoCellCore(cellIdx, animate, extraDelayMs, chosen);
 }
 
 function advancePhotoCell(cellIdx){
