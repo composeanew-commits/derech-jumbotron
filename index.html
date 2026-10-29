@@ -263,7 +263,7 @@
   .yzPhoto{object-fit:cover;object-position:center 18%;background:#0E0C1B;}
   .yzInitials{display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-weight:800;font-size:30px;letter-spacing:1px;color:var(--gold);background:radial-gradient(circle at 30% 25%, #4a3f8a, #1c1840);box-shadow:0 0 0 4px rgba(240,184,77,.12), 0 0 22px rgba(240,184,77,.3), inset 0 0 18px rgba(0,0,0,.35);}
   .yzHead .widgetTitle{font-size:15px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-  .yzScroll .qText{font-size:15px !important;line-height:1.4;}
+  .yzScroll .qText{font-size:12px !important;line-height:1.35;}
   .yzScroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;position:relative;z-index:1;
     -webkit-mask-image:linear-gradient(#000 calc(100% - 18px), transparent);mask-image:linear-gradient(#000 calc(100% - 18px), transparent);}
   .yzScroll::-webkit-scrollbar{display:none;}
@@ -1288,7 +1288,60 @@ const DEFAULT_QUOTES = [
 "Once you choose hope, anything's possible.",
 "With the new day comes new strength and new thoughts.",
 "There is no education like adversity.",
-"The struggle you're in today is developing the strength you need for tomorrow."
+"The struggle you're in today is developing the strength you need for tomorrow.",
+"A small light in the right place does more than a big fire in the wrong one.",
+"Be kind to the person you were yesterday; they were doing their best with what they knew.",
+"The measure of a person is what they do when no one would ever find out.",
+"Listen twice as much as you speak — that's why you were given two ears and one mouth.",
+"A good name is built slowly, one honest choice at a time, and can be lost in a moment.",
+"Don't wait to feel motivated. Start, and motivation will catch up with you.",
+"Who is wise? The one who learns from everyone.",
+"Who is strong? The one who masters their own temper.",
+"Who is rich? The one who is happy with what they have.",
+"A kind word costs nothing and can change someone's whole day.",
+"You can't change the wind, but you can adjust your sails.",
+"Hard roads often lead to beautiful places.",
+"A person's character shows in how they treat someone who can do nothing for them.",
+"Think before you speak, and you'll rarely have to take it back.",
+"A little progress each day adds up to big results.",
+"Be the kind of friend you'd want standing next to you on your hardest day.",
+"If it matters to you, you'll find a way. If not, you'll find an excuse.",
+"The best time to plant a tree was twenty years ago. The second best time is today.",
+"Mistakes are proof that you're trying.",
+"Patience is not just waiting — it's how you act while you wait.",
+"Don't let yesterday use up too much of today.",
+"A calm mind is the best tool you can carry into a hard moment.",
+"Gratitude turns what we have into enough.",
+"Some of the best growth happens in the seasons where nothing seems to be happening.",
+"Speak as if the person you're talking about is standing right beside you.",
+"It's not about being perfect. It's about being a little better than you were.",
+"Humility isn't thinking less of yourself; it's thinking of yourself less.",
+"The one who forgives first is the one who walks away lighter.",
+"Doing the right thing is rarely the easiest thing, but it's the one you'll never regret.",
+"Learn something new every day, and you'll never grow old.",
+"Honest work done quietly is worth more than praise earned loudly.",
+"Every great thing was once a small beginning that somebody refused to quit on.",
+"Don't judge a day by the harvest you reap but by the seeds you plant.",
+"Your attitude is the one thing nobody else gets to choose for you.",
+"Be careful with your words; once spoken, they can't be gathered back.",
+"Courage isn't the absence of fear. It's taking the next step while still afraid.",
+"You become the people you spend your time with — choose them well.",
+"There's no shame in a slow start; the shame is only in never beginning.",
+"Make peace with your pace — what matters is that you're moving.",
+"The strongest people are the ones who can stay gentle.",
+"Don't be so busy making a living that you forget to make a life.",
+"Real friends celebrate your wins as if they were their own.",
+"Treat every person as if they're carrying something heavy — most of them are.",
+"Sometimes the bravest thing you can say is, 'I was wrong.'",
+"A person grows the most when they stop trying to look impressive and start trying to be useful.",
+"The harder you work for something, the more it means when you get there.",
+"Be someone who makes others feel they matter, because they do.",
+"Be loyal in small things, and people will trust you with big ones.",
+"Don't count the days; make the days count.",
+"What you practice in private is what shows up in public.",
+"A good question is worth more than a quick answer.",
+"Hold your head high, but keep your heart open.",
+"Every day is a fresh page. Write something worth reading."
 ];
 
 // Year-round starter set of bite-sized, practical halachos for daily life,
@@ -2620,6 +2673,12 @@ function mergeStoredConfig(stored){
   // DEFAULT_CONFIG alone, so filter it out of whatever was stored too.
   merged.wordBank = merged.wordBank.filter(w => (w.translit || '').trim().toLowerCase() !== 'yalla');
   if(!merged.quoteBank || !merged.quoteBank.length) merged.quoteBank = structuredClone(DEFAULT_CONFIG.quoteBank);
+  merged.quoteBank = merged.quoteBank.map(q => String(q).replace(/\s*\([^()]*\)\s*$/, '').trim()).filter(Boolean);
+  if(merged.quoteBankVer !== 3){
+    const have = new Set(merged.quoteBank.map(q => q.toLowerCase()));
+    DEFAULT_QUOTES.forEach(q => { if(!have.has(q.toLowerCase())){ merged.quoteBank.push(q); have.add(q.toLowerCase()); } });
+    merged.quoteBankVer = 3;
+  }
   if(!merged.waysBank || !merged.waysBank.length) merged.waysBank = structuredClone(DEFAULT_CONFIG.waysBank);
   if(!merged.halachaBank || !merged.halachaBank.length) merged.halachaBank = structuredClone(DEFAULT_CONFIG.halachaBank);
   if(!merged.halachaSeasonal) merged.halachaSeasonal = structuredClone(DEFAULT_CONFIG.halachaSeasonal);
@@ -3272,8 +3331,14 @@ function buildSpotlightItems(){
     rotating.push({key:'standings', eyebrow:'League Standings', title:'Team Points', body, accent:'var(--green)', icon:'\u25B2'});
   }
 
-  if(config.shoutouts && config.shoutouts.length){
-    const body = `<div class="shoutoutBox">${config.shoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
+  // Only real shoutouts count: blank entries and the built-in welcome placeholder
+  // don't get a box in the rotation at all.
+  const realShoutouts = (config.shoutouts || []).filter(s => {
+    const t = String(s || '').trim();
+    return t && !/^Welcome to the Derech Jumbotron! Add your first shoutout/i.test(t);
+  });
+  if(realShoutouts.length){
+    const body = `<div class="shoutoutBox">${realShoutouts.map(s=>`<div class="shoutItem">${escapeHtml(s)}</div>`).join('')}</div>`;
     rotating.push({key:'shoutouts', eyebrow:'Shoutouts', title:'Kol HaKavod', body, accent:'var(--pink)', icon:'\u2726'});
   }
 
@@ -3307,7 +3372,6 @@ function buildSpotlightItems(){
     const parts = q.split(/\s*\((.*?)\)\s*$/);
     const body = `<div class="thoughtBox">
       <div class="thoughtText">\u201C${escapeHtml(parts[0])}\u201D</div>
-      ${parts[1] ? `<div class="thoughtSource">\u2014 ${escapeHtml(parts[1])}</div>` : ''}
     </div>`;
     rotating.push({key:'quote:'+i, eyebrow:'Thought', title:'Quotes', body, accent:'var(--green)', icon:'\u201C'});
   });
@@ -4310,7 +4374,10 @@ let brokenPhotoUrls = new Set();
 // is what was showing up as "many photos on repeat."
 let photoBags = { old: [], new: [], all: [] };
 let photoBagPos = { old: 0, new: 0, all: 0 };
-let recentPhotoUrls = [];
+// Remembered across reloads/resets (localStorage) so a restart doesn't open on the
+// same photos it just showed last time.
+let recentPhotoUrls = (()=>{ try{ const r = JSON.parse(localStorage.getItem('derechRecentPhotos')||'[]'); return Array.isArray(r) ? r.slice(-80) : []; }catch(e){ return []; } })();
+function saveRecentPhotos(){ try{ localStorage.setItem('derechRecentPhotos', JSON.stringify(recentPhotoUrls.slice(-80))); }catch(e){} }
 function photoDedupeKey(url){ return String(url||'').split('?')[0].replace(/-\d+x\d+(\.[a-zA-Z0-9]+)$/, '$1'); }
 
 function reshufflePhotoBag(poolKey, pool){
@@ -4450,7 +4517,7 @@ function pickNextForCell(cellIdx){
   const onScreen = Object.keys(currentlyShownPhotoUrls)
     .filter(k => Number(k) !== cellIdx)
     .map(k => currentlyShownPhotoUrls[k]);
-  const keep = Math.max(0, Math.min(16, uniq.length - 4));
+  const keep = Math.max(0, Math.min(40, Math.floor(uniq.length * 0.6)));
 
   let item = null;
   if(isExtraInfoCell){
@@ -4458,7 +4525,7 @@ function pickNextForCell(cellIdx){
     if(extras.length && Math.random() < 0.3) item = pickWeightedPhoto(extras, onScreen);
   }
   if(!item) item = nextFromPhotoBag('all', pool, onScreen.concat(recentPhotoUrls.slice(-keep)));
-  if(item){ recentPhotoUrls.push(item.url); if(recentPhotoUrls.length > 40) recentPhotoUrls.shift(); }
+  if(item){ recentPhotoUrls.push(item.url); if(recentPhotoUrls.length > 80) recentPhotoUrls.shift(); saveRecentPhotos(); }
   return item;
 }
 
@@ -4646,6 +4713,7 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
 //  5. A cell that faded out could stay invisible if animation frames were
 //     throttled; a timer now guarantees it comes back.
 const photoPaintToken = {};
+const photoBusySince = {};
 function preloadImage(src, ms){
   return new Promise(resolve=>{
     const im = new Image();
@@ -4659,14 +4727,14 @@ function preloadImage(src, ms){
   });
 }
 async function pickLoadablePhoto(cellIdx){
-  for(let attempt = 0; attempt < 6; attempt++){
+  for(let attempt = 0; attempt < 5; attempt++){
     const item = pickNextForCell(cellIdx);
     if(!item) return null;
     if(item.type === 'video') return item;
     const primary = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
     const candidates = [primary, drivePhotoFallback(item.url), item.url].filter((u,i,a)=> u && a.indexOf(u) === i);
-    for(const src of candidates){
-      if(await preloadImage(src, 8000)) return Object.assign({}, item, {_okSrc: src});
+    for(let ci = 0; ci < candidates.length; ci++){
+      if(await preloadImage(candidates[ci], ci === 0 ? 6000 : 4000)) return Object.assign({}, item, {_okSrc: candidates[ci]});
     }
     brokenPhotoUrls.add(item.url);
   }
@@ -4680,17 +4748,48 @@ async function paintPhotoCell(cellIdx, animate, extraDelayMs){
   if(!cell) return;
   const token = (photoPaintToken[cellIdx] = (photoPaintToken[cellIdx] || 0) + 1);
   clearTimeout(photoCellTimers[cellIdx]);
+  photoBusySince[cellIdx] = Date.now();
   let chosen;
   try{ chosen = await pickLoadablePhoto(cellIdx); }catch(e){ chosen = 'keep'; }
   if(token !== photoPaintToken[cellIdx]) return;   // a newer paint superseded this one
   if(chosen === 'keep'){
     // Nothing loadable right now: leave the current photo up, try again shortly.
     cell.classList.remove('fadeOut');
-    photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), 4000);
+    photoBusySince[cellIdx] = 0;
+    const hasContent = !!cell.querySelector('img,video');
+    photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), hasContent ? 4000 : 1500);
     return;
   }
+  photoBusySince[cellIdx] = 0;
+  cell.dataset.shownAt = String(Date.now());
   paintPhotoCellCore(cellIdx, animate, extraDelayMs, chosen);
 }
+
+// ---- BLANK-BOX SWEEPER ----
+// Final safety net: every few seconds, look at each photo square. If it's empty,
+// holds an image that never loaded, or its rotation timer silently died, repaint it.
+setInterval(()=>{
+  try{
+    const now = Date.now();
+    for(let i = 0; i < PHOTO_CELL_COUNT; i++){
+      const cell = document.getElementById('photoCell'+i);
+      if(!cell) continue;
+      const busy = photoBusySince[i] && (now - photoBusySince[i] < 45000);
+      if(busy) continue;
+      const img = cell.querySelector('img');
+      const vid = cell.querySelector('video');
+      const shownFor = now - Number(cell.dataset.shownAt || 0);
+      const empty = !img && !vid;
+      const deadImg = img && !(img.complete && img.naturalWidth > 0) && shownFor > 8000;
+      const stuck = shownFor > (PHOTO_DURATION + 25000) && !vid;
+      if(empty || deadImg || stuck){
+        if(deadImg) brokenPhotoUrls.add(img.dataset.orig || img.src);
+        cell.classList.remove('fadeOut');
+        paintPhotoCell(i, false);
+      }
+    }
+  }catch(e){}
+}, 5000);
 
 function advancePhotoCell(cellIdx){
   paintPhotoCell(cellIdx, true);
@@ -4698,9 +4797,11 @@ function advancePhotoCell(cellIdx){
 
 function startPhotoRotation(){
   const panel = document.getElementById('photoPanel');
-  panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
-    `<div class="photoCell" id="photoCell${i}"></div>`
-  ).join('');
+  if(panel.querySelectorAll('.photoCell').length !== PHOTO_CELL_COUNT){
+    panel.innerHTML = Array.from({length: PHOTO_CELL_COUNT}).map((_,i)=>
+      `<div class="photoCell" id="photoCell${i}"></div>`
+    ).join('');
+  }
   photoCellTimers.forEach(t=>clearTimeout(t));
   photoCellTimers = [];
   currentlyShownPhotoUrls = {};
