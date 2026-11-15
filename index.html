@@ -255,6 +255,10 @@
   #spotlightCard1 .yzHead{gap:16px;margin-bottom:12px;}
   #spotlightCard1 .yzHead .widgetTitle{font-size:21px;}
   #spotlightCard1 .yzScroll .qText{font-size:16px !important;line-height:1.45;}
+  #spotlightCard1 .yzScroll .qText.long{font-size:14px !important;line-height:1.4;}
+  #spotlightCard1 .yzScroll .qText.xlong{font-size:12.5px !important;line-height:1.35;}
+  .yzScroll .qText.long{font-size:11px !important;}
+  .yzScroll .qText.xlong{font-size:10px !important;}
   .bigCard::before{content:'';position:absolute;top:0;right:0;width:130px;height:130px;background:radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);pointer-events:none;transition:background .4s ease;}
   .bigCard .widgetTitle{flex-shrink:0;}
   .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
@@ -538,7 +542,6 @@
   </main>
 
   <div class="ticker">
-    <div class="tickerLabel"><span class="liveDot"></span>Live</div>
     <div class="minyanChip" id="minyanChip" style="display:none"></div>
     <div class="tickerTrack"><div class="tickerInner" id="tickerText">Loading announcements…</div></div>
     <div class="weatherChip" id="weatherChip" style="display:none"></div>
@@ -2190,6 +2193,27 @@ const YAHRZEIT_WIKI_EXTRA6 = {
 // large with their blurb, while the others for that day appear in a smaller
 // "Also today" list (like the printed Israeli luach, where the famous are bold).
 // You can also set star:true on any entry, or in the settings box (see below).
+
+// More yahrzeits (Sivan / Tammuz gaps). Sivan 26-30 gathered from Ohel Sara's Yahrtzeit Calendar;
+// the Tammuz entries from standard Chassidic yahrzeit lists. Dates are Hebrew dates (month 3 = Sivan, 4 = Tammuz).
+const YAHRZEIT_DB7 = [
+  {month:3, day:26, name:"Rav Yonatan ben Uziel", blurb:"A talmid of Hillel HaZaken, to whom the Aramaic Targum Yonasan on the Neviim is attributed."},
+  {month:3, day:26, name:"Rav Yehoshua Buxbaum, the Galanta Rav", blurb:"Av Beis Din of Galanta and author of Ohr Pnei Yehoshua; passed away in 1944."},
+  {month:3, day:26, name:"The Saraph of Moglenitz", blurb:"Rav Avraham Yehoshua Heschel of Moglenitz, a revered Chassidic leader, passed away in 1878."},
+  {month:3, day:27, name:"Rabbi Chaninah ben Tradyon", blurb:"One of the Asarah Harugei Malchus, the ten great sages martyred by the Romans al kiddush Hashem."},
+  {month:3, day:27, name:"The Panim Meirot", blurb:"Rav Meir Eisenstadt, Rav of Eisenstadt and author of the Panim Meirot. His descendants include the Netziv, Rav Chaim Brisker and Rav Isser Zalman Meltzer. Passed away in 1744."},
+  {month:3, day:27, name:"Rav Mordechai Meltzer of Lida", blurb:"Rosh Yeshivah in Vilna and later Rav of Lida, author of Techeiles Mordechai; passed away in 1883."},
+  {month:3, day:27, name:"Rav Moshe Yechiel Elimelech Rabinowitz of Biala", blurb:"The Biala Rebbe in Levertov, a grandson of the Divrei Binah, who began publishing his Torah at 16. Murdered al kiddush Hashem in 1941."},
+  {month:3, day:27, name:"Rav Chaim Stein of Telz", blurb:"Longtime Rosh Yeshivah of Telz in Cleveland. He escaped Lithuania in 1940 with a group of talmidim and helped rebuild Telz in America. Passed away in 2011."},
+  {month:3, day:28, name:"Rav Meshulam Feish Lowy of Tosh", blurb:"A talmid of the Maharam Ash, founder of the Tosh Chassidic dynasty, known for his love of every Jew. Passed away in 1873."},
+  {month:3, day:28, name:"Rav Avraham Chaim Adadi of Tripoli", blurb:"Rav and Rosh Yeshivah in Tripoli for thirty years, author of Vayikra Avraham; passed away in 1874."},
+  {month:3, day:28, name:"Rav Yisrael Zev Gustman", blurb:"Rosh Yeshivah of Ramailles in Vilna, the youngest dayan in Vilna's history at 19, who rebuilt his yeshivah, Netzach Yisrael, in Yerushalayim. Passed away in 1991."},
+  {month:3, day:30, name:"Rav Moshe Najara", blurb:"A talmid of the Arizal in Tzefas, later Rav in Damascus, author of Lekach Tov on Rashi's Chumash commentary. Passed away in 1580."},
+  {month:3, day:30, name:"Rav Shlomo Kluger", blurb:"The Rav of Brody and one of the great poskim of his generation, author of Chochmas Shlomo and Ha'elef Lecha Shlomo. Passed away in 1869."},
+  {month:4, day:1, name:"The Maor VaShemesh", blurb:"Rav Kalonymus Kalman HaLevi Epstein of Krakow, a leading talmid of the Chozeh and the Rebbe Elimelech, author of Maor VaShemesh."},
+  {month:4, day:2, name:"The Baal HaHafla", blurb:"Rav Pinchas HaLevi Horowitz, Rav of Frankfurt and author of Hafla'ah on Maseches Kesubos, teacher of the Chasam Sofer."},
+];
+
 const YAHRZEIT_STAR_RE = /Rambam|Rashi|Ramban|Baal Shem Tov|Chofetz Chaim|Vilna Gaon|Chasam Sofer|Chazon Ish|Alter Rebbe|Tanya|Lubavitcher|Rayatz|Tzemach Tzedek|Mittler Rebbe|Maggid of Mezritch|Arizal|Maharal|Rav Moshe Feinstein|Rav Aharon Kotler|Rav Shach|Steipler|Satmar|Belzer|Rabbi Shimon Bar Yochai|Rebbe Nachman|Nachman of Breslov|Kedushas Levi|Levi Yitzchak of Berdichev|Maharsha|Shelah|Baal Shem|Ben Ish Chai|Baba Sali|Akiva Eiger|Netziv|Chozeh|Rav Chaim Soloveitchik|Brisker|Rav Elchonon|Chofetz|Rosh\b|Rif\b|Radvaz|Rav Yosef Karo|Beis Yosef|Maharam|Ksav Sofer|Sfas Emes|Divrei Chaim|Rav Isser Zalman|Rav Yaakov Kamenetsky|Rav Ovadia|Rav Elyashiv|Rav Shlomo Zalman|Rav Steinman|Rav Shteinman|Rav Chaim Kanievsky|Rav Chaim Ozer|Alter of Slabodka|Alter of Kelm|Rav Hutner|Hutner|Rabbeinu Yonah|Rabbeinu HaKadosh|Shaul HaMelech|Aharon HaKohen|Ezra HaSofer|Shem MiShmuel|Ohr Somayach|Chida\b/i;
 
 // Photos: add entries here ("Exact Name": "URL") now or later. A photo on a
@@ -2205,7 +2229,7 @@ const YAHRZEIT_MONTHS = {nissan:1,nisan:1,iyar:2,sivan:3,tammuz:4,av:5,menachema
 
 function allYahrzeits(){
   const extra = (typeof config !== 'undefined' && config && Array.isArray(config.yahrzeitBank)) ? config.yahrzeitBank : [];
-  return YAHRZEIT_DB.concat(YAHRZEIT_DB2, YAHRZEIT_DB3, YAHRZEIT_DB4, YAHRZEIT_DB5, YAHRZEIT_DB6, extra);
+  return YAHRZEIT_DB.concat(YAHRZEIT_DB2, YAHRZEIT_DB3, YAHRZEIT_DB4, YAHRZEIT_DB5, YAHRZEIT_DB6, YAHRZEIT_DB7, extra);
 }
 // Photo database: config.yahrzeitPhotoList = [{name, url}], edited in Settings > Photos.
 function yzKey(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
@@ -3484,7 +3508,7 @@ function buildSpotlightItems(){
       // the rest of the board).
       const ordered = list.filter(y=>y.star).concat(list.filter(y=>!y.star)).slice(0, 8);
       ordered.forEach((y, idx)=>{
-        const body = `${y.blurb ? `<div class="qText">${escapeHtml(y.blurb)}</div>` : `<div class="qText" style="color:var(--muted)">Yahrzeit of ${escapeHtml(y.name)}.</div>`}${ordered.length>1 ? `<div class="yzCount">${idx+1} OF ${ordered.length} TODAY</div>` : ''}`;
+        const body = `${y.blurb ? `<div class="qText${y.blurb.length > 380 ? ' xlong' : (y.blurb.length > 220 ? ' long' : '')}">${escapeHtml(y.blurb)}</div>` : `<div class="qText" style="color:var(--muted)">Yahrzeit of ${escapeHtml(y.name)}.</div>`}${ordered.length>1 ? `<div class="yzCount">${idx+1} OF ${ordered.length} TODAY</div>` : ''}`;
         rotating.push({key:'yahrzeit:'+y.name, eyebrow: soon ? 'Yahrzeit \u2014 '+(soon===1 ? 'Tomorrow' : 'In '+soon+' Days') : 'Yahrzeit Today', title: y.name, body, yz:{photo:y.photo||''}, accent:'var(--gold-dim)', icon:'\u2727'});
       });
     }
@@ -4645,11 +4669,23 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
     cell.classList.remove('fadeOut');
     const reveal = ()=>{
       if(layer.dataset.revealed) return; layer.dataset.revealed = '1';
-      requestAnimationFrame(()=> layer.classList.add('in'));
+      layer.classList.add('in');   // direct (not rAF): can't stall if the screen is idle
       setTimeout(()=> oldLayers.forEach(o=>{ try{ const v=o.querySelector('video'); if(v){ v.pause(); v.removeAttribute('src'); v.load(); } }catch(e){} o.remove(); }), 900);
     };
     const limg = layer.querySelector('img');
-    if(limg && !(limg.complete && limg.naturalWidth)){
+    const lvid = layer.querySelector('video');
+    if(lvid){
+      // A video layer stays hidden (old photo stays up) until it is REALLY playing.
+      // If it never starts (autoplay blocked, slow stream), drop it and move on:
+      // a video that never plays is just a black box.
+      lvid.addEventListener('playing', reveal);
+      setTimeout(()=>{
+        if(layer.dataset.revealed) return;
+        try{ if(item) brokenPhotoUrls.add(item.url); }catch(e){}
+        layer.remove();
+        advancePhotoCell(cellIdx);
+      }, 8000);
+    } else if(limg && !(limg.complete && limg.naturalWidth)){
       limg.addEventListener('load', reveal);
       limg.addEventListener('error', ()=>{ /* keep old photo up; error handler below picks another */ if(oldLayers.length && !layer.dataset.revealed){ layer.remove(); } });
       setTimeout(reveal, 2500);   // never wait forever
@@ -4918,8 +4954,9 @@ setInterval(()=>{
       const shownFor = now - Number(cell.dataset.shownAt || 0);
       const empty = !img && !vid;
       const deadImg = img && !(img.complete && img.naturalWidth > 0) && shownFor > 8000;
+      const deadVid = vid && vid.readyState < 2 && shownFor > 12000;
       const stuck = shownFor > (PHOTO_DURATION + 25000) && !vid;
-      if(empty || deadImg || stuck){
+      if(empty || deadImg || deadVid || stuck){
         if(deadImg) brokenPhotoUrls.add(img.dataset.orig || img.src);
         cell.classList.remove('fadeOut');
         if(empty){ const fb = cellLastGood[i] || Object.values(cellLastGood)[0]; paintPhotoCellCore(i, false, 0, fb || null); }   // instant refill, no network
@@ -4950,7 +4987,10 @@ function startPhotoRotation(){
   }
 }
 
+const OLD_DEFAULT_TICKER = 'Welcome to the Derech Jumbotron \u2014 tap the gear icon to update scores, add shoutouts, and manage countdowns.';
 function paintTicker(){
+  // Boards that still carry the old welcome message get the new default quote.
+  if(!config.ticker || config.ticker.trim() === OLD_DEFAULT_TICKER) config.ticker = DEFAULT_CONFIG.ticker;
   document.getElementById('tickerText').textContent = config.ticker || '';
 }
 function paintDayBadge(){
