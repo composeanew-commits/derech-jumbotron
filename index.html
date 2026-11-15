@@ -158,6 +158,10 @@
   .photoPanel{flex:0.8;min-width:0;display:flex;flex-direction:column;gap:6px;}
   .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .42s ease, flex-grow .45s ease, transform .42s cubic-bezier(.22,.61,.36,1);}
   .photoCell.tall{flex-grow:2;}
+  /* Never-blank: each photo lives in its own layer that fades in OVER the old one. */
+  .photoLayer{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;}
+  .photoLayer.in{opacity:1;}
+  .photoCell .photoEmptyState{background:radial-gradient(circle at 30% 20%, #2a2460, #0E0C1B);}
   .photoCell.fadeOut{opacity:0;transform:translateY(-12px);}
   .photoCell img{width:100%;height:100%;object-fit:contain;display:block;}
   .photoCell video{width:100%;height:100%;object-fit:contain;display:block;background:#0E0C1B;}
@@ -244,6 +248,12 @@
      general-rotation slots) split the remaining space evenly among
      themselves, each smaller than before. */
   #spotlightCard0{flex:2.2;}
+  /* Yahrzeit box = the size of two normal boxes; the mixed box below it is one. */
+  #spotlightCard1{flex:2;}
+  #spotlightCard1 .yzPhoto,#spotlightCard1 .yzInitials{width:92px;height:92px;font-size:40px;}
+  #spotlightCard1 .yzHead{gap:16px;margin-bottom:12px;}
+  #spotlightCard1 .yzHead .widgetTitle{font-size:21px;}
+  #spotlightCard1 .yzScroll .qText{font-size:16px !important;line-height:1.45;}
   .bigCard::before{content:'';position:absolute;top:0;right:0;width:130px;height:130px;background:radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);pointer-events:none;transition:background .4s ease;}
   .bigCard .widgetTitle{flex-shrink:0;}
   .bigCard .cardScroll{flex:1;min-height:0;overflow:hidden;position:relative;}
@@ -505,7 +515,7 @@
     <div id="stage" class="mainPanel">
       <div id="spotlightGrid" class="spotlightGrid">
         <div id="spotlightCard0" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
-        <div id="spotlightCard3" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
+        <div id="spotlightCard3" class="bigCard spotlightCard" style="display:none"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
         <div id="spotlightCard1" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
         <div id="spotlightCard2" class="bigCard spotlightCard"><div class="spotlightLayer active"></div><div class="spotlightLayer"></div></div>
       </div>
@@ -618,10 +628,13 @@
           </div>
           <div class="hint" style="margin-top:-6px;">Leave every day on to show it all the time. Turn off days to repeat weekly on just the ones you pick — e.g. only Fridays, or once a week.</div>
           <div class="row">
-            <div class="field"><label>Only show after (optional)</label><input id="flyerStartTime" type="time"></div>
-            <div class="field"><label>Only show before (optional)</label><input id="flyerEndTime" type="time"></div>
+            <div class="field"><label>Start showing ON this day (optional)</label><input id="flyerStartsOn" type="date"></div>
+            <div class="field"><label>At this time (optional)</label><input id="flyerStartTime" type="time"></div>
           </div>
-          <div class="hint" style="margin-top:-6px;">Leave both blank to show it all day. Set both to only show during a window \u2014 e.g. 8:00\u20139:30 AM for a morning minyan reminder.</div>
+          <div class="hint" style="margin-top:-6px;">Upload it now, and it stays hidden until that day (and time, if you set one) arrives \u2014 then it starts showing on its own. With no date, the time works as a daily "only after" time.</div>
+          <div class="row">
+            <div class="field"><label>Only show before (optional, daily)</label><input id="flyerEndTime" type="time"></div>
+          </div>
         </div>
       </details>
       <button class="addBtn" id="addFlyer">✓ Save &amp; Publish Flyer</button>
@@ -3087,7 +3100,32 @@ let rotatingItems = [];
 // mixed in with everything else.
 let halachaItems = [];
 const SPOTLIGHT_DURATION = 10000;
-const ROTATING_SLOTS = [1, 2];
+const ROTATING_SLOTS = [2];          // slot 2 = the ONE mixed box (halacha, trivia, words, wisdom, history, shoutouts...)
+let yahrzeitItems = [];              // slot 1 = the big Yahrzeit box (double height)
+let yzPos = 0;
+const YAHRZEIT_DURATION = 14000;
+// Splits the freshly built pools: yahrzeit -> its own big box; everything else
+// (including halacha) -> the single mixed box. Halacha square (slot 3) is retired.
+function splitSpotlightPools(built){
+  pinnedItems = built.pinned;
+  const all = built.rotating.concat(built.halacha);
+  yahrzeitItems = all.filter(it => String(it.key).startsWith('yahrzeit:'));
+  rotatingItems = all.filter(it => !String(it.key).startsWith('yahrzeit:'));
+  halachaItems = [];
+}
+function applyYahrzeitLayout(){
+  const c1 = document.getElementById('spotlightCard1');
+  const c2 = document.getElementById('spotlightCard2');
+  if(c1) c1.style.display = yahrzeitItems.length ? '' : 'none';
+  // No yahrzeit today: the mixed box takes the extra room instead of leaving a gap.
+  if(c2) c2.style.flex = yahrzeitItems.length ? '' : '2';
+}
+function advanceYahrzeitSlot(){
+  if(!yahrzeitItems.length) return;
+  paintSpotlightSlot(1, yahrzeitItems[yzPos++ % yahrzeitItems.length]);
+  clearTimeout(slotTimers[1]);
+  if(yahrzeitItems.length > 1) slotTimers[1] = setTimeout(advanceYahrzeitSlot, YAHRZEIT_DURATION);
+}
 let shuffledQueue = [];
 let queuePos = 0;
 let pinnedQueuePos = 0;
@@ -3170,7 +3208,7 @@ function nextCategory(avoid, slotIdx){
   if(!all.length) return null;
   // Slot 1 is the "important" box (shoutouts, yahrzeit, history, standings);
   // slot 2 gets the filler (trivia, words, wisdom). Falls back if one is empty.
-  const pref = all.filter(c => (slotIdx === ROTATING_SLOTS[0]) === IMPORTANT_CATS.includes(c));
+  const pref = ROTATING_SLOTS.length > 1 ? all.filter(c => (slotIdx === ROTATING_SLOTS[0]) === IMPORTANT_CATS.includes(c)) : all;
   const cats = pref.length ? pref : all;
   const usable = cats.filter(c => !avoid.includes(c));
   const pool = usable.length ? usable : cats;
@@ -3213,9 +3251,11 @@ function nextHalachaQueueItem(){
 // immediate reshuffle.
 function refreshSpotlightPools(){
   const built = buildSpotlightItems();
-  pinnedItems = built.pinned;
-  rotatingItems = built.rotating;
-  halachaItems = built.halacha;
+  const hadYz = yahrzeitItems.length;
+  splitSpotlightPools(built);
+  applyYahrzeitLayout();
+  if(yahrzeitItems.length && !hadYz){ yzPos = 0; advanceYahrzeitSlot(); }
+  if(!yahrzeitItems.length){ clearTimeout(slotTimers[1]); slotTimers[1] = null; }
 
   rebuildCatBags();
 
@@ -3513,9 +3553,9 @@ function advanceHalachaSlot(){
 // change in the same instant.
 function startSpotlightRotation(){
   const built = buildSpotlightItems();
-  pinnedItems = built.pinned;
-  rotatingItems = built.rotating;
-  halachaItems = built.halacha;
+  splitSpotlightPools(built);
+  applyYahrzeitLayout();
+  yzPos = 0;
 
   // Resume from wherever the rotation left off (previous page load, or a
   // config save that re-triggered this) as long as the same set of content
@@ -3550,7 +3590,7 @@ function startSpotlightRotation(){
       if(pinnedItems.length > 1){
         slotTimers[0] = setTimeout(advancePinnedSlot, SPOTLIGHT_DURATION);
       }
-    } else if(!rotatingItems.length){
+    } else if(!rotatingItems.length && !yahrzeitItems.length){
       // Nothing configured anywhere yet — keep slot 0 as the lone placeholder.
       card0.style.display = '';
       paintSpotlightSlot(0, null);
@@ -3576,6 +3616,8 @@ function startSpotlightRotation(){
     }
   }
 
+  // Big yahrzeit box (slot 1)
+  if(yahrzeitItems.length) advanceYahrzeitSlot();
   const activeRotatingSlots = rotatingItems.length ? Math.min(ROTATING_SLOTS.length, rotatingItems.length) : 0;
   ROTATING_SLOTS.forEach((s, i) => {
     const card = document.getElementById('spotlightCard' + s);
@@ -3662,10 +3704,17 @@ function getActiveFlyers(){
     // ("only after 8am", "only before noon") or both together for a
     // window. A start after the end is treated as spanning midnight (e.g.
     // 10pm-6am), so overnight windows work without any extra option.
+    // "Start showing on" date (+ optional time): a one-time go-live moment.
     .filter(f=>{
-      if(!f.startTime && !f.endTime) return true;
+      if(!f.startsOn) return true;
+      const t = new Date(f.startsOn + 'T' + (f.startTime || '00:00') + ':00');
+      return isNaN(t) ? true : now >= t;
+    })
+    .filter(f=>{
+      const startT = f.startsOn ? null : f.startTime;   // with a start date, the time is part of it, not a daily window
+      if(!startT && !f.endTime) return true;
       const nowMins = now.getHours()*60 + now.getMinutes();
-      const startMins = f.startTime ? timeStrToMinutes(f.startTime) : 0;
+      const startMins = startT ? timeStrToMinutes(startT) : 0;
       const endMins = f.endTime ? timeStrToMinutes(f.endTime) : 24*60;
       return startMins <= endMins
         ? (nowMins >= startMins && nowMins < endMins)
@@ -4556,16 +4605,27 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
   const render = ()=>{
     const item = prepared !== undefined ? prepared : pickNextForCell(cellIdx);
     currentlyShownPhotoUrls[cellIdx] = item ? item.url : null;
-    cell.innerHTML = renderPhotoCellMarkup(item, cellIdx);
-    // The cell is still sitting in its faded-out state right now (that's
-    // what we're transitioning away from) — flush it as the committed
-    // starting point, then drop .fadeOut a couple of frames later so the
-    // transition eases the new content in rather than the swap and the
-    // fade-back-in coalescing into one instant jump.
-    void cell.offsetWidth;
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=> cell.classList.remove('fadeOut'));
-    });
+    if(item) cellLastGood[cellIdx] = item;
+    // New photo goes into its own layer on TOP of the old one. The old photo is
+    // only removed after the new one has really loaded, so there is never a gap.
+    const oldLayers = Array.from(cell.querySelectorAll(':scope > .photoLayer'));
+    Array.from(cell.children).forEach(ch=>{ if(!ch.classList.contains('photoLayer')) ch.remove(); });
+    const layer = document.createElement('div');
+    layer.className = 'photoLayer';
+    layer.innerHTML = renderPhotoCellMarkup(item, cellIdx);
+    cell.appendChild(layer);
+    cell.classList.remove('fadeOut');
+    const reveal = ()=>{
+      if(layer.dataset.revealed) return; layer.dataset.revealed = '1';
+      requestAnimationFrame(()=> layer.classList.add('in'));
+      setTimeout(()=> oldLayers.forEach(o=>{ try{ const v=o.querySelector('video'); if(v){ v.pause(); v.removeAttribute('src'); v.load(); } }catch(e){} o.remove(); }), 900);
+    };
+    const limg = layer.querySelector('img');
+    if(limg && !(limg.complete && limg.naturalWidth)){
+      limg.addEventListener('load', reveal);
+      limg.addEventListener('error', ()=>{ /* keep old photo up; error handler below picks another */ if(oldLayers.length && !layer.dataset.revealed){ layer.remove(); } });
+      setTimeout(reveal, 2500);   // never wait forever
+    } else reveal();
     clearTimeout(photoCellTimers[cellIdx]);
     // The declarative `autoplay` attribute is enough in most browsers, but
     // kiosk/webview browsers are inconsistent about honoring it on a
@@ -4575,7 +4635,7 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
     // reliable fix; .muted is also re-set as a JS property (not just the
     // HTML attribute) since that's what some browsers actually check before
     // allowing autoplay without a user gesture.
-    const img = cell.querySelector('img');
+    const img = layer.querySelector('img');
     if(img){
       const checkAspect = ()=> applyCellAspect(cell, img.naturalWidth, img.naturalHeight);
       if(img.complete && img.naturalWidth) checkAspect();
@@ -4587,7 +4647,7 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
         if(img.isConnected && !(img.complete && img.naturalWidth)) handlePhotoImgError(img, cellIdx);
       }, 9000);
     }
-    const vid = cell.querySelector('video');
+    const vid = layer.querySelector('video');
     if(vid){
       vid.muted = true;
       let started = false;
@@ -4690,12 +4750,7 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
       photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), PHOTO_DURATION + (extraDelayMs||0));
     }
   };
-  if(animate){
-    cell.classList.add('fadeOut');
-    setTimeout(render, PHOTO_TRANSITION_MS);
-  } else {
-    render();
-  }
+  render();   // layered crossfade: no fade-to-empty step any more
 }
 
 // ---- BLANK-PHOTO PROTECTION ----
@@ -4714,6 +4769,38 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
 //     throttled; a timer now guarantees it comes back.
 const photoPaintToken = {};
 const photoBusySince = {};
+const cellLastGood = {};
+const blobCache = new Map();   // remote url -> {obj, t}  (blob: URLs never fail once made)
+function pruneBlobCache(){
+  if(blobCache.size <= 36) return;
+  const inUse = new Set(Array.from(document.querySelectorAll('.photoCell img')).map(i=>i.src));
+  for(const [k,v] of blobCache){
+    if(blobCache.size <= 30) break;
+    if(!inUse.has(v.obj)){ try{ URL.revokeObjectURL(v.obj); }catch(e){} blobCache.delete(k); }
+  }
+}
+async function fetchAsBlobUrl(src, ms){
+  if(blobCache.has(src)) return blobCache.get(src).obj;
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), ms);
+  try{
+    const r = await fetch(src, {mode:'cors', referrerPolicy:'no-referrer', signal:ctl.signal});
+    if(!r.ok) return null;
+    const b = await r.blob();
+    if(!b || !b.size || !/^image\//.test(b.type||'image/')) return null;
+    const obj = URL.createObjectURL(b);
+    blobCache.set(src, {obj, t:Date.now()}); pruneBlobCache();
+    return obj;
+  }catch(e){ return null; } finally { clearTimeout(t); }
+}
+async function loadBestSrc(src, ms){
+  // 1) download the bytes ourselves -> the on-screen <img> uses a local blob URL,
+  //    so it cannot fail/re-download/hit a rate limit when it is displayed.
+  const obj = await fetchAsBlobUrl(src, ms);
+  if(obj && await preloadImage(obj, 4000)) return obj;
+  // 2) hosts without CORS: plain image load
+  if(await preloadImage(src, ms)) return src;
+  return null;
+}
 function preloadImage(src, ms){
   return new Promise(resolve=>{
     const im = new Image();
@@ -4734,7 +4821,8 @@ async function pickLoadablePhoto(cellIdx){
     const primary = sizedPhotoUrl(item.isCustom ? item.url : fullResUrl(item.url));
     const candidates = [primary, drivePhotoFallback(item.url), item.url].filter((u,i,a)=> u && a.indexOf(u) === i);
     for(let ci = 0; ci < candidates.length; ci++){
-      if(await preloadImage(candidates[ci], ci === 0 ? 6000 : 4000)) return Object.assign({}, item, {_okSrc: candidates[ci]});
+      const good = await loadBestSrc(candidates[ci], ci === 0 ? 8000 : 5000);
+      if(good) return Object.assign({}, item, {_okSrc: good});
     }
     brokenPhotoUrls.add(item.url);
   }
@@ -4757,6 +4845,7 @@ async function paintPhotoCell(cellIdx, animate, extraDelayMs){
     cell.classList.remove('fadeOut');
     photoBusySince[cellIdx] = 0;
     const hasContent = !!cell.querySelector('img,video');
+    if(!hasContent && cellLastGood[cellIdx]) paintPhotoCellCore(cellIdx, false, 0, cellLastGood[cellIdx]);
     photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), hasContent ? 4000 : 1500);
     return;
   }
@@ -4776,8 +4865,9 @@ setInterval(()=>{
       if(!cell) continue;
       const busy = photoBusySince[i] && (now - photoBusySince[i] < 45000);
       if(busy) continue;
-      const img = cell.querySelector('img');
-      const vid = cell.querySelector('video');
+      const topLayer = cell.querySelector(':scope > .photoLayer:last-child');
+      const img = topLayer ? topLayer.querySelector('img') : null;
+      const vid = topLayer ? topLayer.querySelector('video') : null;
       const shownFor = now - Number(cell.dataset.shownAt || 0);
       const empty = !img && !vid;
       const deadImg = img && !(img.complete && img.naturalWidth > 0) && shownFor > 8000;
@@ -4785,6 +4875,7 @@ setInterval(()=>{
       if(empty || deadImg || stuck){
         if(deadImg) brokenPhotoUrls.add(img.dataset.orig || img.src);
         cell.classList.remove('fadeOut');
+        if(empty && cellLastGood[i]) paintPhotoCellCore(i, false, 0, cellLastGood[i]);   // instant refill, no network
         paintPhotoCell(i, false);
       }
     }
@@ -4979,6 +5070,7 @@ function syncFormToConfig(){
     const v = Number(el.value);
     config.flyers[Number(el.dataset.idx)].durationSec = (v && v > 0) ? v : null;
   });
+  document.querySelectorAll('[data-field="flyerStartsOnEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].startsOn = el.value || null);
   document.querySelectorAll('[data-field="flyerStartTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].startTime = el.value || null);
   document.querySelectorAll('[data-field="flyerEndTimeEdit"]').forEach(el=> config.flyers[Number(el.dataset.idx)].endTime = el.value || null);
   // Day checkboxes fire once per day per flyer (7 boxes per idx), so rebuild
@@ -5125,7 +5217,7 @@ function populateModal(){
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
-              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (isActive ? '● Live now &nbsp;' : ((target && target - new Date() < -864e5) || (f.expiresOn && new Date(f.expiresOn + 'T23:59:59') < new Date()) ? '⌛ Expired — hidden &nbsp;· ' : ''))}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (f.startsOn && new Date(f.startsOn+'T'+(f.startTime||'00:00')+':00') > new Date() ? '🗓 Starts '+escapeHtml(f.startsOn)+(f.startTime?' '+escapeHtml(formatTimeOfDay(f.startTime)):'')+' &nbsp;· ' : (isActive ? '● Live now &nbsp;' : ((target && target - new Date() < -864e5) || (f.expiresOn && new Date(f.expiresOn + 'T23:59:59') < new Date()) ? '⌛ Expired — hidden &nbsp;· ' : '')))}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
             </div>
           </div>
           <div class="flyerSummaryChevron">▾</div>
@@ -5163,7 +5255,7 @@ function populateModal(){
           <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input data-field="flyerName" data-idx="${i}" value="${escapeAttr(f.eventName||'')}" placeholder="e.g. Shabbaton in the Old City"></div>
           <div class="toggleRow"><input type="checkbox" id="ntk${i}" data-field="flyerPriorityEdit" data-idx="${i}" ${f.priority==='high' ? 'checked':''}><label for="ntk${i}" style="margin:0;font-size:14px;font-weight:600;">⭐ Need to Know <span style="font-weight:400;color:var(--muted);font-size:12px;">(off = normal rotation)</span></label></div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input type="number" min="3" max="120" data-field="flyerDurationEdit" data-idx="${i}" value="${f.durationSec ? escapeAttr(String(f.durationSec)) : ''}" placeholder="Default — 14s (22s for Need to Know)"></div>
-          <details class="advancedSchedule" ${(f.days && f.days.length) || f.startTime || f.endTime ? 'open' : ''}>
+          <details class="advancedSchedule" ${(f.days && f.days.length) || f.startTime || f.startsOn || f.endTime ? 'open' : ''}>
             <summary>Advanced: only certain days or times (optional — this flyer shows all the time by default)</summary>
             <div class="advancedScheduleBody">
               <div class="field">
@@ -5172,7 +5264,8 @@ function populateModal(){
               </div>
               <div class="hint" style="margin-top:-6px;">All days on = shows every day. Turn off days to repeat weekly on just the ones you pick.</div>
               <div class="row">
-                <div class="field"><label>Only show after (optional)</label><input type="time" data-field="flyerStartTimeEdit" data-idx="${i}" value="${escapeAttr(f.startTime||'')}"></div>
+                <div class="field"><label>Start showing ON this day</label><input type="date" data-field="flyerStartsOnEdit" data-idx="${i}" value="${escapeAttr(f.startsOn||'')}"></div>
+                <div class="field"><label>At this time (optional)</label><input type="time" data-field="flyerStartTimeEdit" data-idx="${i}" value="${escapeAttr(f.startTime||'')}"></div>
                 <div class="field"><label>Only show before (optional)</label><input type="time" data-field="flyerEndTimeEdit" data-idx="${i}" value="${escapeAttr(f.endTime||'')}"></div>
               </div>
               <div class="hint" style="margin-top:-6px;">Leave both blank to show it all day.</div>
@@ -5758,6 +5851,7 @@ function resetFlyerForm(){
   document.getElementById('flyerShowOnBoard').checked = true;
   document.getElementById('flyerDuration').value = '';
   document.getElementById('flyerStartTime').value = '';
+  document.getElementById('flyerStartsOn').value = '';
   document.getElementById('flyerEndTime').value = '';
   document.getElementById('flyerDayPicker').innerHTML = dayPickerMarkup();
   if(flyerTypeSelect){
@@ -5786,6 +5880,7 @@ document.getElementById('copyLastFlyer').onclick = ()=>{
   document.getElementById('flyerShowOnBoard').checked = last.showOnBoard !== false;
   document.getElementById('flyerDuration').value = last.durationSec || '';
   document.getElementById('flyerStartTime').value = last.startTime || '';
+  document.getElementById('flyerStartsOn').value = last.startsOn || '';
   document.getElementById('flyerEndTime').value = last.endTime || '';
   const days = last.days && last.days.length ? last.days : [0,1,2,3,4,5,6];
   document.querySelectorAll('#flyerDayPicker .flyerDayCb').forEach(cb=> cb.checked = days.includes(Number(cb.value)));
@@ -5849,6 +5944,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   const durationVal = Number(document.getElementById('flyerDuration').value);
   const durationSec = (durationVal && durationVal > 0) ? durationVal : null;
   const startTime = document.getElementById('flyerStartTime').value || null;
+  const startsOn = document.getElementById('flyerStartsOn').value || null;
   const endTime = document.getElementById('flyerEndTime').value || null;
   let days = Array.from(document.querySelectorAll('#flyerDayPicker .flyerDayCb:checked')).map(cb=>Number(cb.value));
   if(days.length === 7) days = []; // all on = no restriction, same as the old no-`days` behavior
@@ -5866,7 +5962,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
     try{ urls = await Promise.all(flyerMulti.map(m=>m.promise)); }
     catch(e){ status.textContent = (e && e.message) || 'One of the uploads failed — re-pick the files and try again'; return; }
     syncFormToConfig();
-    urls.forEach((u,i)=> config.flyers.push({eventName, url:u, type: flyerMulti[i].isPdf ? 'pdf' : 'image', eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime, expiresOn}));
+    urls.forEach((u,i)=> config.flyers.push({eventName, url:u, type: flyerMulti[i].isPdf ? 'pdf' : 'image', eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn}));
     resetFlyerForm();
     await quickSaveIndicator('Saving…', 'flyerStatus');
     populateModal();
@@ -5900,7 +5996,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeMediaUrl(url, type === 'pdf');
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, endTime, expiresOn});
+  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn});
   resetFlyerForm();
   await quickSaveIndicator('Saving…', 'flyerStatus');
   populateModal();
