@@ -2227,9 +2227,251 @@ const YAHRZEIT_PHOTOS = {
 // Month names accepted in the settings box ("Cheshvan 1 | Name | Blurb | Photo URL | star")
 const YAHRZEIT_MONTHS = {nissan:1,nisan:1,iyar:2,sivan:3,tammuz:4,av:5,menachemav:5,elul:6,tishrei:7,tishri:7,cheshvan:8,marcheshvan:8,kislev:9,teves:10,tevet:10,shevat:11,shvat:11,adar:12,adari:12,adarii:12,adar1:12,adar2:12};
 
+// ---- BATCH 1: new yahrzeits (blurbs written for the board) ----
+const YAHRZEIT_DB8 = [
+  {month:7, day:13, name:"Rav Akiva Eiger", blurb:"Rabbi of Posen and one of the great halachic authorities of the 1800s. His glosses (Gilyon HaShas) appear on nearly every page of the Gemara, and his responsa guided Jewish communities across Europe. He passed away in 1837."},
+  {month:7, day:18, name:"Rebbe Nachman of Breslov", blurb:"Great-grandson of the Baal Shem Tov and founder of Breslov Chassidus. Author of Likutei Moharan and the famous stories, teaching simple joy and heartfelt conversation with Hashem. He passed away in Uman in 1810."},
+  {month:7, day:25, name:"Rav Levi Yitzchak of Berditchev", blurb:"The beloved Berditchever, known as the defender of the Jewish people, who pleaded for them before Heaven with endless love. Author of Kedushas Levi, he passed away in 1809."},
+  {month:8, day:7, name:"Rav Meir Shapiro of Lublin", blurb:"Founder of Yeshivas Chachmei Lublin and originator of Daf Yomi, which unites Jews around the world on the same page of Gemara each day. He passed away in 1933 at just 46."},
+  {month:8, day:11, name:"Rachel Imeinu", blurb:"Matriarch of the Jewish People, who gave up her place for her sister Leah and weeps for her children in exile. She is buried on the road to Beis Lechem, where Jews still come to pray."},
+  {month:8, day:19, name:"Rav Dov Yaffe", blurb:"Born in Vilna, a talmid of Rav Elya Lopian and a leading mashgiach of the Mussar movement in Eretz Yisrael. He guided thousands of talmidim in character growth, and passed away in 2017 at 89."},
+  {month:9, day:11, name:"Rav Yaakov Nayman", blurb:"Rav of Kehillas Adas Bnei Yisrael (1909\u20132009), a warm and humble community rabbi who led his congregation for decades and lived to a hundred."},
+  {month:1, day:27, name:"Rav Avigdor Miller", blurb:"Rav, mashgiach and author of Rejoice O Youth and Sing, My Soul. His Thursday-night lectures in Flatbush taught a generation to see Hashem\u2019s hand in nature and to be grateful for every moment. He passed away in 2001."},
+  {month:12, day:15, name:"Rav Chaim Kanievsky", blurb:"Son of the Steipler and son-in-law of Rav Elyashiv, known for his enormous Torah knowledge, his kindness, and the thousands of people who came to him for a blessing. Author of Derech Emunah, he passed away in 2022 at 94."},
+  {month:1, day:26, name:"Yehoshua bin Nun", blurb:"Talmid and successor of Moshe Rabbeinu, who led Bnei Yisrael across the Jordan, conquered Yericho and divided Eretz Yisrael among the tribes."},
+  {month:3, day:14, name:"Rav Chaim of Volozhin", blurb:"Primary talmid of the Vilna Gaon and founder of the Volozhin Yeshiva, the mother of the Litvishe yeshiva world. Author of Nefesh HaChaim. He passed away in 1821."},
+  {month:3, day:25, name:"Rav Mordechai Eliyahu", blurb:"Former Sephardic Chief Rabbi of Israel, a leading posek and a beloved teacher known for his wisdom and his closeness to ordinary people. He passed away in 2010."},
+  {month:4, day:12, name:"Rav Elchonon Wasserman", blurb:"Talmid of the Chofetz Chaim and Rosh Yeshiva of Baranovich, who taught a generation about emunah. He was murdered al kiddush Hashem in Kovno in 1941."},
+  {month:4, day:15, name:"The Ohr HaChaim", blurb:"Rav Chaim ibn Attar of Morocco, whose commentary on the Torah is cherished by Sephardim and Ashkenazim alike. He moved to Eretz Yisrael with a group of students and passed away in Yerushalayim in 1743."},
+  {month:11, day:22, name:"The Kotzker Rebbe", blurb:"Rav Menachem Mendel of Kotzk, a talmid of the Yehudi HaKadosh and Rebbe Bunim, famous for his piercing demand for truth and sincerity in avodas Hashem. He passed away in 1859."}
+];
+const YAHRZEIT_WIKI_EXTRA8 = {
+  "Rav Akiva Eiger":"Akiva Eger","Rebbe Nachman of Breslov":"Nachman of Breslov","Rav Levi Yitzchak of Berditchev":"Levi Yitzchok of Berditchev",
+  "Rav Meir Shapiro of Lublin":"Meir Shapiro","Rav Chaim Kanievsky":"Chaim Kanievsky","Rav Avigdor Miller":"Avigdor Miller",
+  "Rav Chaim of Volozhin":"Chaim Volozhin","Rav Mordechai Eliyahu":"Mordechai Eliyahu","Rav Elchonon Wasserman":"Elchonon Wasserman",
+  "The Ohr HaChaim":"Chaim ibn Attar","The Kotzker Rebbe":"Menachem Mendel of Kotzk","Rav Dov Yaffe":"Dov Yaffe"
+};
+Object.assign(YAHRZEIT_WIKI_EXTRA6, YAHRZEIT_WIKI_EXTRA8);
+
+const YAHRZEIT_DB9 = [
+  {month:5, day:18, name:"The Malbim", blurb:"Rav Meir Leibush Weiser, who served as rabbi in several European cities and wrote a widely studied commentary on all of Tanach that digs into the precise meaning of each word. He passed away in 1879."},
+  {month:2, day:19, name:"The Yaavetz, Rav Yaakov Emden", blurb:"Son of the Chacham Tzvi and a sharp-minded scholar, author of the Mor U\u2019Ketziah and the Siddur Beis Yaakov. He was a fierce defender of tradition and passed away in Altona in 1776."},
+  {month:9, day:9, name:"Rav Eliezer Geldzahler", blurb:"Remembered on the Yahrtzeit Yomi schedule for 9 Kislev (1958-2004)."}
+];
+
+// ---- BATCH 10: added from the Shas Illuminated Yahrtzeit Yomi list (short blurbs; expand over time) ----
+const YAHRZEIT_DB10 = [
+  {month:11, day:6, name:"The Skolya Rebbe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 6 Shevat (1898-1979)."},
+  {month:8, day:28, name:"Rabbeinu Yonah", blurb:"Rabbeinu Yonah Gerondi, a leading Spanish Talmudist and moralist, author of Sha'arei Teshuvah (Gates of Repentance), a classic guide to repentance and character."},
+  {month:8, day:25, name:"Rav Moshe Twersky Hy\"d", blurb:"Rosh yeshiva of Toras Moshe in Jerusalem and a grandson of Rav Yosef Dov Soloveitchik. He was murdered while davening in the Har Nof synagogue attack in 2014."},
+  {month:8, day:26, name:"Rav Elya Yurkansky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Cheshvan (1908-2005)."},
+  {month:8, day:19, name:"Rav Dovid Feinstein", blurb:"Son of Rav Moshe Feinstein and longtime Rosh Yeshiva of Mesivtha Tifereth Jerusalem on the Lower East Side, a leading posek who carried on his father's legacy."},
+  {month:8, day:18, name:"Rav Nochum Partzovitz", blurb:"Rosh Yeshiva of Mir in Jerusalem, a great talmid chacham revered for his clarity of learning and his warmth toward his students."},
+  {month:8, day:13, name:"Rav Yehuda Hachassid I", blurb:"Rabbi Yehuda HeChassid of Regensburg, leader of the Chassidei Ashkenaz and author of Sefer Chassidim, a foundational work on piety and ethics."},
+  {month:8, day:11, name:"Rav Pesach Pruskin, Kobriner Rav", blurb:"Rav of Kobrin, a leading rabbi of Polish Jewry in the interwar years."},
+  {month:8, day:11, name:"Rav Nosson Tzvi Finkel", blurb:"Rosh Yeshiva of the Mir in Jerusalem, who led the yeshiva as it grew to thousands of students, continuing to teach with great devotion despite years of illness."},
+  {month:8, day:8, name:"Rav Yaakov Rosenheim", blurb:"President of the world Agudath Israel organization, a leading figure in German-Jewish Torah life and Jewish public affairs."},
+  {month:8, day:9, name:"Rav Shimon Shkop", blurb:"Rosh yeshiva in Telshe and later Grodno, author of Sha'arei Yosher, whose approach to Talmudic analysis shaped the Lithuanian yeshiva world."},
+  {month:8, day:9, name:"The Rosh", blurb:"Rabbeinu Asher ben Yechiel, who left Germany for Toledo, Spain, and authored Piskei HaRosh, a foundational halachic digest of the Talmud."},
+  {month:8, day:8, name:"Rav Nachum'keh of Horodna", blurb:"Remembered on the Yahrtzeit Yomi schedule for 8 Cheshvan (1812-1879)."},
+  {month:8, day:3, name:"Rav Eliezer of Dzikov", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Cheshvan (1790-1860)."},
+  {month:8, day:4, name:"The Piaseczna Rebbe, Rav Klonimus Kalman Shapira", blurb:"The Piaseczna Rebbe, author of Chovas HaTalmidim and Aish Kodesh, who guided and taught Jews in the Warsaw Ghetto until he was murdered in 1943."},
+  {month:8, day:5, name:"Rav Alexander Zusha Friedman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 5 Cheshvan (1897-1943)."},
+  {month:8, day:2, name:"Rav Simcha Wasserman", blurb:"Son of Rav Elchonon Wasserman and a rosh yeshiva who rebuilt Torah education after the war, founding Yeshiva Ohr Elchonon in Los Angeles."},
+  {month:8, day:1, name:"The Bluzhever Rebbe", blurb:"Rav Yisroel Spira, a Holocaust survivor who rebuilt his Chassidic community in Brooklyn and became a beloved symbol of faith and resilience."},
+  {month:7, day:30, name:"Maharatz Chiyus", blurb:"Rav Tzvi Hirsch Chayes, Rav of Zolkiev and a prominent Galician scholar, author of Mevo HaTalmud and other works on the Oral Torah."},
+  {month:7, day:28, name:"Rav Avraham Kara", blurb:"Remembered on the Yahrtzeit Yomi schedule for 28 Tishrei (d. 1542)."},
+  {month:7, day:29, name:"Shimon HaTzaddik", blurb:"Remembered on the Yahrtzeit Yomi schedule for 29 Tishrei."},
+  {month:7, day:27, name:"The R\"I HaZaken", blurb:"Rabbi Yitzchak ben Shmuel of Dampierre, a leading French Tosafist and a student of Rabbeinu Tam."},
+  {month:7, day:24, name:"The Kol Aryeh", blurb:"Remembered on the Yahrtzeit Yomi schedule for 24 Tishrei (1824-1883)."},
+  {month:7, day:24, name:"The Ribnitzer Rebbe", blurb:"Rav Chaim Zanvl Abramowitz, a Holocaust survivor who established a Chassidic community in Brooklyn and was renowned for his kindness and humility."},
+  {month:7, day:20, name:"The Chanukas HaTorah, Rebbe Reb Heschel", blurb:"Remembered on the Yahrtzeit Yomi schedule for 20 Tishrei (1596-1663)."},
+  {month:7, day:14, name:"The Kozhnitzer Maggid", blurb:"Rav Yisroel Hopsztajn, the Kozhnitzer Maggid, a student of Rav Elimelech of Lizhensk and author of Avodas Yisrael, known for his piety and teaching."},
+  {month:7, day:11, name:"Mar bar Rav Ashi", blurb:"Remembered on the Yahrtzeit Yomi schedule for 11 Tishrei (d. 466 CE)."},
+  {month:7, day:12, name:"Rav Avraham HaMalach", blurb:"Remembered on the Yahrtzeit Yomi schedule for 12 Tishrei (1741-1776)."},
+  {month:7, day:9, name:"The Brisker Rav", blurb:"Rav Yitzchak Zev Soloveitchik, Rav of Brisk and son of Rav Chaim Brisker, a towering Talmudist who later led the Brisker community in Jerusalem."},
+  {month:7, day:5, name:"Naftali ben Yaakov Avinu", blurb:"Remembered on the Yahrtzeit Yomi schedule for 5 Tishrei."},
+  {month:7, day:7, name:"Zevulun ben Yaakov Avinu", blurb:"Remembered on the Yahrtzeit Yomi schedule for 7 Tishrei."},
+  {month:7, day:3, name:"Rav Yerucham Gorelick", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Tishrei (1911-1983)."},
+  {month:7, day:4, name:"The Chayei Adam", blurb:"Rav Avraham Danzig of Vilna, author of Chayei Adam and Chochmas Adam, halachic guides that remained widely studied for generations."},
+  {month:7, day:2, name:"Gedaliah ben Achikam", blurb:"Remembered on the Yahrtzeit Yomi schedule for 2 Tishrei."},
+  {month:7, day:3, name:"The Granat, Rav Naftoli Trop", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Tishrei (1871-1929)."},
+  {month:7, day:13, name:"Rav Chaim Berlin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 13 Tishrei (1832-1912)."},
+  {month:7, day:6, name:"The Shpoler Zaide", blurb:"Remembered on the Yahrtzeit Yomi schedule for 6 Tishrei (1725-1811)."},
+  {month:6, day:25, name:"Rabi Elazar bar Rabi Shimon", blurb:"Remembered on the Yahrtzeit Yomi schedule for 25 Elul (d. 102 CE)."},
+  {month:6, day:23, name:"The Minchas Chinuch", blurb:"Rav Yosef Babad of Tarnopol, author of Minchas Chinuch, a famous commentary on Sefer HaChinuch and the 613 mitzvos."},
+  {month:6, day:16, name:"The Strikover Rebbe, Rav Avraham Avigdor Nachum Landau", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Elul (1917-2001)."},
+  {month:6, day:15, name:"The Marcheshes, Rav Chanoch Henach Eiges Hy\"d", blurb:"Remembered on the Yahrtzeit Yomi schedule for 15 Elul (1862-1941)."},
+  {month:6, day:13, name:"The Tiferes Yaakov, Rav Yaakov Gesundheit", blurb:"Remembered on the Yahrtzeit Yomi schedule for 13 Elul (1815-1878)."},
+  {month:6, day:12, name:"Rav Shlomo Gissinger", blurb:"Remembered on the Yahrtzeit Yomi schedule for 12 Elul (1944-2019)."},
+  {month:6, day:13, name:"Reb Yanky Myer", blurb:"Remembered on the Yahrtzeit Yomi schedule for 13 Elul (1963-2022)."},
+  {month:6, day:8, name:"Dan ben Yaakov Avinu", blurb:"Remembered on the Yahrtzeit Yomi schedule for 8 Elul."},
+  {month:6, day:9, name:"The Pe'er Nochum, Rav Nochum Mordechai Perlow", blurb:"Remembered on the Yahrtzeit Yomi schedule for 9 Elul (1887-1976)."},
+  {month:6, day:7, name:"Rav Reuven Margoliyos", blurb:"Remembered on the Yahrtzeit Yomi schedule for 7 Elul (1889-1971)."},
+  {month:6, day:3, name:"The Pischei Teshuva", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Elul (1812-1868)."},
+  {month:6, day:29, name:"Rav Menashe Klein, Ungvar Rav", blurb:"Ungvar Rav in Brooklyn and author of Mishneh Halachos, a prolific posek who rebuilt his community after surviving the Holocaust."},
+  {month:5, day:27, name:"The Tosher Rebbe, Rav Meshulam Feish Lowy", blurb:"Remembered on the Yahrtzeit Yomi schedule for 27 Av (1921-2015)."},
+  {month:5, day:22, name:"The Mordechai", blurb:"Remembered on the Yahrtzeit Yomi schedule for 22 Av (1250-1298)."},
+  {month:5, day:20, name:"Rav Yosef Steinhardt, Zichron Yosef", blurb:"Remembered on the Yahrtzeit Yomi schedule for 20 Av (1700-1776)."},
+  {month:5, day:16, name:"Reb Itche Meir Levin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Av (1893-1971)."},
+  {month:5, day:14, name:"The Bohusher Rebbe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 14 Av (1903-1992)."},
+  {month:5, day:12, name:"Rav Yitzchok Feigelstock", blurb:"Remembered on the Yahrtzeit Yomi schedule for 12 Av (1926-2021)."},
+  {month:5, day:6, name:"Rabbi Dr. Solomon Breuer", blurb:"Remembered on the Yahrtzeit Yomi schedule for 6 Av (1850-1926)."},
+  {month:5, day:3, name:"Rav Eliyahu Moshe Shisgal", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Av (1921-1973)."},
+  {month:4, day:25, name:"The Shaagas Aryeh", blurb:"Rav Aryeh Leib Gunzberg, Rav of Metz, author of Shaagas Aryeh and Turei Even, who was known for his sharp analysis of halacha."},
+  {month:4, day:27, name:"Rav Shmuel Rozovsky", blurb:"Rosh Yeshiva of Ponevezh in Bnei Brak, famed for his deep, clear shiurim on Talmud that influenced a generation of students."},
+  {month:4, day:21, name:"The Tzaddik of Stefenesht", blurb:"The Stefanesht Rebbe, Rav Avraham Matisyahu Friedman, a Romanian Chassidic leader who later settled in Israel."},
+  {month:4, day:24, name:"Rav Yaakov Yosef, Rav HaKollel", blurb:"The first and only Chief Rabbi of New York City, appointed in 1888, who sought to unite the city's Jewish communities under one halachic authority."},
+  {month:4, day:22, name:"Rav Avrohom Grodzinski, Toras Avrohom", blurb:"Mashgiach of the Slabodka yeshiva, a leader of the mussar movement and author of Toras Avrohom, killed in the Kovno Ghetto in 1944."},
+  {month:4, day:20, name:"Rav Avraham Chaim Na'eh", blurb:"A leading Jerusalem rabbi and author of Ketzos HaShulchan, a major work of halacha and Torah scholarship."},
+  {month:4, day:21, name:"Rav Shlomo Polachek, Meitcheter Iluy", blurb:"Remembered on the Yahrtzeit Yomi schedule for 21 Tammuz (1877-1928)."},
+  {month:4, day:18, name:"The Naroler Rebbe, Rav Chaim Meir Yechiel Shapiro", blurb:"Born in 1907, he served as Naroler Rebbe for some 80 years, a Belzer chasid who moved to Bnei Brak in 1972 and founded the Naroler beis medrash. He passed away at 99 on 18 Tammuz 5767."},
+  {month:4, day:20, name:"The Seret-Vizhnitzer Rebbe, Rav Eliezer Hager", blurb:"Remembered on the Yahrtzeit Yomi schedule for 20 Tammuz (1924-2015)."},
+  {month:4, day:17, name:"Rav Yaakov Yosef Herman", blurb:"A Torah-observant Jewish businessman in America whose devotion to Shabbos and Torah is the subject of the book All for the Boss."},
+  {month:4, day:16, name:"The Kapischnitzer Rebbe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Tammuz (1888-1967)."},
+  {month:4, day:14, name:"Rav Yaakov Yitzchak HaLevi Ruderman", blurb:"Rosh Yeshiva of Ner Israel in Baltimore, who built a major center of Torah in America."},
+  {month:4, day:13, name:"Rav Moshe Rivkis", blurb:"Rav Moshe Rivkes, author of Be'er HaGolah, a classic commentary on the Shulchan Aruch, who lived and taught in Vilna."},
+  {month:4, day:12, name:"The Tur", blurb:"Rabbeinu Yaakov ben Asher, author of the Arba'ah Turim, the code of Jewish law that became the basis for the Shulchan Aruch."},
+  {month:4, day:10, name:"Rebbetzin Sheina Chaya Elyashiv", blurb:"Remembered on the Yahrtzeit Yomi schedule for 10 Tammuz (1912-1994)."},
+  {month:4, day:9, name:"The Klausenberger Rebbe, Shefa Chaim", blurb:"Rav Yekusiel Yehuda Halberstam, who lost his family in the Holocaust yet rebuilt Klausenberg Chassidus and founded Kiryat Sanz and the Laniado Hospital in Netanya."},
+  {month:4, day:8, name:"The Imrei Noam", blurb:"Rav Meir Horowitz of Dzikov, author of Imrei Noam and a leading Galician Chassidic rebbe."},
+  {month:4, day:7, name:"Rav Gedalia Schorr", blurb:"Rosh Yeshiva of Torah Vodaath in Brooklyn and author of Ohr Gedalyahu on the Torah and Jewish thought."},
+  {month:4, day:7, name:"The Lev Simcha, Fifth Gerrer Rebbe", blurb:"Rav Simcha Bunim Alter, fifth Rebbe of Ger and author of Lev Simcha, who guided Ger Chassidus after the war."},
+  {month:4, day:6, name:"Yonatan Netanyahu", blurb:"Commander of the Sayeret Matkal unit, killed leading the 1976 Entebbe rescue operation that freed over a hundred hostages."},
+  {month:4, day:3, name:"Rav Shneur Kotler", blurb:"Rosh Yeshiva of Beth Medrash Govoha in Lakewood after his father, Rav Aharon Kotler, who led its growth into a major center of Torah."},
+  {month:4, day:2, name:"Mike Tress", blurb:"Elimelech Gavriel Tress, a leader of Agudath Israel of America who helped lead the Vaad Hatzalah rescue efforts during the Holocaust."},
+  {month:4, day:1, name:"The First Bobover Rebbe, Rav Shlomo Halberstam", blurb:"Remembered on the Yahrtzeit Yomi schedule for 1 Tammuz (1847-1905)."},
+  {month:4, day:1, name:"Reb Yona Minsker", blurb:"Remembered on the Yahrtzeit Yomi schedule for 1 Tammuz (1909-1941)."},
+  {month:3, day:27, name:"Rav Dovid Trenk", blurb:"Remembered on the Yahrtzeit Yomi schedule for 27 Sivan (1940-2019)."},
+  {month:3, day:10, name:"Rav Gershon Edelstein", blurb:"Rosh Yeshiva of Ponevezh in Bnei Brak and a leader of the Litvish Torah world, widely loved for his humility and warmth."},
+  {month:3, day:25, name:"Rav Michel Yehuda Lefkowitz", blurb:"Rosh yeshiva in Bnei Brak, known as Rav Michel Yehuda, a leading Torah figure of his generation and author of Minchas Yehuda."},
+  {month:3, day:19, name:"Rav Shmuel Hominer", blurb:"Known as the \"Chofetz Chaim HaKatan,\" he authored Alas Tamid and Mitzvas HaBitachon, works on faith and trust in Hashem."},
+  {month:3, day:11, name:"The Minchas Yitzchok", blurb:"Rav Yitzchak Yaakov Weiss, Av Beis Din of the Eida Chareidis in Jerusalem and author of the responsa Minchas Yitzchak."},
+  {month:3, day:9, name:"The Kaf HaChaim", blurb:"Rav Yaakov Chaim Sofer, a Baghdad-born Jerusalem scholar and author of Kaf HaChaim, a major halachic work gathering Sephardic and Ashkenazic rulings."},
+  {month:3, day:7, name:"The Ger Tzedek of Vilna", blurb:"Count Valentin Potocki, a Polish nobleman who converted to Judaism and was executed in Vilna in 1749, remembered as Avraham ben Avraham."},
+  {month:3, day:3, name:"Rav Ovadiah Bartenura", blurb:"Rav Ovadiah of Bartenura, author of the most widely studied commentary on the Mishnah, who later settled in Jerusalem."},
+  {month:3, day:2, name:"The Minchas Elazar, Munkatcher Rebbe", blurb:"Rav Chaim Elazar Shapira, the Munkatcher Rebbe, a fierce defender of tradition and author of Minchas Elazar."},
+  {month:2, day:25, name:"Rav Yaakov Loeberbaum, the Nesivos", blurb:"Remembered on the Yahrtzeit Yomi schedule for 25 Iyar (1760-1832)."},
+  {month:2, day:22, name:"Maharsha Alfandri, Saba Kaddisha", blurb:"Remembered on the Yahrtzeit Yomi schedule for 22 Iyar."},
+  {month:2, day:21, name:"Rabbi Moshe Sherer", blurb:"Longtime president of Agudath Israel of America, who led the organization for decades and was a prominent voice for Torah Jewry."},
+  {month:2, day:15, name:"Rav Tuvia Goldstein", blurb:"Rav and posek in Brooklyn, author of the halachic work Emek Halacha."},
+  {month:2, day:16, name:"The Maharam of Lublin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Iyar (1558-1616)."},
+  {month:2, day:13, name:"The Yabloner Rebbe, Rav Yechezkel Taub", blurb:"Rav Yechezkel Taub, the Yabloner Rebbe, who lived under the name George Nagel; his life story is one of the most remarkable of his generation."},
+  {month:2, day:5, name:"The Imrei Binah, Rav Meir Auerbach", blurb:"Remembered on the Yahrtzeit Yomi schedule for 5 Iyar (1815-1878)."},
+  {month:2, day:11, name:"The Pri Megadim", blurb:"Rav Yosef Teomim, Rav of Frankfurt an der Oder, author of Pri Megadim, a classic commentary on the Shulchan Aruch."},
+  {month:2, day:8, name:"Rav Zundel Kroizer", blurb:"Bnei Brak rosh yeshiva and author of Ohr HaChamah on the Rambam, who was renowned for his encyclopedic Torah knowledge."},
+  {month:2, day:7, name:"The Kli Yakar", blurb:"Rav Shlomo Ephraim of Luntschitz, Chief Rabbi of Prague, whose Kli Yakar commentary on the Torah is widely studied."},
+  {month:2, day:6, name:"The Ralbag", blurb:"Rabbi Levi ben Gershom, also known as Gersonides, a French Torah commentator, philosopher, mathematician and astronomer."},
+  {month:2, day:4, name:"The Beis HaLevi", blurb:"Rav Yosef Dov Soloveitchik, Rav of Slutsk and later Brisk, author of the Beis HaLevi on the Torah and responsa, and the forebear of the Brisker approach to learning."},
+  {month:2, day:3, name:"Rav Yosef Breuer", blurb:"Grandson of Rav Samson Raphael Hirsch and Rav of Khal Adass Jeshurun in Washington Heights, who led the German-Jewish community after fleeing Europe."},
+  {month:2, day:1, name:"Rav Akiva Yosef Schlesinger", blurb:"Remembered on the Yahrtzeit Yomi schedule for 1 Iyar (1838-1922)."},
+  {month:1, day:30, name:"The Ri Migash", blurb:"Rabbi Yosef ibn Migash, a Spanish Talmudist and teacher of the Rambam's father, known for his commentaries and responsa."},
+  {month:1, day:28, name:"Rav Nota Greenblatt", blurb:"Memphis posek and rav for many decades, a talmid of the great American roshei yeshiva and a leading halachic authority."},
+  {month:1, day:26, name:"The Machaneh Ephraim, Rav Ephraim Navon", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Nisan (1677-1735)."},
+  {month:1, day:23, name:"Reb Michoel Shnitzler", blurb:"Remembered as \"The Neshoma Flame,\" a beloved figure whose passing in 2023 was mourned by many."},
+  {month:1, day:23, name:"The Mabit", blurb:"Rav Moshe ben Yosef di Trani, rabbi in Safed and author of Beis Elokim and the Mabit responsa."},
+  {month:1, day:13, name:"The Novominsker Rebbe, Rav Yaakov Perlow", blurb:"Rebbe of Novominsk in Boro Park and chairman of the Agudath Israel Moetzes Gedolei HaTorah, widely respected for his wisdom and humility."},
+  {month:1, day:6, name:"The Kli Chemdah, Rav Meir Don Plotsky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 6 Nisan (1866-1928)."},
+  {month:1, day:5, name:"The Apter Rav, Oheiv Yisrael", blurb:"Rav Avraham Yehoshua Heshel of Apt, the Oheiv Yisrael, a leading Chassidic rebbe known for his love of every Jew."},
+  {month:1, day:10, name:"Rav Henoch Leibowitz", blurb:"Rosh Yeshiva of Yeshivas Chofetz Chaim in New York, a prominent talmid of the Chofetz Chaim's yeshiva world, noted for his mussar teaching."},
+  {month:1, day:4, name:"The Ksav V'haKabalah, Rav Yaakov Tzvi Mecklenburg", blurb:"Rav of Konigsberg, author of the Torah commentary HaKsav V'haKabalah, which links the written text with the Oral tradition."},
+  {month:12, day:28, name:"The Machatzis HaShekel, Rav Shmuel HaLevi Kelin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 28 Adar (1724-1806)."},
+  {month:12, day:26, name:"Rav Chaim Brim", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Adar (1922-2002)."},
+  {month:12, day:25, name:"Rav Yisroel Yaakov Fischer", blurb:"A member of the Beis Din of the Eidah Chareidis in Jerusalem, known as a posek and leading dayan of his generation."},
+  {month:12, day:24, name:"Rav Elya Boruch Finkel", blurb:"Rosh Yeshiva of the Mir in Jerusalem, who led the yeshiva together with his family and was known for his clear, penetrating shiurim."},
+  {month:12, day:12, name:"Rav Naftulche Bobover", blurb:"Remembered on the Yahrtzeit Yomi schedule for 12 Adar (1931-2005)."},
+  {month:12, day:8, name:"The Nitra Rav", blurb:"Rav Shmuel Dovid Ungar, the Nitra Rav, who led his community through the Holocaust and passed away shortly after liberation."},
+  {month:12, day:9, name:"Rav Zalman Volozhiner", blurb:"Son of the Vilna Gaon's student Rav Chaim of Volozhin, who passed away young after leading the Volozhin yeshiva."},
+  {month:12, day:6, name:"Rav Naftali Amsterdam", blurb:"A student of Rav Yisroel Salanter and a prominent figure in the mussar movement in Vilna."},
+  {month:12, day:4, name:"Rav Avrohom Blumenkrantz", blurb:"Remembered on the Yahrtzeit Yomi schedule for 4 Adar (1944-2007)."},
+  {month:12, day:5, name:"The Boyaner Rebbe", blurb:"Rav Mordechai Shlomo Friedman, Rebbe of Boyan, who re-established the Boyan community in New York."},
+  {month:12, day:3, name:"Rav Binyomin Kotzker", blurb:"Remembered on the Yahrtzeit Yomi schedule for 3 Adar (1840-1866)."},
+  {month:12, day:2, name:"Rav Avraham Kalmanowitz", blurb:"Rosh Yeshiva of Mir in Poland and America and a leader of the Vaad Hatzalah during the Holocaust."},
+  {month:12, day:1, name:"The Shach, Rav Shabsai HaKohen", blurb:"Rav Shabsai HaKohen, author of Siftei Kohen on the Shulchan Aruch, a central commentary on Yoreh Deah and Choshen Mishpat."},
+  {month:12, day:27, name:"Rav Chaim Pinchas Scheinberg", blurb:"Rosh Yeshiva of Torah Ohr in Jerusalem and a leading posek for American Jewry."},
+  {month:12, day:27, name:"The Baal HaLeshem, Rav Shlomo Elyashiv", blurb:"Rav Shlomo Elyashiv, author of the Leshem Shvo V'Achlamah, a major work of Kabbalah, and grandfather of Rav Yosef Shalom Elyashiv."},
+  {month:12, day:16, name:"The Pnei Menachem, Seventh Gerrer Rebbe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Adar (1926-1996)."},
+  {month:12, day:2, name:"The Gerrer Rebbe, Rav Yisroel Alter", blurb:"Remembered on the Yahrtzeit Yomi schedule for 2 Adar (1895-1977)."},
+  {month:12, day:3, name:"The Levush, Rav Mordechai Yoffe", blurb:"Rav Mordechai Yoffe, Rav in Prague and Poland, author of the Levush, a halachic code on the Shulchan Aruch."},
+  {month:12, day:10, name:"Shaya Twersky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 10 Adar (1983-2003)."},
+  {month:12, day:23, name:"The Roshei Yeshiva of Mountaindale, Rav Yehuda Davis and Rav Shlomo Rothenberg", blurb:"Remembered on the Yahrtzeit Yomi schedule for 23 Adar."},
+  {month:12, day:6, name:"Rav Dovid Povarsky", blurb:"Rosh Yeshiva of Ponevezh in Bnei Brak, known as a posek and for his clarity in learning."},
+  {month:11, day:30, name:"Rav Yehuda Yerucham Fishel Perla", blurb:"Warsaw rabbi and scholar, best known for his major commentary on Rav Saadia Gaon's Sefer HaMitzvos."},
+  {month:11, day:27, name:"Rav Zundel Hutner, Eisheshoker Rav", blurb:"Remembered on the Yahrtzeit Yomi schedule for 27 Shevat (1846-1919)."},
+  {month:11, day:22, name:"Rav Yehuda Zev Segal", blurb:"Rosh Yeshiva of the Manchester Yeshiva, a prominent talmid of the Chofetz Chaim, renowned for his piety and love for students."},
+  {month:11, day:21, name:"Kochav MiYaakov, Hormilover Rav", blurb:"Remembered on the Yahrtzeit Yomi schedule for 21 Shevat (1840-1894)."},
+  {month:11, day:15, name:"The Shaarei Teshuva", blurb:"Remembered on the Yahrtzeit Yomi schedule for 15 Shevat (d. 1818)."},
+  {month:11, day:9, name:"Rav Leizer Silver", blurb:"Rabbi Eliezer Silver of Cincinnati, president of Agudath HaRabbanim and a leader of Vaad Hatzalah rescue efforts during the Holocaust."},
+  {month:11, day:7, name:"The Minsker Gadol", blurb:"Remembered on the Yahrtzeit Yomi schedule for 7 Shevat (1835-1896)."},
+  {month:10, day:19, name:"The Ketzos HaChoshen, Rav Aryeh Leib Heller", blurb:"Rav Aryeh Leib Heller, Rav of Stryi, author of Ketzos HaChoshen, a classic work on monetary law."},
+  {month:10, day:14, name:"Rav Leib Bakst", blurb:"Remembered on the Yahrtzeit Yomi schedule for 14 Teves (1915-2004)."},
+  {month:10, day:11, name:"Rav Dovid Kronglas", blurb:"Remembered on the Yahrtzeit Yomi schedule for 11 Teves (1910-1973)."},
+  {month:9, day:28, name:"Reb Beinish Mandel", blurb:"Remembered on the Yahrtzeit Yomi schedule for 28 Kislev (1957-2016)."},
+  {month:9, day:18, name:"The Second Bostoner Rebbe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 18 Kislev (1921-2009)."},
+  {month:8, day:20, name:"Rav Mordechai Zuckerman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 20 Cheshvan (1910-2003)."},
+  {month:8, day:9, name:"The Stuchiner Rebbe, Rav Yehuda Horowitz", blurb:"Remembered on the Yahrtzeit Yomi schedule for 9 Cheshvan (1892-1981)."},
+  {month:9, day:29, name:"The Cheshek Shlomo", blurb:"Remembered on the Yahrtzeit Yomi schedule for 29 Kislev (1828-1905)."}
+];
+
+// ---- BATCH 11: added from the Shas Illuminated Yahrtzeit Yomi list (short blurbs; expand over time) ----
+const YAHRZEIT_DB11 = [
+  {month:12, day:1, name:"The Ibn Ezra", blurb:"Rabbi Avraham ibn Ezra, Spanish-born poet, grammarian and commentator on the Torah, who wandered through Europe in his later years."},
+  {month:12, day:2, name:"Rav Berel Soloveitchik", blurb:"Rosh Yeshiva of Brisk in Jerusalem and son of the Brisker Rav, carrying forward the Brisker approach to learning."},
+  {month:12, day:3, name:"The Aderes", blurb:"Rav Eliyahu Dovid Rabinowitz-Teomim, Chief Rabbi of Jerusalem and a leading rabbi of Ashkenazic and Sephardic communities in his era."},
+  {month:12, day:4, name:"Rav Leizer Gordon", blurb:"Remembered on the Yahrtzeit Yomi schedule for 4 Adar."},
+  {month:12, day:4, name:"Rav Dovid Karliner", blurb:"Remembered on the Yahrtzeit Yomi schedule for 4 Adar."},
+  {month:12, day:5, name:"Rav Avraham Bing", blurb:"Remembered on the Yahrtzeit Yomi schedule for 5 Adar."},
+  {month:12, day:8, name:"Rav Moshe Aaron Stern", blurb:"Remembered on the Yahrtzeit Yomi schedule for 8 Adar."},
+  {month:12, day:10, name:"Avodas HaGershuni", blurb:"Remembered on the Yahrtzeit Yomi schedule for 10 Adar."},
+  {month:12, day:12, name:"The Avnei Nezer", blurb:"Rav Avraham Bornstein, the Sochatzover Rebbe, author of the Avnei Nezer responsa and Eglei Tal."},
+  {month:12, day:12, name:"Rav Naftuli Halberstam of Bobov", blurb:"Remembered on the Yahrtzeit Yomi schedule for 12 Adar."},
+  {month:12, day:17, name:"Rav Shimon Sofer", blurb:"Remembered on the Yahrtzeit Yomi schedule for 17 Adar."},
+  {month:12, day:17, name:"Reb Meir Schuster", blurb:"Remembered on the Yahrtzeit Yomi schedule for 17 Adar."},
+  {month:12, day:23, name:"Rav Yisroel Grossman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 23 Adar."},
+  {month:12, day:27, name:"The Shoel U'Meishiv", blurb:"Remembered on the Yahrtzeit Yomi schedule for 27 Adar."},
+  {month:12, day:29, name:"Rav Avraham Shaag", blurb:"Remembered on the Yahrtzeit Yomi schedule for 29 Adar."},
+  {month:12, day:29, name:"Dr. Joseph Kaminetzky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 29 Adar."},
+  {month:11, day:3, name:"Rav Simcha Bunim of Peshischa", blurb:"Rav Simcha Bunim of Peshischa, a leading Polish Chassidic master and teacher of the Kotzker Rebbe."},
+  {month:11, day:6, name:"The Oneg Yom Tov", blurb:"Remembered on the Yahrtzeit Yomi schedule for 6 Shevat."},
+  {month:11, day:9, name:"The Ran", blurb:"Rabbeinu Nissim of Gerona, a Spanish Talmudist known for his commentary on the Rif and for the Derashos HaRan."},
+  {month:11, day:10, name:"Reb Ronnie Greenwald", blurb:"Remembered on the Yahrtzeit Yomi schedule for 10 Shevat."},
+  {month:11, day:18, name:"Rav Yitzchok Scheiner", blurb:"Remembered on the Yahrtzeit Yomi schedule for 18 Shevat."},
+  {month:11, day:19, name:"Rabbi Dr. Abraham J. Twersky", blurb:"Psychiatrist, rabbi and author who founded Gateway Rehabilitation Center and brought Torah values to the treatment of addiction."},
+  {month:11, day:20, name:"Rav Ezra Attiah", blurb:"Remembered on the Yahrtzeit Yomi schedule for 20 Shevat."},
+  {month:11, day:22, name:"Rav Yankel Galinsky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 22 Shevat."},
+  {month:11, day:23, name:"The Sar Shalom of Belz", blurb:"Remembered on the Yahrtzeit Yomi schedule for 23 Shevat."},
+  {month:11, day:25, name:"Rav Mottel Pogromansky", blurb:"Remembered on the Yahrtzeit Yomi schedule for 25 Shevat."},
+  {month:11, day:28, name:"Rav Nesanel Quinn", blurb:"Rav Nesanel Quinn, a prominent rosh yeshiva in Chicago, remembered as an outstanding talmid chacham and teacher."},
+  {month:11, day:28, name:"Rav Yaakov Edelstein", blurb:"Remembered on the Yahrtzeit Yomi schedule for 28 Shevat."},
+  {month:4, day:19, name:"Rav Lazer Yudel Finkel", blurb:"Remembered on the Yahrtzeit Yomi schedule for 19 Tammuz."},
+  {month:4, day:26, name:"Rav Nachman Bulman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Tammuz."},
+  {month:4, day:29, name:"The Yismach Moshe", blurb:"Remembered on the Yahrtzeit Yomi schedule for 29 Tammuz."},
+  {month:3, day:26, name:"Rabi Yosi ben Kisma", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Sivan."},
+  {month:3, day:26, name:"Rav Zelig Braverman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 26 Sivan (1876-1936)."},
+  {month:3, day:25, name:"Reb Yossele Rosenblatt", blurb:"Cantor Yossele Rosenblatt, \"the King of Cantors,\" the great chazzan whose voice and compositions moved Jews worldwide."},
+  {month:3, day:21, name:"The Erlauer Rav, Rav Shimon Sofer", blurb:"Rav of Erlau (Eger) in Hungary and author of Hisorerus HaTeshuva, a leading scholar of Hungarian Jewry."},
+  {month:3, day:17, name:"Rav Aharon of Karlin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 17 Sivan (1802-1872)."},
+  {month:3, day:18, name:"Rav Yerucham Levovitz", blurb:"Mashgiach of the Mir Yeshiva and author of Daas Chochmah U'Mussar, who shaped the mussar approach in the yeshiva world."},
+  {month:3, day:24, name:"Rav Aharon Shurin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 24 Sivan."},
+  {month:3, day:15, name:"Rav Yitzchak Dov Koppelman", blurb:"Remembered on the Yahrtzeit Yomi schedule for 15 Sivan."},
+  {month:3, day:16, name:"Rav Gedalya Nadel", blurb:"Remembered on the Yahrtzeit Yomi schedule for 16 Sivan."},
+  {month:3, day:8, name:"Rav Moshe Blau", blurb:"Remembered on the Yahrtzeit Yomi schedule for 8 Sivan."},
+  {month:3, day:22, name:"The Korban HaEidah", blurb:"Remembered on the Yahrtzeit Yomi schedule for 22 Sivan."},
+  {month:2, day:26, name:"Rav Itzeleh Volozhiner, HaGritz", blurb:"Rav Yitzchak of Volozhin, son of Rav Chaim and head of Volozhin yeshiva, known for his Torah, humility and leadership."},
+  {month:2, day:15, name:"Rav Avraham Eliyahu Kaplan", blurb:"A brilliant young talmid of the Slabodka yeshiva, who composed the poem Shakah Chamah at 17 and passed away young."}
+];
+
+// ---- BATCH 12: added from the Shas Illuminated Yahrtzeit Yomi list (short blurbs; expand over time) ----
+const YAHRZEIT_DB12 = [
+  {month:4, day:18, name:"Rav Shmuel Yehuda Levin", blurb:"Remembered on the Yahrtzeit Yomi schedule for 18 Tammuz."},
+  {month:3, day:30, name:"Rabbi Meir Zlotowitz", blurb:"Rabbi Meir Zlotowitz, founder of ArtScroll, who brought English Torah study to a worldwide audience."},
+  {month:1, day:12, name:"Rav Shimshon Pincus", blurb:"A renowned speaker and author on prayer and personal growth, Rav Pincus served as a rabbi in Ashkelon and was a deeply inspiring teacher."},
+  {month:1, day:8, name:"The Eliyah Rabbah", blurb:"Remembered on the Yahrtzeit Yomi schedule for 8 Nisan."},
+  {month:1, day:27, name:"The Kozhiglover Gaon", blurb:"Remembered on the Yahrtzeit Yomi schedule for 27 Nisan."}
+];
 function allYahrzeits(){
   const extra = (typeof config !== 'undefined' && config && Array.isArray(config.yahrzeitBank)) ? config.yahrzeitBank : [];
-  return YAHRZEIT_DB.concat(YAHRZEIT_DB2, YAHRZEIT_DB3, YAHRZEIT_DB4, YAHRZEIT_DB5, YAHRZEIT_DB6, YAHRZEIT_DB7, extra);
+  return YAHRZEIT_DB.concat(YAHRZEIT_DB2, YAHRZEIT_DB3, YAHRZEIT_DB4, YAHRZEIT_DB5, YAHRZEIT_DB6, YAHRZEIT_DB7, YAHRZEIT_DB8, YAHRZEIT_DB9, YAHRZEIT_DB10, YAHRZEIT_DB11, YAHRZEIT_DB12, extra);
 }
 // Photo database: config.yahrzeitPhotoList = [{name, url}], edited in Settings > Photos.
 function yzKey(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
@@ -2237,6 +2479,11 @@ function yzKey(n){ return String(n||'').toLowerCase().replace(/[^a-z0-9]/g,''); 
 // The board fetches each article's lead image (Wikimedia, free to hotlink) once
 // and caches it for 30 days. Photos only for people with real/traditional
 // images; anything you add in the Photo Database below overrides these.
+const YAHRZEIT_WIKI_EXTRA9 = {"Rabbeinu Yonah": "Yonah Gerondi", "Rav Moshe Twersky Hy\"d": "Moshe Twersky", "Rav Dovid Feinstein": "David Feinstein", "Rav Yehuda Hachassid I": "Judah he-Hasid", "Rav Nosson Tzvi Finkel": "Nosson Tzvi Finkel", "Rav Shimon Shkop": "Shimon Shkop", "The Rosh": "Asher ben Jehiel", "The Piaseczna Rebbe, Rav Klonimus Kalman Shapira": "Kalonymus Kalman Shapira", "Rav Simcha Wasserman": "Simcha Wasserman", "The Bluzhever Rebbe": "Israel Spira", "Maharatz Chiyus": "Zvi Hirsch Chajes", "The R\"I HaZaken": "Isaac ben Samuel", "The Ribnitzer Rebbe": "Chaim Zanvl Abramowitz", "The Kozhnitzer Maggid": "Israel Hapstein", "The Brisker Rav": "Yitzchak Zev Soloveitchik", "The Chayei Adam": "Avraham Danzig", "The Minchas Chinuch": "Yosef Babad", "The Shaagas Aryeh": "Aryeh Leib Ginzburg", "Rav Shmuel Rozovsky": "Shmuel Rozovsky", "The Tur": "Jacob ben Asher", "The Klausenberger Rebbe, Shefa Chaim": "Yekusiel Yehuda Halberstam", "The Lev Simcha, Fifth Gerrer Rebbe": "Simcha Bunim Alter", "Yonatan Netanyahu": "Yonatan Netanyahu", "Rav Shneur Kotler": "Shneur Kotler", "Mike Tress": "Mike Tress", "Rav Gershon Edelstein": "Gershon Edelstein", "Rav Michel Yehuda Lefkowitz": "Michel Yehuda Lefkowitz", "The Minchas Yitzchok": "Yitzchak Yaakov Weiss", "The Kaf HaChaim": "Yaakov Chaim Sofer", "The Ger Tzedek of Vilna": "Valentine Potocki", "Rav Ovadiah Bartenura": "Ovadia ben Abraham of Bertinoro", "The Minchas Elazar, Munkatcher Rebbe": "Chaim Elazar Spira", "The Pri Megadim": "Joseph ben Meir Teomim", "Rav Zundel Kroizer": "Zundel Kroizer", "The Kli Yakar": "Shlomo Ephraim Luntschitz", "The Ralbag": "Gersonides", "The Ri Migash": "Joseph ibn Migash", "The Mabit": "Moses ben Joseph di Trani", "Rav Henoch Leibowitz": "Henoch Leibowitz", "The Apter Rav, Oheiv Yisrael": "Avraham Yehoshua Heschel of Apt", "The Ksav V'haKabalah, Rav Yaakov Tzvi Mecklenburg": "Jacob Zvi Mecklenburg", "Rav Zalman Volozhiner": "Zalman Volozhiner", "Rav Avraham Kalmanowitz": "Abraham Kalmanowitz", "The Shach, Rav Shabsai HaKohen": "Shabbethai ben Meir HaKohen", "Rav Chaim Pinchas Scheinberg": "Chaim Pinchas Scheinberg", "The Baal HaLeshem, Rav Shlomo Elyashiv": "Shlomo Elyashiv", "The Levush, Rav Mordechai Yoffe": "Mordecai Jaffe", "Rav Dovid Povarsky": "David Povarsky", "Rav Yehuda Zev Segal": "Yehuda Zev Segal", "The Ketzos HaChoshen, Rav Aryeh Leib Heller": "Aryeh Leib Heller", "The Ibn Ezra": "Abraham ibn Ezra", "The Aderes": "Eliyahu David Rabinowitz-Teomim", "The Avnei Nezer": "Avraham Bornsztain", "Rabbi Dr. Abraham J. Twersky": "Abraham J. Twerski", "Rav Itzeleh Volozhiner, HaGritz": "Yitzchak of Volozhin", "Rav Yerucham Levovitz": "Yeruchom Levovitz", "Reb Yossele Rosenblatt": "Josef Rosenblatt", "Rabbi Meir Zlotowitz": "Meir Zlotowitz", "Rav Shimshon Pincus": "Shimshon Pincus", "The Ran": "Nissim of Gerona", "Rav Simcha Bunim of Peshischa": "Simcha Bunim of Peshischa"};
+const YAHRZEIT_WIKI_EXTRA10 = {"Rav Menashe Klein, Ungvar Rav":"Menashe Klein"};
+Object.assign(YAHRZEIT_WIKI_EXTRA9, YAHRZEIT_WIKI_EXTRA10);
+const YAHRZEIT_WIKI_EXTRA11 = {"Rabbi Moshe Sherer": "Moshe Sherer", "The Novominsker Rebbe, Rav Yaakov Perlow": "Yaakov Perlow", "Rav Gedalia Schorr": "Gedalia Schorr", "Rav Moshe Rivkis": "Moses Rivkes", "Rav Yaakov Yosef, Rav HaKollel": "Jacob Joseph (rabbi)", "The Nitra Rav": "Shmuel David Ungar", "Rav Leizer Silver": "Eliezer Silver", "Rav Yaakov Rosenheim": "Jacob Rosenheim", "Rav Berel Soloveitchik": "Berel Soloveitchik"};
+Object.assign(YAHRZEIT_WIKI_EXTRA9, YAHRZEIT_WIKI_EXTRA11);
 const YAHRZEIT_WIKI = {
   "The Rambam (Maimonides)":"Maimonides","Rashi":"Rashi","The Vilna Gaon":"Elijah ben Solomon",
   "The Chofetz Chaim":"Yisrael Meir Kagan","The Baal Shem Tov":"Baal Shem Tov",
@@ -2257,7 +2504,7 @@ const YAHRZEIT_WIKI = {
   "The Shelah HaKadosh":"Isaiah Horowitz","Rav Yosef Karo":"Joseph Karo","The Divrei Chaim of Sanz":"Chaim Halberstam",
   "Rav Shmuel of Sochatchov (Shem MiShmuel)":"Shmuel Bornstein"
 };
-Object.assign(YAHRZEIT_WIKI, YAHRZEIT_WIKI_EXTRA, YAHRZEIT_WIKI_EXTRA3, YAHRZEIT_WIKI_EXTRA4, YAHRZEIT_WIKI_EXTRA5, YAHRZEIT_WIKI_EXTRA6);
+Object.assign(YAHRZEIT_WIKI, YAHRZEIT_WIKI_EXTRA, YAHRZEIT_WIKI_EXTRA3, YAHRZEIT_WIKI_EXTRA4, YAHRZEIT_WIKI_EXTRA5, YAHRZEIT_WIKI_EXTRA6, YAHRZEIT_WIKI_EXTRA9);
 Object.assign(YAHRZEIT_BLURB_OVERLAY, YAHRZEIT_BLURB_OVERLAY4);
 
 // ---- Richer blurbs + extra photo lookups (added; only fills gaps for photos) ----
@@ -2446,6 +2693,9 @@ const HISTORY_DB = [
   {month:9, day:25, text:'Chanukah begins \u2014 marking the Chashmonaim\u2019s victory and the rededication of the Beis Hamikdash.'},
   {adar:true, day:14, text:'Purim \u2014 celebrating the salvation of the Jews of Shushan from Haman\u2019s plot, as told in Megillas Esther.'}
 ];
+HISTORY_DB.push(
+  {month:9, day:7, text:"Death of King Herod \u2014 marked in Megillas Taanis as a day of relief for the Jewish People from a cruel ruler."}
+);
 
 const DEFAULT_SCHEDULE = `7:00 AM - Wake Up
 7:30 AM - Shacharis
@@ -2641,7 +2891,7 @@ const DEFAULT_CONFIG = {
   shoutouts: ['Welcome to the Derech Jumbotron! Add your first shoutout from the gear icon.'],
   photos: [],
   galleryPhotos: DEFAULT_GALLERY_PHOTOS.map(([url,caption])=>({url,caption})),
-  ticker: '\u201cStart where you are. Use what you have. Do what you can.\u201d \u2014 Arthur Ashe',
+  ticker: '\u201cStart where you are. Use what you have. Do what you can.\u201d',
   triviaBank: DEFAULT_TRIVIA.map(([q,a,cat])=>({q,a,cat})),
   riddleBank: DEFAULT_RIDDLES.map(([r,a])=>({r,a})),
   wordBank: DEFAULT_WORDS.map(([hebrew,translit,meaning,cat])=>({hebrew,translit,meaning,cat})),
@@ -4990,7 +5240,7 @@ function startPhotoRotation(){
 const OLD_DEFAULT_TICKER = 'Welcome to the Derech Jumbotron \u2014 tap the gear icon to update scores, add shoutouts, and manage countdowns.';
 function paintTicker(){
   // Boards that still carry the old welcome message get the new default quote.
-  if(!config.ticker || config.ticker.trim() === OLD_DEFAULT_TICKER) config.ticker = DEFAULT_CONFIG.ticker;
+  if(!config.ticker || config.ticker.trim() === OLD_DEFAULT_TICKER || /Do what you can\.\u201d\s*\u2014\s*Arthur Ashe\s*$/.test(config.ticker.trim())) config.ticker = DEFAULT_CONFIG.ticker;
   document.getElementById('tickerText').textContent = config.ticker || '';
 }
 function paintDayBadge(){
