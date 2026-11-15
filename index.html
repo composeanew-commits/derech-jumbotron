@@ -162,6 +162,7 @@
   .photoLayer{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;}
   .photoLayer.in{opacity:1;}
   .photoCell .photoEmptyState{background:radial-gradient(circle at 30% 20%, #2a2460, #0E0C1B);}
+  .photoBrand span{font-family:'Rubik',sans-serif;font-weight:700;letter-spacing:.35em;font-size:22px;color:var(--gold);opacity:.55;animation:pulseDot 2.4s infinite;}
   .photoCell.fadeOut{opacity:0;transform:translateY(-12px);}
   .photoCell img{width:100%;height:100%;object-fit:contain;display:block;}
   .photoCell video{width:100%;height:100%;object-fit:contain;display:block;background:#0E0C1B;}
@@ -399,6 +400,18 @@
   .ticker{border-top:1px solid var(--line);background:var(--panel);padding:10px 24px;display:flex;align-items:center;gap:16px;overflow:hidden;flex-shrink:0;}
   .tickerLabel{flex-shrink:0;display:flex;align-items:center;gap:8px;background:linear-gradient(135deg, rgba(214,80,63,.16), rgba(240,184,77,.12));border:1px solid var(--gold-dim);border-radius:20px;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
   .tickerLabel .liveDot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulseDot 1.7s infinite;}
+  .minyanChip,.weatherChip{flex-shrink:0;display:flex;align-items:center;gap:8px;font-family:'Rubik',sans-serif;font-size:15px;font-weight:500;color:var(--text,#f3f1ff);border:1px solid var(--line);border-radius:20px;padding:6px 14px;white-space:nowrap;}
+  .minyanChip b{color:var(--gold);font-weight:600;}
+  .minyanChip small,.weatherChip small{opacity:.65;font-size:12px;font-weight:400;}
+  /* Weather is a quiet side note: two small lines, no border, soft colors. */
+  .weatherChip{flex-direction:column;align-items:flex-end;gap:1px;border:none;padding:0 4px;font-size:13px;line-height:1.25;opacity:.88;}
+  .weatherChip .wxTop{display:flex;align-items:center;gap:7px;}
+  .weatherChip .wxTop b{color:var(--gold);font-weight:600;}
+  .weatherChip .wxPlace{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;}
+  .weatherChip .wxToday{font-size:12px;opacity:.85;padding-left:8px;border-left:1px solid var(--line);}
+  .weatherChip .wxRow{display:flex;gap:12px;font-size:11px;opacity:.7;}
+  .weatherChip .wxRow i{font-style:normal;font-weight:600;opacity:.9;}
+  .minyanChip.soon{border-color:var(--gold);animation:pulseDot 1.6s infinite;}
   .tickerTrack{flex:1;min-width:0;overflow:hidden;white-space:nowrap;position:relative;}
   .tickerInner{display:inline-block;padding-left:100%;animation:scroll 30s linear infinite;font-family:'Rubik',sans-serif;font-weight:500;font-size:16px;color:var(--gold);letter-spacing:.3px;}
   @keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
@@ -526,7 +539,9 @@
 
   <div class="ticker">
     <div class="tickerLabel"><span class="liveDot"></span>Live</div>
+    <div class="minyanChip" id="minyanChip" style="display:none"></div>
     <div class="tickerTrack"><div class="tickerInner" id="tickerText">Loading announcements…</div></div>
+    <div class="weatherChip" id="weatherChip" style="display:none"></div>
   </div>
 </div>
 
@@ -2602,7 +2617,7 @@ const DEFAULT_CONFIG = {
   shoutouts: ['Welcome to the Derech Jumbotron! Add your first shoutout from the gear icon.'],
   photos: [],
   galleryPhotos: DEFAULT_GALLERY_PHOTOS.map(([url,caption])=>({url,caption})),
-  ticker: 'Welcome to the Derech Jumbotron \u2014 tap the gear icon to update scores, add shoutouts, and manage countdowns.',
+  ticker: '\u201cStart where you are. Use what you have. Do what you can.\u201d \u2014 Arthur Ashe',
   triviaBank: DEFAULT_TRIVIA.map(([q,a,cat])=>({q,a,cat})),
   riddleBank: DEFAULT_RIDDLES.map(([r,a])=>({r,a})),
   wordBank: DEFAULT_WORDS.map(([hebrew,translit,meaning,cat])=>({hebrew,translit,meaning,cat})),
@@ -4435,6 +4450,19 @@ function reshufflePhotoBag(poolKey, pool){
     const j = Math.floor(Math.random() * (i + 1));
     [bag[i], bag[j]] = [bag[j], bag[i]];
   }
+  // Smarter order: whatever has gone longest without being shown (or never) leads
+  // the new round, so a restart or refill never opens on photos just seen.
+  // Ties stay random, and extra copies of newer photos get spread apart.
+  const lastSeen = u => { const i = recentPhotoUrls.lastIndexOf(u); return i < 0 ? -1 : i; };
+  const rank = new Map();
+  bag.forEach((it, i) => rank.set(it, lastSeen(it.url) + Math.random() * 6 + (i % 3) * 0.01));
+  bag.sort((a, b) => rank.get(a) - rank.get(b));
+  for(let i = 1; i < bag.length; i++){
+    if(bag[i].url === bag[i-1].url){
+      const j = bag.findIndex((x, k) => k > i && x.url !== bag[i].url && (k + 1 >= bag.length || x.url !== bag[k+1].url));
+      if(j > 0){ const [m] = bag.splice(j, 1); bag.splice(i, 0, m); }
+    }
+  }
   photoBags[poolKey] = bag;
   photoBagPos[poolKey] = 0;
 }
@@ -4487,7 +4515,7 @@ function nextFromPhotoBag(poolKey, pool, avoidUrls){
 }
 
 function renderPhotoCellMarkup(item, cellIdx){
-  if(!item) return `<div class="photoEmptyState">Add photos from the gear icon</div>`;
+  if(!item) return `<div class="photoEmptyState photoBrand"><span>DERECH</span></div>`;   // branded, never a blank hole
   if(item.type === 'video'){
     // autoplay requires muted in every modern browser. No `loop` here —
     // the cell now waits for the video's own 'ended' event before moving
@@ -4845,13 +4873,32 @@ async function paintPhotoCell(cellIdx, animate, extraDelayMs){
     cell.classList.remove('fadeOut');
     photoBusySince[cellIdx] = 0;
     const hasContent = !!cell.querySelector('img,video');
-    if(!hasContent && cellLastGood[cellIdx]) paintPhotoCellCore(cellIdx, false, 0, cellLastGood[cellIdx]);
+    // Never leave a box empty: reuse this box's last photo, else any box's last good photo.
+    const fb = cellLastGood[cellIdx] || Object.values(cellLastGood)[0];
+    if(!hasContent && fb) paintPhotoCellCore(cellIdx, false, 0, fb);
+    else if(!hasContent && !cell.querySelector('.photoBrand')) paintPhotoCellCore(cellIdx, false, 0, null);
     photoCellTimers[cellIdx] = setTimeout(()=>advancePhotoCell(cellIdx), hasContent ? 4000 : 1500);
     return;
   }
   photoBusySince[cellIdx] = 0;
   cell.dataset.shownAt = String(Date.now());
   paintPhotoCellCore(cellIdx, animate, extraDelayMs, chosen);
+  setTimeout(prefetchUpcomingPhotos, 1500);
+}
+
+// V2: quietly download the next few photos in line while the current ones are
+// on screen, so each swap is instant and a slow host can't leave a box waiting.
+let prefetchBusy = false;
+async function prefetchUpcomingPhotos(){
+  if(prefetchBusy) return; prefetchBusy = true;
+  try{
+    const bag = photoBags.all || [], pos = photoBagPos.all || 0;
+    const next = bag.slice(pos, pos + 4).filter(it => it && it.type !== 'video');
+    for(const it of next){
+      const src = sizedPhotoUrl(it.isCustom ? it.url : fullResUrl(it.url));
+      if(!blobCache.has(src)) await fetchAsBlobUrl(src, 8000);
+    }
+  }catch(e){} finally { prefetchBusy = false; }
 }
 
 // ---- BLANK-BOX SWEEPER ----
@@ -4875,7 +4922,7 @@ setInterval(()=>{
       if(empty || deadImg || stuck){
         if(deadImg) brokenPhotoUrls.add(img.dataset.orig || img.src);
         cell.classList.remove('fadeOut');
-        if(empty && cellLastGood[i]) paintPhotoCellCore(i, false, 0, cellLastGood[i]);   // instant refill, no network
+        if(empty){ const fb = cellLastGood[i] || Object.values(cellLastGood)[0]; paintPhotoCellCore(i, false, 0, fb || null); }   // instant refill, no network
         paintPhotoCell(i, false);
       }
     }
@@ -6192,6 +6239,70 @@ async function startBoard(){
 (async function init(){
   await startBoard();
 })();
+
+
+// ===== Next-minyan countdown (reads Shacharis / Mincha / Ma'ariv from the daily schedule) =====
+function parseMinyanim(){
+  const text = (config.schedule && config.schedule.trim()) || DEFAULT_SCHEDULE;
+  const out = [];
+  text.split('\n').forEach(line=>{
+    let name = null;
+    if(/shach[a-z']*|shachris|shacharis|shacharit/i.test(line)) name = 'Shacharis';
+    else if(/minch/i.test(line)) name = 'Mincha';
+    else if(/ma'?a?riv|arvit/i.test(line)) name = "Ma'ariv";
+    if(!name) return;
+    const m = line.match(/(\d{1,2}):(\d{2})\s*([ap])?\.?m?/i);
+    if(!m) return;
+    let h = parseInt(m[1],10); const mi = parseInt(m[2],10);
+    if(m[3]){ const pm = m[3].toLowerCase()==='p'; if(pm && h<12) h+=12; if(!pm && h===12) h=0; }
+    out.push({name, mins:h*60+mi, label:(m[3]? line.match(/(\d{1,2}:\d{2}\s*[ap]\.?m?\.?)/i)[1].toUpperCase().replace(/\./g,'').replace(/\s+/,' ') : m[1]+':'+m[2])});
+  });
+  return out.sort((a,b)=>a.mins-b.mins);
+}
+function updateMinyanChip(){
+  const el = document.getElementById('minyanChip'); if(!el) return;
+  try{
+    const list = parseMinyanim();
+    if(!list.length){ el.style.display='none'; return; }
+    const d = new Date(); const now = d.getHours()*60 + d.getMinutes();
+    let next = list.find(m=>m.mins > now), tomorrow = false;
+    if(!next){ next = list[0]; tomorrow = true; }
+    const diff = (tomorrow ? next.mins + 1440 : next.mins) - now;
+    const fmt = diff >= 60 ? Math.floor(diff/60)+'h '+(diff%60 ? (diff%60)+'m' : '') : diff+' min';
+    el.innerHTML = tomorrow
+      ? `<span>⏱</span><b>${escapeHtml(next.name)}</b> <span>tomorrow</span><small>${escapeHtml(next.label)}</small>`
+      : `<span>⏱</span><b>${escapeHtml(next.name)}</b> <span>in ${fmt.trim()}</span><small>${escapeHtml(next.label)}</small>`;
+    el.classList.toggle('soon', !tomorrow && diff <= 10);
+    el.style.display = 'flex';
+  }catch(e){ el.style.display='none'; }
+}
+setInterval(updateMinyanChip, 15000);
+setTimeout(updateMinyanChip, 1500);
+
+// ===== Yerushalayim weather (Open-Meteo, 31.7683N 35.2137E, Asia/Jerusalem time) =====
+function wxIcon(c){
+  if(c===0) return '☀️'; if(c<=2) return '🌤️'; if(c===3) return '☁️'; if(c===45||c===48) return '🌫️';
+  if(c>=51&&c<=57) return '🌦️'; if((c>=61&&c<=67)||(c>=80&&c<=82)) return '🌧️';
+  if((c>=71&&c<=77)||c===85||c===86) return '❄️'; if(c>=95) return '⛈️'; return '🌡️';
+}
+async function updateWeather(){
+  const el = document.getElementById('weatherChip'); if(!el) return;
+  try{
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=31.7683&longitude=35.2137&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FJerusalem&forecast_days=4');
+    if(!r.ok) throw new Error('wx '+r.status);
+    const j = await r.json();
+    const c = Math.round(j.current.temperature_2m), f = Math.round(c*9/5+32);
+    const hl = k => `H ${Math.round(j.daily.temperature_2m_max[k])}° · L ${Math.round(j.daily.temperature_2m_min[k])}°`;
+    const days = [1,2,3].map(k=>{
+      const dn = new Date(j.daily.time[k] + 'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});
+      return `<span class="wxDay"><i>${dn}</i> ${wxIcon(j.daily.weather_code[k])} ${hl(k)}</span>`;
+    }).join('');
+    el.innerHTML = `<div class="wxTop"><span>${wxIcon(j.current.weather_code)}</span><b>${c}°C / ${f}°F</b><span class="wxPlace">Yerushalayim</span><span class="wxToday">Today ${hl(0)}</span></div><div class="wxRow">${days}</div>`;
+    el.style.display = 'flex';
+    setTimeout(updateWeather, 20*60*1000);
+  }catch(e){ setTimeout(updateWeather, 3*60*1000); }   // keep the last reading on screen; retry soon
+}
+setTimeout(updateWeather, 2500);
 </script>
 </body>
 </html>
