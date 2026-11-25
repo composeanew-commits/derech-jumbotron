@@ -156,11 +156,12 @@
   /* Photos are the smaller, separate "nice to look at" column — a stack of
      a couple of cells, each still a real size, never squeezed into slivers. */
   .photoPanel{flex:0.8;min-width:0;display:flex;flex-direction:column;gap:6px;}
-  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .42s ease, flex-grow .45s ease, transform .42s cubic-bezier(.22,.61,.36,1);}
+  .photoCell{flex:1;min-width:0;position:relative;overflow:hidden;background:#0E0C1B;border-radius:16px;border:1px solid var(--line);transition:opacity .42s ease, flex-grow 1s cubic-bezier(.4,0,.2,1), transform .42s cubic-bezier(.22,.61,.36,1);}
   .photoCell.tall{flex-grow:2;}
   /* Never-blank: each photo lives in its own layer that fades in OVER the old one. */
-  .photoLayer{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;}
-  .photoLayer.in{opacity:1;}
+  .photoLayer{position:absolute;inset:0;opacity:0;background:#0E0C1B;transform:scale(1.04);will-change:opacity,transform;
+    transition:opacity 1.2s cubic-bezier(.4,0,.2,1), transform 1.8s cubic-bezier(.22,.61,.36,1);}
+  .photoLayer.in{opacity:1;transform:scale(1);}
   .photoCell .photoEmptyState{background:radial-gradient(circle at 30% 20%, #2a2460, #0E0C1B);}
   .photoBrand span{font-family:'Rubik',sans-serif;font-weight:700;letter-spacing:.35em;font-size:22px;color:var(--gold);opacity:.55;animation:pulseDot 2.4s infinite;}
   .photoCell.fadeOut{opacity:0;transform:translateY(-12px);}
@@ -420,6 +421,20 @@
   .tickerInner{display:inline-block;padding-left:100%;animation:scroll 30s linear infinite;font-family:'Rubik',sans-serif;font-weight:500;font-size:16px;color:var(--gold);letter-spacing:.3px;}
   @keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
 
+  #shabbosOverlay{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:4vh 5vw;
+    background:radial-gradient(ellipse at 50% 0%, #241f4a 0%, #0E0C1B 70%);color:var(--ink);text-align:center;}
+  #shabbosOverlay.on{display:flex;}
+  #shabbosOverlay *{animation:none !important;transition:none !important;}
+  #shabbosOverlay .sbEyebrow{font-size:2.2vh;letter-spacing:.5em;text-transform:uppercase;color:var(--muted);}
+  #shabbosOverlay .sbTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:7vh;color:var(--gold);margin:1vh 0 1.5vh 0;}
+  #shabbosOverlay .sbTimes{display:flex;gap:6vw;justify-content:center;margin-bottom:3vh;font-size:3.2vh;color:var(--ink);}
+  #shabbosOverlay .sbTimes b{color:var(--gold);font-weight:700;}
+  #shabbosOverlay .sbList{column-gap:5vw;width:min(1400px,92vw);text-align:left;flex:0 1 auto;max-height:68vh;overflow:hidden;}
+  #shabbosOverlay .sbList.two{column-count:2;}
+  #shabbosOverlay .sbRow{display:flex;gap:2vw;align-items:baseline;padding:1.1vh 0;border-bottom:1px solid var(--line);break-inside:avoid;font-size:3.6vh;}
+  #shabbosOverlay .sbTime{flex:0 0 17vh;min-width:17vh;font-weight:700;color:var(--gold);}
+  #shabbosOverlay .sbExit{position:absolute;bottom:14px;right:18px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;opacity:.25;}
+  #shabbosOverlay .sbExit:hover{opacity:1;}
   .editBtn{position:fixed;bottom:22px;right:22px;width:52px;height:52px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .2s;}
   .editBtn{opacity:0;transition:opacity .25s, transform .2s;}
   .editBtn:hover,.editBtn:focus-visible{opacity:1;}
@@ -508,6 +523,14 @@
   .bankCount{font-size:12px;color:var(--muted);margin-bottom:12px;}
   .uploadDivider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
   .uploadDivider::before, .uploadDivider::after{content:'';flex:1;height:1px;background:var(--line);}
+  .qpRow{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px;background:var(--panel2);}
+  .qpRow img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none;}
+  .qpRow .qpBody{flex:1;min-width:0;}
+  .qpRow .qpStatus{font-size:12px;color:var(--muted);}
+  .qpRow .qpStatus.ok{color:var(--green);} .qpRow .qpStatus.err{color:var(--red);}
+  .qpRow .qpTitleBtn{background:none;border:none;color:var(--gold);font-size:12px;padding:4px 0;cursor:pointer;text-decoration:underline;}
+  .qpRow input.qpTitle{width:100%;margin-top:4px;display:none;}
+  .qpRow .qpRm{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;flex:none;}
   .fileDrop{border:1px dashed var(--gold-dim);border-radius:8px;padding:14px;text-align:center;cursor:pointer;color:var(--gold);font-size:13px;background:rgba(240,184,77,.05);}
   .fileDrop input{display:none;}
   .fileDrop.hasFile{color:var(--ink);border-style:solid;}
@@ -549,6 +572,8 @@
 </div>
 
 <button class="editBtn" id="editOpen" title="Edit content">⚙</button>
+<button class="editBtn" id="shabbosBtn" title="Shabbos Mode" style="right:84px;">🕯</button>
+<div id="shabbosOverlay"><div class="sbEyebrow">Derech</div><div class="sbTitle" id="sbTitle">Shabbos</div><div class="sbTimes" id="sbTimes"></div><div class="sbList" id="sbList"></div><button class="sbExit" id="sbExit">Exit Shabbos Mode</button></div>
 
 <div class="modalOverlay" id="modalOverlay">
   <div class="modal">
@@ -577,6 +602,9 @@
       <div class="field"><label>Today's Schedule (one line per activity, e.g. "7:30 - Shacharis")</label><textarea id="qSchedule" rows="6" placeholder="7:30 - Shacharis
 8:15 - Breakfast
 9:00 - Seder"></textarea></div>
+      <div class="field"><label>Shabbos Schedule — shown all Shabbos when you tap the 🕯 button (one line per item, e.g. "9:00 - Shacharis")</label><textarea id="qShabbosSchedule" rows="6" placeholder="Fri 7:10 PM - Mincha / Kabbalas Shabbos
+9:00 - Shacharis
+6:45 PM - Mincha"></textarea></div>
       <div class="field"><label>Today in Jewish History (leave blank to auto-fill from Hebrew date when known)</label><input id="qHistory" placeholder="e.g. 1948 — The State of Israel is declared"></div>
       <div class="field"><label>Yahrzeit Today — Name (leave blank to auto-fill when known)</label><input id="qYahrzeitName" placeholder="e.g. The Chofetz Chaim"></div>
       <div class="field"><label>Yahrzeit Today — Short Blurb (optional)</label><textarea id="qYahrzeitBlurb" rows="2" placeholder="A one or two line note about who they were"></textarea></div>
@@ -585,6 +613,13 @@
       <div class="field"><label>Quick-Add a Shoutout / Mazel Tov</label><input id="qShoutout" placeholder="Type it and tap Add"></div>
       <button class="addBtn" id="qShoutoutAdd">+ Add & Save</button>
       <div style="height:20px;"></div>
+      <div class="fileDrop" id="qPhotoFileDrop">
+        <input type="file" id="qPhotoFile" accept="image/*" multiple>
+        <span id="qPhotoFileLabel">📷 Upload photos from this device</span>
+      </div>
+      <div id="qPhotoPicked"></div>
+      <button class="addBtn" id="qPhotoUploadAdd" style="display:none;margin-top:10px;">⬆ Upload & Save to Board</button>
+      <div class="hint" style="margin:6px 0 16px 0;">Titles are optional — tap “+ Add title” on a photo only if you want one. Or paste a link below.</div>
       <div class="field"><label>Photo or Video?</label>
         <select id="qPhotoType">
           <option value="image">Photo</option>
@@ -624,8 +659,9 @@
         <div id="flyerUrlPreviewMsg" class="hint" style="margin:6px 0 0 0;"></div>
       </div>
 
+      <div class="field"><label>Title (optional — shows on the flyer and the countdown)</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
       <div class="row">
-        <div class="field"><label>Event Date (optional — leave blank if you just want it in rotation)</label><input id="flyerDate" type="date"></div>
+        <div class="field"><label>Date (optional — the flyer, title &amp; countdown come down by themselves once this date is over)</label><input id="flyerDate" type="date"></div>
         <div class="field"><label>Event Time (optional)</label><input id="flyerTime" type="time"></div>
       </div>
       <div class="toggleRow" style="margin-top:4px;"><input type="checkbox" id="flyerNTK"><label for="flyerNTK" style="margin:0;font-size:15px;font-weight:600;">⭐ Need to Know <span style="font-weight:400;color:var(--muted);font-size:12px;">— stays on screen. Leave off for normal rotation.</span></label></div>
@@ -636,9 +672,8 @@
       <div class="toggleRow"><input type="checkbox" id="flyerShowOnBoard" checked><label for="flyerShowOnBoard" style="margin:0;font-size:14px;">Show this flyer on the board</label></div>
       <div class="hint" style="margin-top:-6px;">Uncheck this to save the flyer without posting it \u2014 handy for prepping something ahead of time.</div>
       <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
-      <div class="field"><label>Countdown / Caption Name (only needed if you turned that on above)</label><input id="flyerEventName" placeholder="e.g. Shabbaton in the Old City"></div>
           <div class="field"><label>Stop showing after (optional date — it hides itself, never deleted)</label><input id="flyerExpires" type="date"></div>
-          <div class="hint" style="margin-top:-6px;">Flyers with an event date already hide themselves the day after the event. Use this for undated flyers. Expired flyers stay in the list so you can bring them back by changing the date.</div>
+          <div class="hint" style="margin-top:-6px;">Flyers with a date above come down on their own once that date is over. Use this only for flyers with no date. Expired flyers stay in the list so you can bring them back by changing the date.</div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input id="flyerDuration" type="number" min="3" max="120" placeholder="Default — 14s (22s for Need to Know)"></div>
           <div class="field">
             <label>Only show on certain days?</label>
@@ -3249,6 +3284,15 @@ function parseDateTime(dateStr, timeStr, fallbackTime){
 
 // Flyers without an explicit time still get a target (end of day) so they
 // can count down and show up as a chip even if the rabbi only picked a date.
+// True once a flyer's date has fully passed (end of its event day, or its
+// manual "stop showing after" day). Used so the flyer, its title and its
+// countdown chip all come down together.
+function flyerIsPast(f){
+  const now = new Date();
+  if(f.eventDate && new Date(f.eventDate + 'T23:59:59') < now) return true;
+  if(f.expiresOn && new Date(f.expiresOn + 'T23:59:59') < now) return true;
+  return false;
+}
 function flyerTarget(f){
   return parseDateTime(f.eventDate, f.eventTime, '23:59');
 }
@@ -3269,8 +3313,9 @@ function getCountdownEntries(){
       key: 'f'+i,
       name: (f.eventName && f.eventName.trim()) || 'Upcoming Event',
       target: flyerTarget(f),
-      fromFlyer: true
-    })).filter(c=>c.target);
+      fromFlyer: true,
+      past: flyerIsPast(f) || f.showOnBoard === false
+    })).filter(c=>c.target && !c.past);
 
   return [...manual, ...fromFlyers]
     .map(c=>({...c, urgency: getCountdownUrgency(c.target)}))
@@ -3980,7 +4025,7 @@ function getActiveFlyers(){
     // Flyers with no date attached never expire and always stay in rotation.
     // Dated flyers keep showing for a day after the event, then drop out
     // (still editable/removable in the Flyers tab).
-    .filter(f=> !f.target || (f.target - now > -24*3600*1000))
+    .filter(f=> !flyerIsPast(f))
     // Optional manual "stop showing after" date (hidden, never deleted).
     .filter(f=> !f.expiresOn || new Date(f.expiresOn + 'T23:59:59') >= now)
     // Day-of-week schedule: no `days` (or an empty list) means no
@@ -4920,7 +4965,7 @@ function paintPhotoCellCore(cellIdx, animate, extraDelayMs, prepared){
     const reveal = ()=>{
       if(layer.dataset.revealed) return; layer.dataset.revealed = '1';
       layer.classList.add('in');   // direct (not rAF): can't stall if the screen is idle
-      setTimeout(()=> oldLayers.forEach(o=>{ try{ const v=o.querySelector('video'); if(v){ v.pause(); v.removeAttribute('src'); v.load(); } }catch(e){} o.remove(); }), 900);
+      setTimeout(()=> oldLayers.forEach(o=>{ try{ const v=o.querySelector('video'); if(v){ v.pause(); v.removeAttribute('src'); v.load(); } }catch(e){} o.remove(); }), 1500);
     };
     const limg = layer.querySelector('img');
     const lvid = layer.querySelector('video');
@@ -5369,6 +5414,7 @@ function syncFormToConfig(){
       sofZmanShema: document.getElementById('qzShema').value
     };
     config.schedule = document.getElementById('qSchedule').value;
+    config.shabbosSchedule = document.getElementById('qShabbosSchedule').value;
     config.dailyHistory = document.getElementById('qHistory').value;
     config.yahrzeit = {
       name: document.getElementById('qYahrzeitName').value,
@@ -5446,6 +5492,7 @@ function populateModal(){
   document.getElementById('qzHavdalah').value = (config.zmanim && config.zmanim.havdalah) || '';
   document.getElementById('qzShema').value = (config.zmanim && config.zmanim.sofZmanShema) || '';
   document.getElementById('qSchedule').value = config.schedule || DEFAULT_SCHEDULE;
+  document.getElementById('qShabbosSchedule').value = config.shabbosSchedule || '';
   document.getElementById('qHistory').value = config.dailyHistory || '';
   document.getElementById('qYahrzeitName').value = (config.yahrzeit && config.yahrzeit.name) || '';
   document.getElementById('qYahrzeitBlurb').value = (config.yahrzeit && config.yahrzeit.blurb) || '';
@@ -5554,7 +5601,7 @@ function populateModal(){
           <div class="flyerSummaryInfo">
             <div class="flyerSummaryName">${escapeHtml(f.eventName || 'Untitled flyer')}</div>
             <div class="flyerSummaryMeta">
-              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (f.startsOn && new Date(f.startsOn+'T'+(f.startTime||'00:00')+':00') > new Date() ? '🗓 Starts '+escapeHtml(f.startsOn)+(f.startTime?' '+escapeHtml(formatTimeOfDay(f.startTime)):'')+' &nbsp;· ' : (isActive ? '● Live now &nbsp;' : ((target && target - new Date() < -864e5) || (f.expiresOn && new Date(f.expiresOn + 'T23:59:59') < new Date()) ? '⌛ Expired — hidden &nbsp;· ' : '')))}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
+              ${f.showOnBoard===false ? '🚫 Not shown on board &nbsp;· ' : (f.startsOn && new Date(f.startsOn+'T'+(f.startTime||'00:00')+':00') > new Date() ? '🗓 Starts '+escapeHtml(f.startsOn)+(f.startTime?' '+escapeHtml(formatTimeOfDay(f.startTime)):'')+' &nbsp;· ' : (isActive ? '● Live now &nbsp;' : (flyerIsPast(f) ? '⌛ Expired — hidden &nbsp;· ' : '')))}${target ? escapeHtml(formatRelativeTime(target)) : 'No date set'}${f.priority==='high' ? ' &nbsp;· Need to Know' : ''}${f.durationSec ? ` &nbsp;· ${f.durationSec}s` : ''}${f.days && f.days.length ? ` &nbsp;· ${f.days.slice().sort().map(d=>FLYER_DAY_LABELS[d]).join(', ')} only` : ''}${(f.startTime || f.endTime) ? ` &nbsp;· ${f.startTime ? formatTimeOfDay(f.startTime) : 'anytime'}\u2013${f.endTime ? formatTimeOfDay(f.endTime) : 'anytime'}` : ''}
             </div>
           </div>
           <div class="flyerSummaryChevron">▾</div>
@@ -6381,6 +6428,126 @@ document.getElementById('qPhotoAdd').onclick = async ()=>{
   await quickSaveIndicator('Saving…');
 };
 
+// ---- Direct photo upload from device (optional title per photo) ----
+(function(){
+  const input = document.getElementById('qPhotoFile');
+  const drop = document.getElementById('qPhotoFileDrop');
+  const label = document.getElementById('qPhotoFileLabel');
+  const list = document.getElementById('qPhotoPicked');
+  const btn = document.getElementById('qPhotoUploadAdd');
+  if(!input || !list || !btn) return;
+  let picked = [];
+  drop.onclick = (e)=>{ if(e.target !== input) input.click(); };
+  function setStatus(it, txt, cls){
+    const el = it.row.querySelector('.qpStatus');
+    el.textContent = txt; el.className = 'qpStatus ' + (cls||'');
+  }
+  function refreshUi(){
+    btn.style.display = picked.length ? 'block' : 'none';
+    drop.classList.toggle('hasFile', picked.length > 0);
+    label.textContent = picked.length ? ('✓ ' + picked.length + ' photo' + (picked.length>1?'s':'') + ' selected — tap to add more') : '📷 Upload photos from this device';
+  }
+  input.onchange = ()=>{
+    Array.from(input.files || []).forEach(file=>{
+      const it = {file, url:'', objUrl: URL.createObjectURL(file)};
+      it.row = document.createElement('div');
+      it.row.className = 'qpRow';
+      it.row.innerHTML = `<img alt=""><div class="qpBody"><div class="qpStatus">Uploading…</div><button type="button" class="qpTitleBtn">＋ Add title</button><input class="qpTitle" placeholder="Title (optional)"></div><button type="button" class="qpRm" title="Remove">✕</button>`;
+      it.row.querySelector('img').src = it.objUrl;
+      it.row.querySelector('.qpTitleBtn').onclick = (ev)=>{
+        const ti = it.row.querySelector('.qpTitle');
+        ti.style.display = 'block'; ev.target.style.display = 'none'; ti.focus();
+      };
+      it.row.querySelector('.qpRm').onclick = ()=>{
+        picked = picked.filter(x=> x !== it);
+        URL.revokeObjectURL(it.objUrl); it.row.remove(); refreshUi();
+      };
+      it.promise = uploadImageToImgbb(file)
+        .then(u=>{ it.url = u; setStatus(it, '✓ Uploaded', 'ok'); })
+        .catch(e=>{ it.err = (e && e.message) || 'Upload failed'; setStatus(it, it.err + ' — will retry on Save', 'err'); });
+      picked.push(it);
+      list.appendChild(it.row);
+    });
+    input.value = '';
+    refreshUi();
+  };
+  btn.onclick = async ()=>{
+    if(!picked.length) return;
+    btn.disabled = true;
+    const st = document.getElementById('quickStatus');
+    if(st) st.textContent = 'Uploading photos…';
+    for(const it of picked){
+      if(!it.url){ setStatus(it, 'Uploading…'); it.err = ''; try{ it.url = await uploadImageToImgbb(it.file); setStatus(it, '✓ Uploaded', 'ok'); }catch(e){ it.err = (e && e.message) || 'Upload failed'; setStatus(it, it.err, 'err'); } }
+      else await it.promise;
+    }
+    const ok = picked.filter(it=> it.url);
+    if(ok.length){
+      syncFormToConfig();
+      ok.forEach(it=>{
+        const t = it.row.querySelector('.qpTitle').value.trim();
+        config.photos.push({url: it.url, caption: t, type:'image'});
+        URL.revokeObjectURL(it.objUrl); it.row.remove();
+      });
+      picked = picked.filter(it=> !it.url);
+      refreshUi();
+      await quickSaveIndicator('Saving…');
+    } else if(st){
+      st.textContent = 'No photos uploaded — check your connection and try again.';
+    }
+    btn.disabled = false;
+  };
+})();
+
+// ================= SHABBOS MODE =================
+// Full-screen, completely static schedule. No rotation, no animation, no
+// auto-reload while it is on. Remembered across a page reload.
+(function(){
+  const ov = document.getElementById('shabbosOverlay');
+  const btn = document.getElementById('shabbosBtn');
+  if(!ov || !btn) return;
+  function build(){
+    const z = (config && config.zmanim) || {};
+    const candle = (z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting;
+    const havdalah = (z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah;
+    document.getElementById('sbTitle').textContent = autoZmanim.parsha || 'Shabbos Schedule';
+    const t = [];
+    if(candle) t.push(`<span>Candle Lighting <b>${escapeHtml(candle)}</b></span>`);
+    if(havdalah) t.push(`<span>Shabbos Ends <b>${escapeHtml(havdalah)}</b></span>`);
+    document.getElementById('sbTimes').innerHTML = t.join('');
+    const lines = String((config && config.shabbosSchedule) || '').split('\n').map(l=>l.trim()).filter(Boolean);
+    const list = document.getElementById('sbList');
+    if(!lines.length){
+      list.className = 'sbList';
+      list.innerHTML = '<div class="sbRow"><span>Add the Shabbos schedule in Settings (⚙) → “Shabbos Schedule”.</span></div>';
+      return;
+    }
+    list.className = 'sbList' + (lines.length > 8 ? ' two' : '');
+    list.innerHTML = lines.map(l=>{
+      const [time, ...rest] = l.split(/\s[-–—]\s/);
+      return rest.length
+        ? `<div class="sbRow"><span class="sbTime">${escapeHtml(time.trim())}</span><span>${escapeHtml(rest.join(' - ').trim())}</span></div>`
+        : `<div class="sbRow"><span>${escapeHtml(l)}</span></div>`;
+    }).join('');
+  }
+  function setMode(on){
+    window.__shabbosOn = on;
+    if(on) build();
+    ov.classList.toggle('on', on);
+    try{ localStorage.setItem('shabbosMode', on ? '1' : '0'); }catch(e){}
+  }
+  btn.onclick = ()=> setMode(true);
+  document.getElementById('sbExit').onclick = ()=> setMode(false);
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && window.__shabbosOn) setMode(false); });
+  // Restore after a reload (wait for the config to finish loading).
+  let tries = 0;
+  const restore = setInterval(()=>{
+    tries++;
+    let want = false; try{ want = localStorage.getItem('shabbosMode') === '1'; }catch(e){}
+    if(!want || tries > 40){ clearInterval(restore); return; }
+    if(typeof config !== 'undefined' && config){ clearInterval(restore); setMode(true); }
+  }, 500);
+})();
+
 function persistModalChanges(){
   syncFormToConfig();
 
@@ -6522,6 +6689,7 @@ async function startBoard(){
   // ends up on whatever is currently live on GitHub Pages, not a cached
   // copy of the old page.
   setInterval(()=>{
+    if(window.__shabbosOn) return;   // stay perfectly steady all Shabbos
     location.href = location.pathname + '?v=' + Date.now();
   }, 15*60*1000);
 }
