@@ -421,20 +421,6 @@
   .tickerInner{display:inline-block;padding-left:100%;animation:scroll 30s linear infinite;font-family:'Rubik',sans-serif;font-weight:500;font-size:16px;color:var(--gold);letter-spacing:.3px;}
   @keyframes scroll{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
 
-  #shabbosOverlay{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;padding:4vh 5vw;
-    background:radial-gradient(ellipse at 50% 0%, #241f4a 0%, #0E0C1B 70%);color:var(--ink);text-align:center;}
-  #shabbosOverlay.on{display:flex;}
-  #shabbosOverlay *{animation:none !important;transition:none !important;}
-  #shabbosOverlay .sbEyebrow{font-size:2.2vh;letter-spacing:.5em;text-transform:uppercase;color:var(--muted);}
-  #shabbosOverlay .sbTitle{font-family:'Poppins',sans-serif;font-weight:800;font-size:7vh;color:var(--gold);margin:1vh 0 1.5vh 0;}
-  #shabbosOverlay .sbTimes{display:flex;gap:6vw;justify-content:center;margin-bottom:3vh;font-size:3.2vh;color:var(--ink);}
-  #shabbosOverlay .sbTimes b{color:var(--gold);font-weight:700;}
-  #shabbosOverlay .sbList{column-gap:5vw;width:min(1400px,92vw);text-align:left;flex:0 1 auto;max-height:68vh;overflow:hidden;}
-  #shabbosOverlay .sbList.two{column-count:2;}
-  #shabbosOverlay .sbRow{display:flex;gap:2vw;align-items:baseline;padding:1.1vh 0;border-bottom:1px solid var(--line);break-inside:avoid;font-size:3.6vh;}
-  #shabbosOverlay .sbTime{flex:0 0 17vh;min-width:17vh;font-weight:700;color:var(--gold);}
-  #shabbosOverlay .sbExit{position:absolute;bottom:14px;right:18px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;opacity:.25;}
-  #shabbosOverlay .sbExit:hover{opacity:1;}
   .editBtn{position:fixed;bottom:22px;right:22px;width:52px;height:52px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:50;transition:transform .2s;}
   .editBtn{opacity:0;transition:opacity .25s, transform .2s;}
   .editBtn:hover,.editBtn:focus-visible{opacity:1;}
@@ -572,8 +558,6 @@
 </div>
 
 <button class="editBtn" id="editOpen" title="Edit content">⚙</button>
-<button class="editBtn" id="shabbosBtn" title="Shabbos Mode" style="right:84px;">🕯</button>
-<div id="shabbosOverlay"><div class="sbEyebrow">Derech</div><div class="sbTitle" id="sbTitle">Shabbos</div><div class="sbTimes" id="sbTimes"></div><div class="sbList" id="sbList"></div><button class="sbExit" id="sbExit">Exit Shabbos Mode</button></div>
 
 <div class="modalOverlay" id="modalOverlay">
   <div class="modal">
@@ -602,9 +586,6 @@
       <div class="field"><label>Today's Schedule (one line per activity, e.g. "7:30 - Shacharis")</label><textarea id="qSchedule" rows="6" placeholder="7:30 - Shacharis
 8:15 - Breakfast
 9:00 - Seder"></textarea></div>
-      <div class="field"><label>Shabbos Schedule — shown all Shabbos when you tap the 🕯 button (one line per item, e.g. "9:00 - Shacharis")</label><textarea id="qShabbosSchedule" rows="6" placeholder="Fri 7:10 PM - Mincha / Kabbalas Shabbos
-9:00 - Shacharis
-6:45 PM - Mincha"></textarea></div>
       <div class="field"><label>Today in Jewish History (leave blank to auto-fill from Hebrew date when known)</label><input id="qHistory" placeholder="e.g. 1948 — The State of Israel is declared"></div>
       <div class="field"><label>Yahrzeit Today — Name (leave blank to auto-fill when known)</label><input id="qYahrzeitName" placeholder="e.g. The Chofetz Chaim"></div>
       <div class="field"><label>Yahrzeit Today — Short Blurb (optional)</label><textarea id="qYahrzeitBlurb" rows="2" placeholder="A one or two line note about who they were"></textarea></div>
@@ -673,6 +654,7 @@
       <div class="hint" style="margin-top:-6px;">Uncheck this to save the flyer without posting it \u2014 handy for prepping something ahead of time.</div>
       <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShowCountdown"><label for="flyerShowCountdown" style="margin:0;font-size:14px;">Also show a countdown chip for this on the sidebar</label></div>
           <div class="field"><label>Stop showing after (optional date — it hides itself, never deleted)</label><input id="flyerExpires" type="date"></div>
+          <div class="toggleRow" style="margin-top:14px;"><input type="checkbox" id="flyerShabbosOnly"><label for="flyerShabbosOnly" style="margin:0;font-size:14px;">🕯 Show only during Shabbos (candle lighting → havdalah) — other flyers pause until it ends</label></div>
           <div class="hint" style="margin-top:-6px;">Flyers with a date above come down on their own once that date is over. Use this only for flyers with no date. Expired flyers stay in the list so you can bring them back by changing the date.</div>
           <div class="field"><label>How long to stay on screen (seconds)</label><input id="flyerDuration" type="number" min="3" max="120" placeholder="Default — 14s (22s for Need to Know)"></div>
           <div class="field">
@@ -4008,6 +3990,40 @@ function timeStrToMinutes(hhmm){
   const [h,m] = String(hhmm).split(':').map(Number);
   return (h||0)*60 + (m||0);
 }
+// ---- Shabbos gating for flyers ----
+// Shabbos = Jerusalem Friday from candle lighting until Saturday havdalah
+// (falls back to Fri 6:00 PM / Sat 9:00 PM if those times aren't available).
+function parseClockMinutes(str, fallback){
+  const m = String(str || '').match(/(\d{1,2}):(\d{2})\s*([AaPp][Mm])?/);
+  if(!m) return fallback;
+  let h = +m[1]; const mi = +m[2]; const ap = (m[3] || '').toLowerCase();
+  if(ap === 'pm' && h < 12) h += 12;
+  if(ap === 'am' && h === 12) h = 0;
+  if(!ap && h >= 1 && h <= 11 && fallback >= 12*60) h += 12; // bare "7:12" in the evening
+  return h*60 + mi;
+}
+function isShabbosNow(){
+  try{
+    const parts = new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+    const get = t => (parts.find(p=>p.type===t)||{}).value;
+    const wd = get('weekday'); const mins = (+get('hour') % 24)*60 + (+get('minute'));
+    const z = (config && config.zmanim) || {};
+    const candle = parseClockMinutes((z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting, 18*60);
+    const havdalah = parseClockMinutes((z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah, 21*60);
+    if(wd === 'Fri') return mins >= candle;
+    if(wd === 'Sat') return mins < havdalah;
+  }catch(e){}
+  return false;
+}
+function flyerShabbosGate(f){
+  if(!isShabbosNow()) return !f.shabbosOnly;
+  if(f.shabbosOnly) return true;
+  // During Shabbos, regular flyers pause, but only if at least one live
+  // Shabbos flyer exists to take over (otherwise nothing changes).
+  const flyers = config ? normalizeStoredList(config.flyers) : [];
+  return !flyers.some(x => x && x.url && x.shabbosOnly && x.showOnBoard !== false && !flyerIsPast(x));
+}
+
 function getActiveFlyers(){
   const now = new Date();
   // config can be null for a beat on a cold start, and flyers can come back
@@ -4022,6 +4038,8 @@ function getActiveFlyers(){
     // without going live. Older saved flyers have no showOnBoard field at
     // all, so only an explicit `false` opts a flyer out.
     .filter(f=> f.showOnBoard !== false)
+    // Shabbos-only flyers show only during Shabbos; other flyers pause then.
+    .filter(f=> flyerShabbosGate(f))
     // Flyers with no date attached never expire and always stay in rotation.
     // Dated flyers keep showing for a day after the event, then drop out
     // (still editable/removable in the Flyers tab).
@@ -5414,7 +5432,6 @@ function syncFormToConfig(){
       sofZmanShema: document.getElementById('qzShema').value
     };
     config.schedule = document.getElementById('qSchedule').value;
-    config.shabbosSchedule = document.getElementById('qShabbosSchedule').value;
     config.dailyHistory = document.getElementById('qHistory').value;
     config.yahrzeit = {
       name: document.getElementById('qYahrzeitName').value,
@@ -5492,7 +5509,6 @@ function populateModal(){
   document.getElementById('qzHavdalah').value = (config.zmanim && config.zmanim.havdalah) || '';
   document.getElementById('qzShema').value = (config.zmanim && config.zmanim.sofZmanShema) || '';
   document.getElementById('qSchedule').value = config.schedule || DEFAULT_SCHEDULE;
-  document.getElementById('qShabbosSchedule').value = config.shabbosSchedule || '';
   document.getElementById('qHistory').value = config.dailyHistory || '';
   document.getElementById('qYahrzeitName').value = (config.yahrzeit && config.yahrzeit.name) || '';
   document.getElementById('qYahrzeitBlurb').value = (config.yahrzeit && config.yahrzeit.blurb) || '';
@@ -6245,6 +6261,7 @@ function resetFlyerForm(){
   resetFlyerFilePicker();
   flyerUrlPreviewWrap.style.display = 'none';
   const ex = document.getElementById('flyerExpires'); if(ex) ex.value = '';
+  const sbo = document.getElementById('flyerShabbosOnly'); if(sbo) sbo.checked = false;
   flyerMulti = [];
 }
 
@@ -6340,13 +6357,14 @@ document.getElementById('addFlyer').onclick = async ()=>{
   }
 
   const expiresOn = (document.getElementById('flyerExpires') || {}).value || null;
+  const shabbosOnly = !!(document.getElementById('flyerShabbosOnly') || {}).checked;
   if(flyerMulti.length){
     status.textContent = 'Finishing uploads…';
     let urls;
     try{ urls = await Promise.all(flyerMulti.map(m=>m.promise)); }
     catch(e){ status.textContent = (e && e.message) || 'One of the uploads failed — re-pick the files and try again'; return; }
     syncFormToConfig();
-    urls.forEach((u,i)=> config.flyers.push({eventName, url:u, type: flyerMulti[i].isPdf ? 'pdf' : 'image', eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn}));
+    urls.forEach((u,i)=> config.flyers.push({eventName, url:u, type: flyerMulti[i].isPdf ? 'pdf' : 'image', eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn, shabbosOnly}));
     resetFlyerForm();
     await quickSaveIndicator('Saving…', 'flyerStatus');
     populateModal();
@@ -6380,7 +6398,7 @@ document.getElementById('addFlyer').onclick = async ()=>{
   if(!flyerPickedFile) url = normalizeMediaUrl(url, type === 'pdf');
 
   syncFormToConfig();
-  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn});
+  config.flyers.push({eventName, url, type, eventDate, eventTime, priority, showCountdown, showOnBoard, durationSec, days, startTime, startsOn, endTime, expiresOn, shabbosOnly});
   resetFlyerForm();
   await quickSaveIndicator('Saving…', 'flyerStatus');
   populateModal();
@@ -6496,56 +6514,6 @@ document.getElementById('qPhotoAdd').onclick = async ()=>{
     }
     btn.disabled = false;
   };
-})();
-
-// ================= SHABBOS MODE =================
-// Full-screen, completely static schedule. No rotation, no animation, no
-// auto-reload while it is on. Remembered across a page reload.
-(function(){
-  const ov = document.getElementById('shabbosOverlay');
-  const btn = document.getElementById('shabbosBtn');
-  if(!ov || !btn) return;
-  function build(){
-    const z = (config && config.zmanim) || {};
-    const candle = (z.candleLighting && z.candleLighting.trim()) || autoZmanim.candleLighting;
-    const havdalah = (z.havdalah && z.havdalah.trim()) || autoZmanim.havdalah;
-    document.getElementById('sbTitle').textContent = autoZmanim.parsha || 'Shabbos Schedule';
-    const t = [];
-    if(candle) t.push(`<span>Candle Lighting <b>${escapeHtml(candle)}</b></span>`);
-    if(havdalah) t.push(`<span>Shabbos Ends <b>${escapeHtml(havdalah)}</b></span>`);
-    document.getElementById('sbTimes').innerHTML = t.join('');
-    const lines = String((config && config.shabbosSchedule) || '').split('\n').map(l=>l.trim()).filter(Boolean);
-    const list = document.getElementById('sbList');
-    if(!lines.length){
-      list.className = 'sbList';
-      list.innerHTML = '<div class="sbRow"><span>Add the Shabbos schedule in Settings (⚙) → “Shabbos Schedule”.</span></div>';
-      return;
-    }
-    list.className = 'sbList' + (lines.length > 8 ? ' two' : '');
-    list.innerHTML = lines.map(l=>{
-      const [time, ...rest] = l.split(/\s[-–—]\s/);
-      return rest.length
-        ? `<div class="sbRow"><span class="sbTime">${escapeHtml(time.trim())}</span><span>${escapeHtml(rest.join(' - ').trim())}</span></div>`
-        : `<div class="sbRow"><span>${escapeHtml(l)}</span></div>`;
-    }).join('');
-  }
-  function setMode(on){
-    window.__shabbosOn = on;
-    if(on) build();
-    ov.classList.toggle('on', on);
-    try{ localStorage.setItem('shabbosMode', on ? '1' : '0'); }catch(e){}
-  }
-  btn.onclick = ()=> setMode(true);
-  document.getElementById('sbExit').onclick = ()=> setMode(false);
-  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && window.__shabbosOn) setMode(false); });
-  // Restore after a reload (wait for the config to finish loading).
-  let tries = 0;
-  const restore = setInterval(()=>{
-    tries++;
-    let want = false; try{ want = localStorage.getItem('shabbosMode') === '1'; }catch(e){}
-    if(!want || tries > 40){ clearInterval(restore); return; }
-    if(typeof config !== 'undefined' && config){ clearInterval(restore); setMode(true); }
-  }, 500);
 })();
 
 function persistModalChanges(){
@@ -6689,7 +6657,7 @@ async function startBoard(){
   // ends up on whatever is currently live on GitHub Pages, not a cached
   // copy of the old page.
   setInterval(()=>{
-    if(window.__shabbosOn) return;   // stay perfectly steady all Shabbos
+    if(isShabbosNow()) return;   // stay perfectly steady during Shabbos
     location.href = location.pathname + '?v=' + Date.now();
   }, 15*60*1000);
 }
